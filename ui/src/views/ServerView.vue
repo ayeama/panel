@@ -81,19 +81,24 @@ onMounted(async () => {
         <div class="row gy-2">
           <div class="col-6">
             <label for="inputId" class="form-label">ID</label>
-            <input type="text" class="form-control" id="inputId" readonly v-model="data.id">
+            <input type="text" class="form-control" id="inputId" readonly v-model="data.id" />
           </div>
 
           <div class="col-6">
             <label for="inputName" class="form-label">Name</label>
-            <input type="text" class="form-control" id="inputName" v-model="data.name">
+            <input type="text" class="form-control" id="inputName" v-model="data.name" />
           </div>
 
           <div class="col-6">
             <label for="inputStatus" class="form-label">Status</label>
-            <input type="text" class="form-control" id="inputStatus" readonly v-model="data.status">
+            <input
+              type="text"
+              class="form-control"
+              id="inputStatus"
+              readonly
+              v-model="data.status"
+            />
           </div>
-
         </div>
       </form>
     </div>
