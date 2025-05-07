@@ -1,0 +1,12 @@
+{
+  "name": "Minecraft",
+  "variant": "vanilla",
+  "variables": [
+    {
+      "name": "version",
+      "options": [
+        "1.21.5"
+      ]
+    }
+  ]
+}

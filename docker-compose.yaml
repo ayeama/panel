@@ -1,0 +1,16 @@
+services:
+  ui:
+    image: localhost/panel/ui:latest
+    ports:
+      - 8000:80
+    build:
+      context: ./panel/web/panel
+
+  api:
+    image: localhost/panel/api:latest
+    volumes:
+      - "${XDG_RUNTIME_DIR}/podman/podman.sock:/${XDG_RUNTIME_DIR}/podman/podman.sock"
+      - ./panel/cert.pem:/app/cert.pem:ro,Z
+      - ./panel/key.pem:/app/key.pem:ro,Z
+    build:
+      context: ./panel
