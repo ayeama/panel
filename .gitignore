@@ -1,0 +1,9 @@
+tmp/
+
+cert.pem
+cert.key
+
+Caddyfile
+
+config.js
+!/ui/public/config.js

@@ -1,0 +1,18 @@
+- hosts: all
+  gather_facts: true
+  tasks:
+    - name: Create group
+      ansible.builtin.group:
+        state: present
+        name: panel
+        gid: 42873
+      become: true
+
+    - name: Create user
+      ansible.builtin.user:
+        state: present
+        name: panel
+        uid: 42873
+        group: panel
+        groups: docker
+      become: true
