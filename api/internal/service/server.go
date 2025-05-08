@@ -49,5 +49,25 @@ func (s *ServerService) ServerStop(id string) {
 
 func (s *ServerService) ServerAttach(id string, stdin io.Reader, stdout io.Writer, stderr io.Writer) {
 	domainServer := s.repository.ReadOne(id)
+
+	// tail logs
+	stdoutLog := make(chan string, 1)
+	stderrLog := make(chan string, 1)
+
+	go func() {
+		defer close(stdoutLog)
+		defer close(stderrLog)
+		domainServer.Logs(stdoutLog, stderrLog)
+	}()
+
+	for i := range stdoutLog {
+		stdout.Write([]byte(i))
+	}
+
+	for i := range stderrLog {
+		stdout.Write([]byte(i))
+	}
+	// END tail logs
+
 	domainServer.Attach(stdin, stdout, stderr)
 }

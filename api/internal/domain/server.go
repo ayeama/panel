@@ -110,6 +110,23 @@ func (s *Server) Remove() {
 	fmt.Println(removeResponse)
 }
 
+func (s *Server) Logs(stdout chan string, stderr chan string) {
+	conn, err := bindings.NewConnection(context.Background(), "unix:///run/user/1000/podman/podman.sock")
+	if err != nil {
+		panic(err)
+	}
+
+	tail := "25"
+	options := &containers.LogOptions{
+		Tail: &tail,
+	}
+
+	err = containers.Logs(conn, s.Pod.Id, options, stdout, stderr)
+	if err != nil {
+		panic(err)
+	}
+}
+
 func (s *Server) Attach(stdin io.Reader, stdout io.Writer, stderr io.Writer) {
 	conn, err := bindings.NewConnection(context.Background(), "unix:///run/user/1000/podman/podman.sock")
 	if err != nil {
