@@ -33,6 +33,28 @@ async function getServer(id) {
   }
 }
 
+async function startServer() {
+  try {
+    const response = await fetch(`https://${HOST}/servers/${id}/start`, {
+      method: 'POST',
+    })
+    // TODO handle?
+  } catch (err) {
+    console.log('Failed to start server')
+  }
+}
+
+async function stopServer() {
+  try {
+    const response = await fetch(`https://${HOST}/servers/${id}/stop`, {
+      method: 'POST',
+    })
+    // TODO handle?
+  } catch (err) {
+    console.log('Failed to stop server')
+  }
+}
+
 onMounted(async () => {
   await getServer(id)
 })
@@ -56,9 +78,12 @@ onMounted(async () => {
         <div class="float-end">
           <div class="">
             <!-- TODO routing -->
-            <RouterLink to="{name: 'ServerEditView', params: {id: id}}" class="btn btn-secondary">
+            <button class="btn btn-secondary" v-on:click="startServer">Start</button>
+            <button class="btn btn-secondary ms-2" v-on:click="stopServer">Stop</button>
+            <button class="btn btn-secondary ms-2">Edit</button>
+            <!-- <RouterLink to="{name: 'ServerEditView', params: {id: id}}" class="btn btn-secondary">
               Edit
-            </RouterLink>
+            </RouterLink> -->
             <button
               type="button"
               class="btn btn-danger ms-2"
@@ -77,30 +102,90 @@ onMounted(async () => {
     </div>
 
     <div>
-      <form>
-        <div class="row gy-2">
-          <div class="col-6">
-            <label for="inputId" class="form-label">ID</label>
-            <input type="text" class="form-control" id="inputId" readonly v-model="data.id" />
+      <div class="row">
+        <div class="col-6">
+          <form>
+            <div class="row gy-2">
+              <div class="col-12">
+                <label for="inputId" class="form-label">ID</label>
+                <input type="text" class="form-control" id="inputId" v-model="data.id" disabled readonly />
+              </div>
+
+              <div class="col-12">
+                <label for="inputName" class="form-label">Name</label>
+                <input type="text" class="form-control" id="inputName" v-model="data.name" />
+              </div>
+
+              <div class="col-12">
+                <label for="inputStatus" class="form-label">Status</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="inputStatus"
+                  readonly
+                  v-model="data.status"
+                />
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <div class="col-6">
+          <div class="row">
+            <div class="col-2">
+              <p>cpu</p>
+            </div>
+            <div class="col">
+              <div
+                class="progress"
+                role="progressbar"
+                aria-valuenow="20"
+                aria-valuemin="0"
+                aria-valuemax="100"
+                style="height: 25px"
+              >
+                <div class="progress-bar bg-success" style="width: 20%">20%</div>
+              </div>
+            </div>
           </div>
 
-          <div class="col-6">
-            <label for="inputName" class="form-label">Name</label>
-            <input type="text" class="form-control" id="inputName" v-model="data.name" />
+          <div class="row">
+            <div class="col-2">
+              <p>memory</p>
+            </div>
+            <div class="col">
+              <div
+                class="progress"
+                role="progressbar"
+                aria-valuenow="75"
+                aria-valuemin="0"
+                aria-valuemax="100"
+                style="height: 25px"
+              >
+                <div class="progress-bar bg-warning" style="width: 75%">75%</div>
+              </div>
+            </div>
           </div>
 
-          <div class="col-6">
-            <label for="inputStatus" class="form-label">Status</label>
-            <input
-              type="text"
-              class="form-control"
-              id="inputStatus"
-              readonly
-              v-model="data.status"
-            />
+          <div class="row">
+            <div class="col-2">
+              <p>disk</p>
+            </div>
+            <div class="col">
+              <div
+                class="progress"
+                role="progressbar"
+                aria-valuenow="85"
+                aria-valuemin="0"
+                aria-valuemax="100"
+                style="height: 25px"
+              >
+                <div class="progress-bar bg-danger" style="width: 85%">85%</div>
+              </div>
+            </div>
           </div>
         </div>
-      </form>
+      </div>
     </div>
 
     <ModalConfirm
