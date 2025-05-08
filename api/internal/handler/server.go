@@ -60,6 +60,16 @@ func (s *ServerHandler) ServerDelete(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+func (s *ServerHandler) ServerStart(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	s.service.ServerStart(id)
+}
+
+func (s *ServerHandler) ServerStop(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	s.service.ServerStop(id)
+}
+
 func (s *ServerHandler) ServerAttach(w http.ResponseWriter, r *http.Request) {
 	conn := Upgrade(w, r)
 	defer conn.Close()
@@ -91,5 +101,7 @@ func (s *ServerHandler) RegisterHandlers(m *http.ServeMux) {
 	m.HandleFunc("GET /servers/{id}", s.ServerReadOne)
 	m.HandleFunc("PATCH /servers", s.ServerUpdate)
 	m.HandleFunc("DELETE /servers/{id}", s.ServerDelete)
+	m.HandleFunc("POST /servers/{id}/start", s.ServerStart)
+	m.HandleFunc("POST /servers/{id}/stop", s.ServerStop)
 	m.HandleFunc("GET /servers/{id}/attach", s.ServerAttach)
 }

@@ -2,11 +2,14 @@ package domain
 
 import (
 	"context"
+	"fmt"
 	"io"
 
+	nettypes "github.com/containers/common/libnetwork/types"
 	"github.com/containers/podman/v5/pkg/bindings"
 	"github.com/containers/podman/v5/pkg/bindings/containers"
 	"github.com/containers/podman/v5/pkg/specgen"
+	"github.com/opencontainers/runtime-spec/specs-go"
 )
 
 type Pod struct {
@@ -71,6 +74,40 @@ func (s *Server) Start() {
 	if err != nil {
 		panic(err)
 	}
+}
+
+func (s *Server) Stop() {
+	conn, err := bindings.NewConnection(context.Background(), "unix:///run/user/1000/podman/podman.sock")
+	if err != nil {
+		panic(err)
+	}
+
+	err = containers.Stop(conn, s.Pod.Id, nil)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func (s *Server) Remove() {
+	conn, err := bindings.NewConnection(context.Background(), "unix:///run/user/1000/podman/podman.sock")
+	if err != nil {
+		panic(err)
+	}
+
+	force := true
+	volumes := true
+
+	options := &containers.RemoveOptions{
+		Force:   &force,
+		Volumes: &volumes,
+	}
+
+	removeResponse, err := containers.Remove(conn, s.Pod.Id, options)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(removeResponse)
 }
 
 func (s *Server) Attach(stdin io.Reader, stdout io.Writer, stderr io.Writer) {

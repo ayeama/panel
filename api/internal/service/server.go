@@ -16,7 +16,7 @@ func NewServerService(repository *repository.ServerRepository) *ServerService {
 }
 
 func (s *ServerService) ServerCreate(server domain.Server) domain.Server {
-	server.Create() // Created the actual container
+	server.Create()
 	domainServer := s.repository.Create(server)
 	return domainServer
 }
@@ -32,7 +32,19 @@ func (s *ServerService) ServerReadOne(id string) domain.Server {
 func (s *ServerService) ServerUpdate() {}
 
 func (s *ServerService) ServerDelete(id string) {
+	domainServer := s.repository.ReadOne(id)
+	domainServer.Remove()
 	s.repository.Delete(id)
+}
+
+func (s *ServerService) ServerStart(id string) {
+	domainServer := s.repository.ReadOne(id)
+	domainServer.Start()
+}
+
+func (s *ServerService) ServerStop(id string) {
+	domainServer := s.repository.ReadOne(id)
+	domainServer.Stop()
 }
 
 func (s *ServerService) ServerAttach(id string, stdin io.Reader, stdout io.Writer, stderr io.Writer) {
