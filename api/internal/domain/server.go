@@ -29,9 +29,27 @@ func (s *Server) Create() {
 	stdin := true
 	terminal := true
 
+	cpus := 1.0
+	cpuPeriod := uint64(100000)
+	cpuQuota := int64(float64(cpuPeriod) * cpus)
+	memLimit := int64(1000000000)
+
+	var portMappings []nettypes.PortMapping
+	portMappings = append(portMappings, nettypes.PortMapping{HostPort: 25565, ContainerPort: 25565})
+
 	spec := specgen.NewSpecGenerator("localhost/server/minecraft:latest", false)
 	spec.Stdin = &stdin
 	spec.Terminal = &terminal
+	spec.ResourceLimits = &specs.LinuxResources{
+		CPU: &specs.LinuxCPU{
+			Period: &cpuPeriod,
+			Quota:  &cpuQuota,
+		},
+		Memory: &specs.LinuxMemory{
+			Limit: &memLimit,
+		},
+	}
+	spec.PortMappings = portMappings
 
 	createResponse, err := containers.CreateWithSpec(conn, spec, nil)
 	if err != nil {
