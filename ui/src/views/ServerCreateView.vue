@@ -43,31 +43,95 @@ async function createServer() {
       </RouterLink>
     </div>
 
-    <h1>Create Server</h1>
-
-    <form v-on:submit.prevent="createServer">
-      <div class="mb-3">
-        <label for="idInput" class="form-label">Identity</label>
-        <input
-          type="text"
-          class="form-control"
-          id="idInput"
-          aria-describedby="idHelp"
-          v-model="id"
-        />
-        <div id="idHelp" class="form-text">A sha256sum</div>
+    <div class="row">
+      <div class="col">
+        <h1>Create Server</h1>
       </div>
 
-      <div class="mb-3">
-        <label for="nameInput" class="form-label">Name</label>
-        <input type="text" class="form-control" id="nameInput" v-model="name" />
+      <div class="col">
+        <div class="float-end">
+          <button v-if="!loading" form="createServer" type="submit" class="btn btn-primary">Create</button>
+        </div>
+      </div>
+    </div>
+
+    <form v-on:submit.prevent="createServer" id="createServer">
+      <div class="row">
+        <div class="col">
+          <div>
+            <label for="gameSelect" class="form-label">Game</label>
+            <select class="form-select" id="gameSelect" aria-label="Game select">
+              <option selected>Minecraft</option>
+              <option value="1">Valheim</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="col">
+          <div>
+            <label for="variantSelect" class="form-label">Variant</label>
+            <select class="form-select" id="variantSelect" aria-label="Variant select">
+              <option selected>Vanilla</option>
+              <option value="1">Paper</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="col">
+          <div>
+            <label for="versionSelect" class="form-label">Version</label>
+            <select class="form-select" id="versionSelect" aria-label="Version select">
+              <option selected>1.21.5</option>
+              <option value="1">1.21.5</option>
+              <option value="2">1.21.4</option>
+              <option value="3">1.21.3</option>
+              <option value="4">1.21.2</option>
+              <option value="5">1.21.1</option>
+              <option value="6">1.21</option>
+              <option value="7">1.20.1</option>
+              <option value="8">1.20</option>
+            </select>
+          </div>
+        </div>
       </div>
 
-      <button v-if="!loading" type="submit" class="btn btn-primary">Create</button>
-      <button v-else type="button" class="btn btn-primary" disabled>
-        <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
-        <span class="ms-1" role="status">Creating...</span>
-      </button>
+      <div class="row mt-3">
+        <div class="col">
+          <div>
+            <label for="nameInput" class="form-label">Name</label>
+            <input type="text" class="form-control" id="nameInput" v-model="name" />
+          </div>
+        </div>
+      </div>
+
+      <div class="row mt-3">
+        <div class="col">
+          <label for="cpuInput" class="form-label">CPU</label>
+          <div class="input-group">
+            <input type="number" class="form-control" id="cpuInput" />
+            <span class="input-group-text">%</span>
+          </div>
+          <div class="form-text">400% available</div>
+        </div>
+
+        <div class="col">
+          <label for="memoryInput" class="form-label">Memory</label>
+          <div class="input-group">
+            <input type="number" class="form-control" id="memoryInput" />
+            <span class="input-group-text">MiB</span>
+          </div>
+          <div class="form-text">2048MiB available</div>
+        </div>
+
+        <div class="col">
+          <label for="diskInput" class="form-label">Disk</label>
+          <div class="input-group">
+            <input type="number" class="form-control" id="diskInput" />
+            <span class="input-group-text">GB</span>
+          </div>
+          <div class="form-text">40GB available</div>
+        </div>
+      </div>
     </form>
   </div>
 </template>
