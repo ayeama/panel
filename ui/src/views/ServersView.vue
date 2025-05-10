@@ -78,7 +78,7 @@ function serverView(id) {
               </tr>
             </thead>
 
-            <tbody class="">
+            <tbody>
               <tr v-if="loading">
                 <td scope="role">
                   <div class="placeholder-glow"><span class="placeholder col-8"></span></div>
