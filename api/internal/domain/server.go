@@ -59,6 +59,9 @@ func (s *Server) Create() {
 	}
 	spec.PortMappings = portMappings
 
+	// TODO add metadata to labels
+	// spec.Labels = map[string]string{"com.github.ayeama.panel.api.server.id": "id"}
+
 	createResponse, err := containers.CreateWithSpec(conn, spec, nil)
 	if err != nil {
 		panic(err)
