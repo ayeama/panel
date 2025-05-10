@@ -102,29 +102,50 @@ onMounted(async () => {
     </div>
 
     <div>
-      <div class="row">
+      <div class="row mt-3">
         <div class="col-6">
           <form>
             <div class="row gy-2">
               <div class="col-12">
-                <label for="inputId" class="form-label">ID</label>
-                <input type="text" class="form-control" id="inputId" v-model="data.id" disabled readonly />
+                <div>
+                  <label for="idInput" class="form-label">ID</label>
+                  <input type="text" class="form-control" id="idInput" v-model="data.id" disabled readonly />
+                </div>
               </div>
 
               <div class="col-12">
-                <label for="inputName" class="form-label">Name</label>
-                <input type="text" class="form-control" id="inputName" v-model="data.name" />
+                <div>
+                  <label for="addressInput" class="form-label">Address</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="addressInput"
+                    value="127.0.0.1:25565"
+                    disabled
+                    readonly
+                  />
+                </div>
               </div>
 
               <div class="col-12">
-                <label for="inputStatus" class="form-label">Status</label>
-                <input
-                  type="text"
-                  class="form-control"
-                  id="inputStatus"
-                  readonly
-                  v-model="data.status"
-                />
+                <div>
+                  <label for="nameInput" class="form-label">Name</label>
+                  <input type="text" class="form-control" id="nameInput" v-model="data.name" />
+                </div>
+              </div>
+
+              <div class="col-12">
+                <div>
+                  <label for="statusInput" class="form-label">Status</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="statusInput"
+                    disabled
+                    readonly
+                    v-model="data.status"
+                  />
+                </div>
               </div>
             </div>
           </form>
