@@ -18,7 +18,7 @@ func NewServerRepository(database *sql.DB) *ServerRepository {
 func (s *ServerRepository) Create(serverTodo domain.Server) domain.Server {
 	id := uuid.New().String()
 	// name := namesgenerator.GetRandomName(0)
-	name := "anotherone"
+	name := serverTodo.Name
 	status := "created"
 
 	// server := domain.Server{}

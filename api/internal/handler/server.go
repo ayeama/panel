@@ -20,7 +20,7 @@ func NewServerHandler(service *service.ServerService) *ServerHandler {
 func (s *ServerHandler) ServerCreate(w http.ResponseWriter, r *http.Request) {
 	var serverCreate types.ServerCreateRequest
 	ReadRequestJson(r.Body, &serverCreate)
-	server := s.service.ServerCreate(domain.Server{})
+	server := s.service.ServerCreate(domain.Server{Name: serverCreate.Name})
 	output := types.ServerResponse{Id: server.Id, Name: server.Name, Status: server.Pod.Status}
 	WriteResponseJson(w, 200, output)
 }
