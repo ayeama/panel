@@ -21,7 +21,7 @@ func (s *ServerHandler) ServerCreate(w http.ResponseWriter, r *http.Request) {
 	var serverCreate types.ServerCreateRequest
 	ReadRequestJson(r.Body, &serverCreate)
 	server := s.service.ServerCreate(domain.Server{})
-	output := types.ServerResponse{Id: server.Id, Name: server.Name, Status: server.Status}
+	output := types.ServerResponse{Id: server.Id, Name: server.Name, Status: server.Pod.Status}
 	WriteResponseJson(w, 200, output)
 }
 
@@ -38,7 +38,7 @@ func (s *ServerHandler) ServerRead(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for _, s := range domainServerPaginated.Items {
-		serverPaginated.Items = append(serverPaginated.Items, types.ServerResponse{Id: s.Id, Name: s.Name, Status: s.Status})
+		serverPaginated.Items = append(serverPaginated.Items, types.ServerResponse{Id: s.Id, Name: s.Name, Status: s.Pod.Status})
 	}
 
 	WriteResponseJson(w, 200, serverPaginated)
@@ -47,7 +47,7 @@ func (s *ServerHandler) ServerRead(w http.ResponseWriter, r *http.Request) {
 func (s *ServerHandler) ServerReadOne(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	domainServer := s.service.ServerReadOne(id)
-	server := types.ServerResponse{Id: domainServer.Id, Name: domainServer.Name, Status: domainServer.Status}
+	server := types.ServerResponse{Id: domainServer.Id, Name: domainServer.Name, Status: domainServer.Pod.Status}
 	WriteResponseJson(w, 200, server)
 }
 

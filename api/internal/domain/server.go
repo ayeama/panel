@@ -13,14 +13,14 @@ import (
 )
 
 type Pod struct {
-	Id string
+	Id     string
+	Status string
 }
 
 type Server struct {
-	Id     string
-	Name   string
-	Status string
-	Pod    Pod
+	Id   string
+	Name string
+	Pod  Pod
 }
 
 func (s *Server) Create() {
@@ -143,4 +143,18 @@ func (s *Server) Attach(stdin io.Reader, stdout io.Writer, stderr io.Writer) {
 	}()
 
 	<-attachReady
+}
+
+func (s *Server) Inspect() {
+	conn, err := bindings.NewConnection(context.Background(), "unix:///run/user/1000/podman/podman.sock")
+	if err != nil {
+		panic(err)
+	}
+
+	inspectResponse, err := containers.Inspect(conn, s.Pod.Id, nil)
+	if err != nil {
+		panic(err)
+	}
+
+	s.Pod.Status = inspectResponse.State.Status
 }

@@ -28,7 +28,7 @@ func (s *ServerRepository) Create(serverTodo domain.Server) domain.Server {
 	// }
 
 	server := domain.Server{}
-	err := s.db.QueryRow("INSERT INTO servers (id, name, status, container_id) VALUES (?, ?, ?, ?) RETURNING id, name, status, container_id", id, name, status, serverTodo.Pod.Id).Scan(&server.Id, &server.Name, &server.Status, &server.Pod.Id)
+	err := s.db.QueryRow("INSERT INTO servers (id, name, status, container_id) VALUES (?, ?, ?, ?) RETURNING id, name, status, container_id", id, name, status, serverTodo.Pod.Id).Scan(&server.Id, &server.Name, &server.Pod.Status, &server.Pod.Id)
 	if err != nil {
 		panic(err)
 	}
@@ -51,10 +51,11 @@ func (s *ServerRepository) Read(p domain.Pagination) domain.PaginationResponse[d
 
 	for rows.Next() {
 		var server domain.Server
-		err = rows.Scan(&server.Id, &server.Name, &server.Status, &server.Pod.Id, &servers.Total)
+		err = rows.Scan(&server.Id, &server.Name, &server.Pod.Status, &server.Pod.Id, &servers.Total)
 		if err != nil {
 			panic(err)
 		}
+		server.Inspect() // refreshes state
 		servers.Items = append(servers.Items, server)
 	}
 
@@ -63,7 +64,7 @@ func (s *ServerRepository) Read(p domain.Pagination) domain.PaginationResponse[d
 
 func (s *ServerRepository) ReadOne(id string) domain.Server {
 	server := domain.Server{}
-	err := s.db.QueryRow("SELECT id, name, status, container_id FROM servers WHERE id = ?", id).Scan(&server.Id, &server.Name, &server.Status, &server.Pod.Id)
+	err := s.db.QueryRow("SELECT id, name, status, container_id FROM servers WHERE id = ?", id).Scan(&server.Id, &server.Name, &server.Pod.Status, &server.Pod.Id)
 	if err != nil {
 		panic(err)
 	}
