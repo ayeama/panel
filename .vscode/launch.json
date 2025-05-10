@@ -10,7 +10,30 @@
             "request": "launch",
             "mode": "debug",
             "program": "${workspaceFolder}/api/cmd/api/main.go",
-            "cwd": "${workspaceFolder}/api"
+            "cwd": "${workspaceFolder}/api",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "ui",
+            "type": "node",
+            "request": "launch",
+            "runtimeExecutable": "npm",
+            "runtimeArgs": [
+                "run",
+                "dev"
+            ],
+            "cwd": "${workspaceFolder}/ui",
+            "console": "integratedTerminal",
+        }
+    ],
+    "compounds": [
+        {
+            "name": "all",
+            "configurations": [
+                "api",
+                "ui"
+            ],
+            "stopAll": true
         }
     ]
 }
