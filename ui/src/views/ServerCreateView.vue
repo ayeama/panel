@@ -20,7 +20,6 @@ async function createServer() {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        id: id.value,
         name: name.value,
       }),
     })
