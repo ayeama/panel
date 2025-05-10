@@ -92,7 +92,12 @@ function toggle() {
 <template>
   <div>
     <div class="card">
-      <div class="card-header" data-bs-toggle="collapse" data-bs-target="#card-body" style="cursor: pointer;">
+      <div
+        class="card-header"
+        data-bs-toggle="collapse"
+        data-bs-target="#card-body"
+        style="cursor: pointer"
+      >
         <div class="row">
           <div class="col">
             <h1 class="fs-5 mb-0">Terminal</h1>
@@ -133,10 +138,21 @@ function toggle() {
           <div class="row">
             <div class="col">
               <div class="input-group">
-                <span class="input-group-text rounded-top-0 border-0 border-top border-right">$</span>
+                <span class="input-group-text rounded-top-0 border-0 border-top border-right"
+                  >$</span
+                >
 
-                <input v-model="input" class="form-control px-2 border-0 border-top border-left border-right" style="font-family: monospace" />
-                <button type="submit" class="btn btn-secondary border-0 border-top border-left border-right">Send</button>
+                <input
+                  v-model="input"
+                  class="form-control px-2 border-0 border-top border-left border-right"
+                  style="font-family: monospace"
+                />
+                <button
+                  type="submit"
+                  class="btn btn-secondary border-0 border-top border-left border-right"
+                >
+                  Send
+                </button>
                 <a
                   class="btn btn-secondary rounded-top-0 border-0 border-top border-left"
                   v-bind:class="{ active: follow }"

@@ -109,7 +109,14 @@ onMounted(async () => {
               <div class="col-12">
                 <div>
                   <label for="idInput" class="form-label">ID</label>
-                  <input type="text" class="form-control" id="idInput" v-model="data.id" disabled readonly />
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="idInput"
+                    v-model="data.id"
+                    disabled
+                    readonly
+                  />
                 </div>
               </div>
 

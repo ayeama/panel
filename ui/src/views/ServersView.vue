@@ -3,6 +3,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { HOST } from '@/config'
 import ArrowClockwise from '@/components/icons/ArrowClockwise.vue'
+import ServerStatusBadge from '@/components/ServerStatusBadge.vue'
 
 const router = useRouter()
 
@@ -63,19 +64,16 @@ function serverView(id) {
             class="icon-link"
             href=""
             v-on:click.prevent="getServers(serversPaginated.offset / serversPaginated.limit + 1)"
-            >Refresh <ArrowClockwise
-          /></a>
+            >Refresh
+            <ArrowClockwise />
+          </a>
         </div>
 
         <div class="card-body p-0">
           <table class="table table-hover m-0">
-            <!-- <caption v-if="servers.items.length === 0 || loading">
-              No servers found
-            </caption> -->
             <thead>
               <tr>
-                <th scope="col">ID</th>
-                <th>Name</th>
+                <th scope="col">Name</th>
                 <th>Status</th>
               </tr>
             </thead>
@@ -96,9 +94,10 @@ function serverView(id) {
                 v-bind:key="server.id"
                 v-on:click="serverView(server.id)"
               >
-                <td scope="row">{{ server.id }}</td>
-                <td>{{ server.name }}</td>
-                <td>{{ server.status }}</td>
+                <td scope="row">{{ server.name }}</td>
+                <td>
+                  <ServerStatusBadge v-bind:status="server.status" />
+                </td>
               </tr>
             </tbody>
           </table>

@@ -50,7 +50,9 @@ async function createServer() {
 
       <div class="col">
         <div class="float-end">
-          <button v-if="!loading" form="createServer" type="submit" class="btn btn-primary">Create</button>
+          <button v-if="!loading" form="createServer" type="submit" class="btn btn-primary">
+            Create
+          </button>
         </div>
       </div>
     </div>
@@ -70,7 +72,7 @@ async function createServer() {
         <div class="col">
           <div>
             <label for="variantSelect" class="form-label">Variant</label>
-            <select class="form-select" id="variantSelect" aria-label="Variant select">
+            <select class="form-select" id="variantSelect" aria-label="Variant select" disabled>
               <option selected>Vanilla</option>
               <option value="1">Paper</option>
             </select>
@@ -80,7 +82,7 @@ async function createServer() {
         <div class="col">
           <div>
             <label for="versionSelect" class="form-label">Version</label>
-            <select class="form-select" id="versionSelect" aria-label="Version select">
+            <select class="form-select" id="versionSelect" aria-label="Version select" disabled>
               <option selected>1.21.5</option>
               <option value="1">1.21.5</option>
               <option value="2">1.21.4</option>
@@ -108,7 +110,7 @@ async function createServer() {
         <div class="col">
           <label for="cpuInput" class="form-label">CPU</label>
           <div class="input-group">
-            <input type="number" class="form-control" id="cpuInput" />
+            <input type="number" class="form-control" id="cpuInput" value="100" />
             <span class="input-group-text">%</span>
           </div>
           <div class="form-text">400% available</div>
@@ -117,16 +119,16 @@ async function createServer() {
         <div class="col">
           <label for="memoryInput" class="form-label">Memory</label>
           <div class="input-group">
-            <input type="number" class="form-control" id="memoryInput" />
-            <span class="input-group-text">MiB</span>
+            <input type="number" class="form-control" id="memoryInput" value="1000" />
+            <span class="input-group-text">MB</span>
           </div>
-          <div class="form-text">2048MiB available</div>
+          <div class="form-text">2000MB available</div>
         </div>
 
         <div class="col">
           <label for="diskInput" class="form-label">Disk</label>
           <div class="input-group">
-            <input type="number" class="form-control" id="diskInput" />
+            <input type="number" class="form-control" id="diskInput" value="20" />
             <span class="input-group-text">GB</span>
           </div>
           <div class="form-text">40GB available</div>
