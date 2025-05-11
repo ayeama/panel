@@ -1,5 +1,10 @@
 # Panel
 
+## Requirements
+
+* Disk size quotas require the XFS filesystem.
+
+
 systemctl --user start podman.socket
 
 
