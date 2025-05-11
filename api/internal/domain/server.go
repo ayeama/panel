@@ -8,6 +8,7 @@ import (
 	nettypes "github.com/containers/common/libnetwork/types"
 	"github.com/containers/podman/v5/pkg/bindings"
 	"github.com/containers/podman/v5/pkg/bindings/containers"
+	"github.com/containers/podman/v5/pkg/domain/entities/types"
 	"github.com/containers/podman/v5/pkg/specgen"
 	"github.com/opencontainers/runtime-spec/specs-go"
 )
@@ -61,6 +62,8 @@ func (s *Server) Create() {
 
 	// TODO add metadata to labels
 	// spec.Labels = map[string]string{"com.github.ayeama.panel.api.server.id": "id"}
+
+	// todo container restart: unless-stopped
 
 	createResponse, err := containers.CreateWithSpec(conn, spec, nil)
 	if err != nil {
@@ -165,4 +168,28 @@ func (s *Server) Inspect() {
 	}
 
 	s.Pod.Status = inspectResponse.State.Status
+}
+
+func (s *Server) Stats() chan types.ContainerStatsReport {
+	conn, err := bindings.NewConnection(context.Background(), "unix:///run/user/1000/podman/podman.sock")
+	if err != nil {
+		panic(err)
+	}
+
+	all := false
+	stream := true
+	interval := 1
+	options := &containers.StatsOptions{
+		All:      &all,
+		Stream:   &stream,
+		Interval: &interval,
+	}
+
+	containerIds := []string{s.Pod.Id}
+	statsResponse, err := containers.Stats(conn, containerIds, options)
+	if err != nil {
+		panic(err)
+	}
+
+	return statsResponse
 }
