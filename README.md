@@ -59,3 +59,43 @@ nvm use --lts
 # Steam Games
 
 [steamdb](https://steamdb.info) for possible manifests etc?
+
+
+# UML
+
+## servers
+
+| id (PK) | name | status |
+| --- | --- | --- |
+| 29def84d-46b4-43f6-b3c7-a5852f132908 | Minecraft Vanilla | running |
+
+## containers
+
+| id (PK) | name | status | server_id (FK) |
+| --- | --- | --- | --- |
+| a44c2123761f9a30aecb863a3f35caf0a125d7b3264ecbe52aba031dbe5db110 | lucid_boyd | running | 29def84d-46b4-43f6-b3c7-a5852f132908 |
+
+## users
+
+| id (PK) | username | password |
+| --- | --- | --- |
+| 4f56915f-f087-4100-8d9c-ff1b2c2b5440 | ayeama | admin |
+| b29331c7-57a3-4b81-815a-5e2efa193529 | john | smith |
+
+## roles
+
+| id (PK) | name |
+| --- | --- |
+| 1 | owner |
+| 2 | member |
+
+## user_server_roles
+
+| user_id (PK, FK) | server_id (PK, FK) | role_id (FK) |
+| --- | --- | --- |
+| 4f56915f-f087-4100-8d9c-ff1b2c2b5440 | 29def84d-46b4-43f6-b3c7-a5852f132908 | 1 |
+
+## invite
+
+| id (PK) | server_id (FK) | inviter_user_id (FK) | invited_user_id (FK) | role_id | status | invited_date | accepted_date |
+| --- | --- | --- | --- | --- | --- | --- | --- |
