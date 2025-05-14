@@ -2,14 +2,19 @@ module github.com/ayeama/panel/agent
 
 go 1.23.3
 
-require github.com/containers/podman/v5 v5.4.2
+require (
+	github.com/containers/podman/v5 v5.4.2
+	github.com/redis/go-redis/v9 v9.8.0
+)
 
 require (
 	github.com/BurntSushi/toml v1.4.0 // indirect
 	github.com/blang/semver/v4 v4.0.0 // indirect
+	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/containers/common v0.62.3 // indirect
 	github.com/containers/storage v1.57.2 // indirect
 	github.com/cyphar/filepath-securejoin v0.3.6 // indirect
+	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect

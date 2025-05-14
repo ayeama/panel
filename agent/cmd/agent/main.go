@@ -1,6 +1,6 @@
 package main
 
-import internal "github.com/ayeama/panel/agent/agent"
+import internal "github.com/ayeama/panel/agent/internal"
 
 func main() {
 	// slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, nil)))
