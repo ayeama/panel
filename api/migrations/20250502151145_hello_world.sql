@@ -5,10 +5,16 @@
 --     status VARCHAR(32) NOT NULL
 -- );
 CREATE TABLE IF NOT EXISTS servers (
-    id VARCHAR(64) NOT NULL PRIMARY KEY,
+    id VARCHAR(64) PRIMARY KEY,
+    name VARCHAR(256) NOT NULL,
+    status VARCHAR(32) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS containers (
+    id VARCHAR(64) PRIMARY KEY,
     name VARCHAR(256) NOT NULL,
     status VARCHAR(32) NOT NULL,
-    container_id VARCHAR(64)
+    server_id VARCHAR(64) UNIQUE REFERENCES servers(id)
 );
 
 -- -- +down

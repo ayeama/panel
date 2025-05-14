@@ -4,6 +4,7 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/ayeama/panel/api/internal/broker"
 	"github.com/ayeama/panel/api/internal/database"
 	"github.com/ayeama/panel/api/internal/handler"
 	"github.com/ayeama/panel/api/internal/repository"
@@ -15,15 +16,17 @@ type Server struct {
 }
 
 func NewServer() *Server {
-	database, err := database.Connect()
+	database := database.NewDatabase()
+
+	broker, err := broker.NewBroker(broker.BrokerTypeRedis)
 	if err != nil {
 		panic(err)
 	}
 
 	mux := http.NewServeMux()
 
-	serverRepository := repository.NewServerRepository(database)
-	serverService := service.NewServerService(serverRepository)
+	serverRepository := repository.NewServerRepository(database.Db) // todo .Db ugh
+	serverService := service.NewServerService(broker, serverRepository)
 	serverHandler := handler.NewServerHandler(serverService)
 	serverHandler.RegisterHandlers(mux)
 

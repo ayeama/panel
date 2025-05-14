@@ -1,195 +1,24 @@
 package domain
 
-import (
-	"context"
-	"fmt"
-	"io"
-
-	nettypes "github.com/containers/common/libnetwork/types"
-	"github.com/containers/podman/v5/pkg/bindings"
-	"github.com/containers/podman/v5/pkg/bindings/containers"
-	"github.com/containers/podman/v5/pkg/domain/entities/types"
-	"github.com/containers/podman/v5/pkg/specgen"
-	"github.com/opencontainers/runtime-spec/specs-go"
-)
-
-type Pod struct {
+type Container struct {
 	Id     string
+	Name   string
 	Status string
 }
 
+const (
+	ServerStatusCreating string = "creating"
+	ServerStatusCreated  string = "created"
+	ServerStatusStarted  string = "started"
+	ServerStatusRunning  string = "running"
+	ServerStatusStopping string = "stopping"
+	ServerStatusStopped  string = "stopped"
+	ServerStatusDeleting string = "deleting"
+)
+
 type Server struct {
-	Id   string
-	Name string
-	Pod  Pod
-}
-
-func (s *Server) Create() {
-	conn, err := bindings.NewConnection(context.Background(), "unix:///run/user/1000/podman/podman.sock")
-	if err != nil {
-		panic(err)
-	}
-
-	stdin := true
-	terminal := true
-
-	cpus := 1.0
-	cpuPeriod := uint64(100000)
-	cpuQuota := int64(float64(cpuPeriod) * cpus)
-	memLimit := int64(1000000000)
-
-	hostPort, err := freeHostPort()
-	if err != nil {
-		panic(err)
-	}
-
-	var portMappings []nettypes.PortMapping
-	portMappings = append(portMappings, nettypes.PortMapping{HostPort: hostPort, ContainerPort: 25565})
-
-	spec := specgen.NewSpecGenerator("localhost/server/minecraft:latest", false)
-	spec.Stdin = &stdin
-	spec.Terminal = &terminal
-	spec.ResourceLimits = &specs.LinuxResources{
-		CPU: &specs.LinuxCPU{
-			Period: &cpuPeriod,
-			Quota:  &cpuQuota,
-		},
-		Memory: &specs.LinuxMemory{
-			Limit: &memLimit,
-		},
-	}
-	spec.PortMappings = portMappings
-
-	// TODO add metadata to labels
-	// spec.Labels = map[string]string{"com.github.ayeama.panel.api.server.id": "id"}
-
-	// todo container restart: unless-stopped
-
-	createResponse, err := containers.CreateWithSpec(conn, spec, nil)
-	if err != nil {
-		panic(err)
-	}
-
-	s.Pod.Id = createResponse.ID
-
-	s.Start()
-}
-
-func (s *Server) Start() {
-	conn, err := bindings.NewConnection(context.Background(), "unix:///run/user/1000/podman/podman.sock")
-	if err != nil {
-		panic(err)
-	}
-
-	err = containers.Start(conn, s.Pod.Id, nil)
-	if err != nil {
-		panic(err)
-	}
-}
-
-func (s *Server) Stop() {
-	conn, err := bindings.NewConnection(context.Background(), "unix:///run/user/1000/podman/podman.sock")
-	if err != nil {
-		panic(err)
-	}
-
-	err = containers.Stop(conn, s.Pod.Id, nil)
-	if err != nil {
-		panic(err)
-	}
-}
-
-func (s *Server) Remove() {
-	conn, err := bindings.NewConnection(context.Background(), "unix:///run/user/1000/podman/podman.sock")
-	if err != nil {
-		panic(err)
-	}
-
-	force := true
-	volumes := true
-
-	options := &containers.RemoveOptions{
-		Force:   &force,
-		Volumes: &volumes,
-	}
-
-	removeResponse, err := containers.Remove(conn, s.Pod.Id, options)
-	if err != nil {
-		panic(err)
-	}
-
-	fmt.Println(removeResponse)
-}
-
-func (s *Server) Logs(stdout chan string, stderr chan string) {
-	conn, err := bindings.NewConnection(context.Background(), "unix:///run/user/1000/podman/podman.sock")
-	if err != nil {
-		panic(err)
-	}
-
-	tail := "25"
-	options := &containers.LogOptions{
-		Tail: &tail,
-	}
-
-	err = containers.Logs(conn, s.Pod.Id, options, stdout, stderr)
-	if err != nil {
-		panic(err)
-	}
-}
-
-func (s *Server) Attach(stdin io.Reader, stdout io.Writer, stderr io.Writer) {
-	conn, err := bindings.NewConnection(context.Background(), "unix:///run/user/1000/podman/podman.sock")
-	if err != nil {
-		panic(err)
-	}
-
-	attachReady := make(chan bool)
-
-	go func() {
-		err = containers.Attach(conn, s.Pod.Id, stdin, stdout, stderr, attachReady, nil)
-		if err != nil {
-			panic(err)
-		}
-	}()
-
-	<-attachReady
-}
-
-func (s *Server) Inspect() {
-	conn, err := bindings.NewConnection(context.Background(), "unix:///run/user/1000/podman/podman.sock")
-	if err != nil {
-		panic(err)
-	}
-
-	inspectResponse, err := containers.Inspect(conn, s.Pod.Id, nil)
-	if err != nil {
-		panic(err)
-	}
-
-	s.Pod.Status = inspectResponse.State.Status
-}
-
-func (s *Server) Stats() chan types.ContainerStatsReport {
-	conn, err := bindings.NewConnection(context.Background(), "unix:///run/user/1000/podman/podman.sock")
-	if err != nil {
-		panic(err)
-	}
-
-	all := false
-	stream := true
-	interval := 1
-	options := &containers.StatsOptions{
-		All:      &all,
-		Stream:   &stream,
-		Interval: &interval,
-	}
-
-	containerIds := []string{s.Pod.Id}
-	statsResponse, err := containers.Stats(conn, containerIds, options)
-	if err != nil {
-		panic(err)
-	}
-
-	return statsResponse
+	Id        string
+	Name      string
+	Status    string
+	Container *Container
 }

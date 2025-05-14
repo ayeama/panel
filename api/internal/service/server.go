@@ -1,73 +1,66 @@
 package service
 
 import (
-	"io"
-
+	"github.com/ayeama/panel/api/internal/broker"
 	"github.com/ayeama/panel/api/internal/domain"
 	"github.com/ayeama/panel/api/internal/repository"
+	"github.com/google/uuid"
 )
 
 type ServerService struct {
+	broker     broker.Broker
 	repository *repository.ServerRepository
 }
 
-func NewServerService(repository *repository.ServerRepository) *ServerService {
-	return &ServerService{repository: repository}
+func NewServerService(broker broker.Broker, repository *repository.ServerRepository) *ServerService {
+	return &ServerService{broker: broker, repository: repository}
 }
 
-func (s *ServerService) ServerCreate(server domain.Server) domain.Server {
-	server.Create()
-	domainServer := s.repository.Create(server)
-	return domainServer
+func (s *ServerService) Create(server domain.Server) domain.Server {
+	server.Id = uuid.NewString()
+	server.Status = domain.ServerStatusCreating
+
+	s.repository.Create(&server)
+	s.broker.AddEventServerCreate(domain.EventServerCreate{Id: server.Id})
+
+	return server
 }
 
-func (s *ServerService) ServerRead(p domain.Pagination) domain.PaginationResponse[domain.Server] {
+func (s *ServerService) Read(p domain.Pagination) domain.PaginationResponse[domain.Server] {
 	return s.repository.Read(p)
 }
 
-func (s *ServerService) ServerReadOne(id string) domain.Server {
+func (s *ServerService) ReadOne(id string) domain.Server {
 	return s.repository.ReadOne(id)
 }
 
-func (s *ServerService) ServerUpdate() {}
+// func (s *ServerService) ServerUpdate() {}
 
-func (s *ServerService) ServerDelete(id string) {
-	domainServer := s.repository.ReadOne(id)
-	domainServer.Remove()
+func (s *ServerService) Delete(id string) {
+	// todo should actually
+	// update server status to deleting
+	// post event to delete
+	// ep will actually remove from database
+	server := s.repository.ReadOne(id)
+	if server.Container != nil {
+		s.broker.AddEventServerDelete(domain.EventServerDelete{Id: id, ContainerId: server.Container.Id})
+	}
 	s.repository.Delete(id)
 }
 
-func (s *ServerService) ServerStart(id string) {
-	domainServer := s.repository.ReadOne(id)
-	domainServer.Start()
-}
-
-func (s *ServerService) ServerStop(id string) {
-	domainServer := s.repository.ReadOne(id)
-	domainServer.Stop()
-}
-
-func (s *ServerService) ServerAttach(id string, stdin io.Reader, stdout io.Writer, stderr io.Writer) {
-	domainServer := s.repository.ReadOne(id)
-
-	// tail logs
-	stdoutLog := make(chan string, 1)
-	stderrLog := make(chan string, 1)
-
-	go func() {
-		defer close(stdoutLog)
-		defer close(stderrLog)
-		domainServer.Logs(stdoutLog, stderrLog)
-	}()
-
-	for i := range stdoutLog {
-		stdout.Write([]byte(i))
+func (s *ServerService) Start(id string) {
+	server := s.repository.ReadOne(id)
+	if server.Container != nil {
+		s.broker.AddEventServerStart(domain.EventServerStart{Id: id, ContainerId: server.Container.Id})
 	}
-
-	for i := range stderrLog {
-		stdout.Write([]byte(i))
-	}
-	// END tail logs
-
-	domainServer.Attach(stdin, stdout, stderr)
 }
+
+func (s *ServerService) Stop(id string) {
+	server := s.repository.ReadOne(id)
+	if server.Container != nil {
+		s.broker.AddEventServerStop(domain.EventServerStop{Id: id, ContainerId: server.Container.Id})
+	}
+}
+
+// func (s *ServerService) ServerAttach(id string, stdin io.Reader, stdout io.Writer, stderr io.Writer) {
+// }

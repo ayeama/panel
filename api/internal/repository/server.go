@@ -4,7 +4,6 @@ import (
 	"database/sql"
 
 	"github.com/ayeama/panel/api/internal/domain"
-	"github.com/google/uuid"
 )
 
 type ServerRepository struct {
@@ -15,29 +14,15 @@ func NewServerRepository(database *sql.DB) *ServerRepository {
 	return &ServerRepository{db: database}
 }
 
-func (s *ServerRepository) Create(serverTodo domain.Server) domain.Server {
-	id := uuid.New().String()
-	// name := namesgenerator.GetRandomName(0)
-	name := serverTodo.Name
-	status := "created"
-
-	// server := domain.Server{}
-	// err := s.db.QueryRow("INSERT INTO servers (id, name, status) VALUES (?, ?, ?) RETURNING id, name, status", id, name, status).Scan(&server.Id, &server.Name, &server.Status)
-	// if err != nil {
-	// 	panic(err)
-	// }
-
-	server := domain.Server{}
-	err := s.db.QueryRow("INSERT INTO servers (id, name, status, container_id) VALUES (?, ?, ?, ?) RETURNING id, name, status, container_id", id, name, status, serverTodo.Pod.Id).Scan(&server.Id, &server.Name, &server.Pod.Status, &server.Pod.Id)
+func (s *ServerRepository) Create(server *domain.Server) {
+	_, err := s.db.Exec("INSERT INTO servers (id, name, status) VALUES (?, ?, ?)", server.Id, server.Name, server.Status)
 	if err != nil {
 		panic(err)
 	}
-
-	return server
 }
 
 func (s *ServerRepository) Read(p domain.Pagination) domain.PaginationResponse[domain.Server] {
-	rows, err := s.db.Query("SELECT id, name, status, container_id, (SELECT COUNT(*) FROM servers) AS total FROM servers LIMIT ? OFFSET ?", p.Limit, p.Offset)
+	rows, err := s.db.Query("SELECT s.id, s.name, s.status, c.id, c.name, c.status FROM servers s LEFT JOIN containers c ON s.id = c.server_id LIMIT ? OFFSET ?", p.Limit, p.Offset)
 	if err != nil {
 		panic(err)
 	}
@@ -51,12 +36,27 @@ func (s *ServerRepository) Read(p domain.Pagination) domain.PaginationResponse[d
 
 	for rows.Next() {
 		var server domain.Server
-		err = rows.Scan(&server.Id, &server.Name, &server.Pod.Status, &server.Pod.Id, &servers.Total)
+		var container_id, container_name, container_status sql.NullString
+
+		err = rows.Scan(&server.Id, &server.Name, &server.Status, &container_id, &container_name, &container_status)
 		if err != nil {
 			panic(err)
 		}
-		server.Inspect() // refreshes state
+
+		if container_id.Valid {
+			server.Container = &domain.Container{
+				Id:     container_id.String,
+				Name:   container_name.String,
+				Status: container_status.String,
+			}
+		}
+
 		servers.Items = append(servers.Items, server)
+	}
+
+	err = s.db.QueryRow("SELECT COUNT(*) FROM servers").Scan(&servers.Total)
+	if err != nil {
+		panic(err)
 	}
 
 	return servers
@@ -64,10 +64,21 @@ func (s *ServerRepository) Read(p domain.Pagination) domain.PaginationResponse[d
 
 func (s *ServerRepository) ReadOne(id string) domain.Server {
 	server := domain.Server{}
-	err := s.db.QueryRow("SELECT id, name, status, container_id FROM servers WHERE id = ?", id).Scan(&server.Id, &server.Name, &server.Pod.Status, &server.Pod.Id)
+	var container_id, container_name, container_status sql.NullString
+
+	err := s.db.QueryRow("SELECT s.id, s.name, s.status, c.id, c.name, c.status FROM servers s LEFT JOIN containers c ON s.id = c.server_id WHERE s.id = ?", id).Scan(&server.Id, &server.Name, &server.Status, &container_id, &container_name, &container_status)
 	if err != nil {
 		panic(err)
 	}
+
+	if container_id.Valid {
+		server.Container = &domain.Container{
+			Id:     container_id.String,
+			Name:   container_name.String,
+			Status: container_status.String,
+		}
+	}
+
 	return server
 }
 
