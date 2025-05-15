@@ -34,7 +34,9 @@ func (s *ServerService) ReadOne(id string) domain.Server {
 	return s.repository.ReadOne(id)
 }
 
-// func (s *ServerService) ServerUpdate() {}
+func (s *ServerService) Update(server *domain.Server) {
+	s.repository.Update(server)
+}
 
 func (s *ServerService) Delete(id string) {
 	// todo should actually

@@ -2,6 +2,7 @@ package repository
 
 import (
 	"database/sql"
+	"strings"
 
 	"github.com/ayeama/panel/api/internal/domain"
 )
@@ -80,6 +81,30 @@ func (s *ServerRepository) ReadOne(id string) domain.Server {
 	}
 
 	return server
+}
+
+func (s *ServerRepository) Update(server *domain.Server) {
+	query := "UPDATE servers SET "
+	params := []interface{}{}
+	sets := []string{}
+
+	if server.Name != "" {
+		params = append(params, server.Name)
+		sets = append(sets, "name=?")
+	}
+	if server.Status != "" {
+		params = append(params, server.Status)
+		sets = append(sets, "status=?")
+	}
+
+	query += strings.Join(sets, ", ")
+	query += " WHERE id=? RETURNING name, status"
+	params = append(params, server.Id)
+
+	err := s.db.QueryRow(query, params...).Scan(&server.Name, &server.Status)
+	if err != nil {
+		panic(err)
+	}
 }
 
 func (s *ServerRepository) Delete(id string) {

@@ -50,7 +50,17 @@ func (s *ServerHandler) ReadOne(w http.ResponseWriter, r *http.Request) {
 	WriteResponseJson(w, 200, server)
 }
 
-// func (s *ServerHandler) ServerUpdate(w http.ResponseWriter, r *http.Request) {}
+func (s *ServerHandler) Update(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+
+	var serverUpdate types.ServerUpdateRequest
+	ReadRequestJson(r.Body, &serverUpdate)
+	domainServer := domain.Server{Id: id, Name: serverUpdate.Name}
+	s.service.Update(&domainServer)
+
+	server := types.ServerResponse{Id: domainServer.Id, Name: domainServer.Name, Status: domainServer.Status}
+	WriteResponseJson(w, 200, server)
+}
 
 func (s *ServerHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
@@ -98,7 +108,7 @@ func (s *ServerHandler) RegisterHandlers(m *http.ServeMux) {
 	m.HandleFunc("POST /servers", s.Create)
 	m.HandleFunc("GET /servers", s.Read)
 	m.HandleFunc("GET /servers/{id}", s.ReadOne)
-	// m.HandleFunc("PATCH /servers", s.ServerUpdate)
+	m.HandleFunc("PATCH /servers/{id}", s.Update)
 	m.HandleFunc("DELETE /servers/{id}", s.Delete)
 	m.HandleFunc("POST /servers/{id}/start", s.Start)
 	m.HandleFunc("POST /servers/{id}/stop", s.Stop)
