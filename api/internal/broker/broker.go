@@ -11,6 +11,7 @@ const (
 )
 
 type Broker interface {
+	AddEventAgentCommand(domain.EventServerCreate)
 	AddEventServerCreate(domain.EventServerCreate)
 	AddEventServerDelete(domain.EventServerDelete)
 	AddEventServerStart(domain.EventServerStart)
@@ -18,6 +19,7 @@ type Broker interface {
 	PublishEventAgentStat(domain.EventAgentStat)
 	ReadEventAgentCommand() domain.EventServerCreate // TODO handle multiple events?
 	ReadEventAgentStat() domain.EventAgentStat
+	ReadEventServerCreate() domain.EventServerCreate
 }
 
 func NewBroker(t string) (Broker, error) {

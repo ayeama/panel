@@ -29,13 +29,11 @@ func (s *Scheduler) Start() {
 	// optionally filter usage for scoring (rolling average etc)
 	// then score agents that passed filtering (strategy pattern with option custom weights)
 
-	var wg sync.WaitGroup
-
 	s.agents = make(map[string]*domain.AgentStat) // TODO is this the right spot etc?
 
+	var wg sync.WaitGroup
 	s.handleAgentStat(&wg)
 	s.handleEventSchedule(&wg)
-
 	wg.Wait()
 }
 
@@ -64,11 +62,12 @@ func (s *Scheduler) handleAgentStat(wg *sync.WaitGroup) {
 		for {
 			time.Sleep(time.Second * 1)
 
-			s.m.RLock()
-			for _, agent := range s.agents {
-				fmt.Println(agent.Cpu, agent.Online())
-			}
-			s.m.RUnlock()
+			// s.m.RLock()
+			// for _, agent := range s.agents {
+			// 	// TODO remove offline agents?
+			// 	fmt.Println(agent.Cpu, agent.Online())
+			// }
+			// s.m.RUnlock()
 		}
 	}()
 }
@@ -80,6 +79,32 @@ func (s *Scheduler) handleEventSchedule(wg *sync.WaitGroup) {
 
 		for {
 			time.Sleep(time.Second * 1)
+
+			event := s.broker.ReadEventServerCreate()
+
+			var agent string
+			var stat *domain.AgentStat
+
+			s.m.RLock()
+			for k, v := range s.agents {
+				if agent == "" || stat == nil {
+					agent = k
+					stat = v
+					continue
+				}
+				if !v.Online() {
+					continue
+				}
+				if v.Score() > stat.Score() {
+					agent = k
+					stat = v
+					continue
+				}
+			}
+			s.m.RUnlock()
+
+			fmt.Println("placed on agent:", agent)
+			s.broker.AddEventAgentCommand(event)
 		}
 	}()
 }

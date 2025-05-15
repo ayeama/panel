@@ -41,7 +41,7 @@ func (a *Agent) handleStats(wg *sync.WaitGroup) {
 		cpuTotal, cpuIdle := stat.Cpu()
 
 		for {
-			time.Sleep(time.Second * 1)
+			time.Sleep(time.Second * 5)
 
 			uptime := stat.Uptime()
 			cpu := stat.CpuPercent(&cpuTotal, &cpuIdle)
@@ -56,15 +56,15 @@ func (a *Agent) handleStats(wg *sync.WaitGroup) {
 				Time:     time,
 			})
 
-			slog.Info(
-				"published event",
-				slog.String("channel", "agent:stat"),
-				slog.String("type", "EventAgentStat"),
-				slog.String("hostname", hostname),
-				slog.Float64("uptime", uptime),
-				slog.Float64("cpu", cpu),
-				slog.Float64("memory", memory),
-			)
+			// slog.Info(
+			// 	"published event",
+			// 	slog.String("channel", "agent:stat"),
+			// 	slog.String("type", "EventAgentStat"),
+			// 	slog.String("hostname", hostname),
+			// 	slog.Float64("uptime", uptime),
+			// 	slog.Float64("cpu", cpu),
+			// 	slog.Float64("memory", memory),
+			// )
 		}
 	}()
 }
