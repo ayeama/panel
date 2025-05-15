@@ -15,6 +15,8 @@ type Broker interface {
 	AddEventServerDelete(domain.EventServerDelete)
 	AddEventServerStart(domain.EventServerStart)
 	AddEventServerStop(domain.EventServerStop)
+	PublishEventAgentStat(domain.EventAgentStat)
+	ReadEventAgentCommand() domain.EventServerCreate // TODO handle multiple events?
 }
 
 func NewBroker(t string) (Broker, error) {

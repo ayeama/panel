@@ -2,7 +2,12 @@ package domain
 
 // agents
 
-type EventAgentStat struct{}
+type EventAgentStat struct {
+	Hostname string  `json:"hostname"`
+	Uptime   float64 `json:"uptime"`
+	Cpu      float64 `json:"cpu"`
+	Memory   float64 `json:"memory"`
+}
 
 // servers
 

@@ -3,6 +3,7 @@ package broker
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"github.com/ayeama/panel/api/internal/domain"
 	"github.com/redis/go-redis/v9"
@@ -89,4 +90,61 @@ func (b *BrokerRedis) AddEventServerStop(e domain.EventServerStop) {
 	if err != nil {
 		panic(err)
 	}
+}
+
+func (b *BrokerRedis) PublishEventAgentStat(e domain.EventAgentStat) {
+	data, err := json.Marshal(e)
+	if err != nil {
+		panic(err)
+	}
+
+	err = b.rdb.Publish(context.Background(), "agent:stat", data).Err()
+	if err != nil {
+		panic(err)
+	}
+}
+
+func (b *BrokerRedis) ReadEventAgentCommand() domain.EventServerCreate {
+	hostname := "neon" // TODO pass in agent id?
+
+	// TODO update stream to agent specific?
+	err := b.rdb.XGroupCreateMkStream(context.Background(), "server:create", "agent", "0").Err()
+	if err != nil {
+		if err.Error() != "BUSYGROUP Consumer Group name already exists" {
+			panic(err)
+		}
+	}
+
+	r, err := b.rdb.XReadGroup(context.Background(), &redis.XReadGroupArgs{
+		Group:    "agent",
+		Consumer: hostname,
+		Streams:  []string{"server:create", ">"},
+		Count:    1,
+		Block:    0,
+	}).Result()
+	if err != nil {
+		panic(err)
+	}
+
+	s := r[0]
+	m := s.Messages[0]
+
+	d, ok := m.Values["data"]
+	if !ok {
+		panic(fmt.Errorf("cound not find data in stream message")) // TODO better errors?
+	}
+
+	data, ok := d.(string)
+	if !ok {
+		panic(fmt.Errorf("expected string, got %T", d)) // TODO better errors?
+	}
+
+	// TODO handle multiple different events?
+	var event domain.EventServerCreate
+	err = json.Unmarshal([]byte(data), &event)
+	if err != nil {
+		panic(err)
+	}
+
+	return event
 }
