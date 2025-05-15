@@ -1,12 +1,15 @@
 package domain
 
+import "time"
+
 // agents
 
 type EventAgentStat struct {
-	Hostname string  `json:"hostname"`
-	Uptime   float64 `json:"uptime"`
-	Cpu      float64 `json:"cpu"`
-	Memory   float64 `json:"memory"`
+	Hostname string    `json:"hostname"`
+	Uptime   float64   `json:"uptime"`
+	Cpu      float64   `json:"cpu"`
+	Memory   float64   `json:"memory"`
+	Time     time.Time `json:"time"`
 }
 
 // servers

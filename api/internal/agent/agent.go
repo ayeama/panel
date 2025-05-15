@@ -41,17 +41,19 @@ func (a *Agent) handleStats(wg *sync.WaitGroup) {
 		cpuTotal, cpuIdle := stat.Cpu()
 
 		for {
-			time.Sleep(time.Second * 5)
+			time.Sleep(time.Second * 1)
 
 			uptime := stat.Uptime()
 			cpu := stat.CpuPercent(&cpuTotal, &cpuIdle)
 			memory := stat.MemoryPercent()
+			time := time.Now().UTC()
 
 			a.broker.PublishEventAgentStat(domain.EventAgentStat{
 				Hostname: hostname,
 				Uptime:   uptime,
 				Cpu:      cpu,
 				Memory:   memory,
+				Time:     time,
 			})
 
 			slog.Info(

@@ -148,3 +148,20 @@ func (b *BrokerRedis) ReadEventAgentCommand() domain.EventServerCreate {
 
 	return event
 }
+
+func (b *BrokerRedis) ReadEventAgentStat() domain.EventAgentStat {
+	ps := b.rdb.Subscribe(context.Background(), "agent:stat")
+	defer ps.Close() // TODO this is because there were >600 connected clients to redis :o
+	m, err := ps.ReceiveMessage(context.Background())
+	if err != nil {
+		panic(err)
+	}
+
+	var event domain.EventAgentStat
+	err = json.Unmarshal([]byte(m.Payload), &event)
+	if err != nil {
+		panic(err)
+	}
+
+	return event
+}
