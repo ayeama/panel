@@ -2,6 +2,12 @@ package domain
 
 import "time"
 
+type Agent struct {
+	Id       string
+	Hostname string
+	Seen     time.Time
+}
+
 type AgentStat struct {
 	Uptime float64
 	Cpu    float64

@@ -1,6 +1,7 @@
 *.bak
 
-panel.db
+*.db
+*.db-*
 
 cert.pem
 key.pem

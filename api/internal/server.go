@@ -25,6 +25,11 @@ func NewServer() *Server {
 
 	mux := http.NewServeMux()
 
+	agentRepository := repository.NewAgentRepository(database.Db)
+	agentService := service.NewAgentService(agentRepository)
+	agentHandler := handler.NewAgentHandler(agentService)
+	agentHandler.RegisterHandlers(mux)
+
 	serverRepository := repository.NewServerRepository(database.Db) // todo .Db ugh
 	serverService := service.NewServerService(broker, serverRepository)
 	serverHandler := handler.NewServerHandler(serverService)

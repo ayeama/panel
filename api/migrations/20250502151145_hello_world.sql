@@ -7,7 +7,8 @@
 CREATE TABLE IF NOT EXISTS servers (
     id VARCHAR(64) PRIMARY KEY,
     name VARCHAR(256) NOT NULL,
-    status VARCHAR(32) NOT NULL
+    status VARCHAR(32) NOT NULL,
+    agent_id VARCHAR(64) REFERENCES agents(id)
 );
 
 CREATE TABLE IF NOT EXISTS containers (
@@ -15,6 +16,12 @@ CREATE TABLE IF NOT EXISTS containers (
     name VARCHAR(256) NOT NULL,
     status VARCHAR(32) NOT NULL,
     server_id VARCHAR(64) UNIQUE REFERENCES servers(id)
+);
+
+CREATE TABLE IF NOT EXISTS agents (
+    id VARCHAR(64) PRIMARY KEY,
+    hostname VARCHAR(256) NOT NULL UNIQUE,
+    seen VARCHAR(35) NOT NULL
 );
 
 -- -- +down

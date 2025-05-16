@@ -20,5 +20,6 @@ type Server struct {
 	Id        string
 	Name      string
 	Status    string
+	Agent     *Agent
 	Container *Container
 }

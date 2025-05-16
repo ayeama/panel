@@ -2,6 +2,7 @@ package repository
 
 import (
 	"database/sql"
+	"fmt"
 	"strings"
 
 	"github.com/ayeama/panel/api/internal/domain"
@@ -23,7 +24,7 @@ func (s *ServerRepository) Create(server *domain.Server) {
 }
 
 func (s *ServerRepository) Read(p domain.Pagination) domain.PaginationResponse[domain.Server] {
-	rows, err := s.db.Query("SELECT s.id, s.name, s.status, c.id, c.name, c.status FROM servers s LEFT JOIN containers c ON s.id = c.server_id LIMIT ? OFFSET ?", p.Limit, p.Offset)
+	rows, err := s.db.Query("SELECT s.id, s.name, s.status, a.id, a.hostname, c.id, c.name, c.status FROM servers s LEFT JOIN agents a ON s.agent_id = a.id LEFT JOIN containers c ON s.id = c.server_id LIMIT ? OFFSET ?", p.Limit, p.Offset)
 	if err != nil {
 		panic(err)
 	}
@@ -37,13 +38,20 @@ func (s *ServerRepository) Read(p domain.Pagination) domain.PaginationResponse[d
 
 	for rows.Next() {
 		var server domain.Server
+		var agent_id, agent_hostname sql.NullString
 		var container_id, container_name, container_status sql.NullString
 
-		err = rows.Scan(&server.Id, &server.Name, &server.Status, &container_id, &container_name, &container_status)
+		err = rows.Scan(&server.Id, &server.Name, &server.Status, &agent_id, &agent_hostname, &container_id, &container_name, &container_status)
 		if err != nil {
 			panic(err)
 		}
 
+		if agent_id.Valid {
+			server.Agent = &domain.Agent{
+				Id:       agent_id.String,
+				Hostname: agent_hostname.String,
+			}
+		}
 		if container_id.Valid {
 			server.Container = &domain.Container{
 				Id:     container_id.String,
@@ -52,6 +60,7 @@ func (s *ServerRepository) Read(p domain.Pagination) domain.PaginationResponse[d
 			}
 		}
 
+		fmt.Println(server)
 		servers.Items = append(servers.Items, server)
 	}
 
