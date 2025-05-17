@@ -2,6 +2,7 @@ package handler
 
 import (
 	"bufio"
+	"bytes"
 	"crypto/sha1"
 	"encoding/base64"
 	"encoding/binary"
@@ -56,7 +57,7 @@ func (c *WebSocketConnection) Close() {
 }
 
 func (c *WebSocketConnection) Read(p []byte) (n int, err error) {
-	var msg []byte
+	var buf bytes.Buffer
 
 	fin := false
 
@@ -72,19 +73,19 @@ func (c *WebSocketConnection) Read(p []byte) (n int, err error) {
 
 		b1, _ := c.rw.ReadByte()
 		mask := b1&0b10000000 != 0
-		payloadLength := b1 & 0b01111111
+		plen := b1 & 0b01111111
 
-		var uintPayloadLength uint64
-		if payloadLength <= 125 {
-			uintPayloadLength = uint64(payloadLength)
-		} else if payloadLength == 126 {
+		var uintplen uint64
+		if plen <= 125 {
+			uintplen = uint64(plen)
+		} else if plen == 126 {
 			x := make([]byte, 2)
 			io.ReadFull(c.rw.Reader, x)
-			uintPayloadLength = uint64(binary.BigEndian.Uint16(x))
-		} else if payloadLength == 127 {
+			uintplen = uint64(binary.BigEndian.Uint16(x))
+		} else if plen == 127 {
 			x := make([]byte, 8)
 			io.ReadFull(c.rw.Reader, x)
-			uintPayloadLength = binary.BigEndian.Uint64(x)
+			uintplen = binary.BigEndian.Uint64(x)
 		}
 
 		if !mask {
@@ -94,56 +95,52 @@ func (c *WebSocketConnection) Read(p []byte) (n int, err error) {
 		maskingKey := make([]byte, 4)
 		io.ReadFull(c.rw.Reader, maskingKey)
 
-		payload := make([]byte, uintPayloadLength)
+		payload := make([]byte, uintplen)
 		io.ReadFull(c.rw.Reader, payload)
 
-		msgPart := make([]byte, uintPayloadLength)
-		for i := 0; i < int(uintPayloadLength); i++ {
+		msgPart := make([]byte, uintplen)
+		for i := 0; i < int(uintplen); i++ {
 			msgPart[i] = payload[i] ^ maskingKey[i%4]
 		}
 
-		msg = append(msg, msgPart...)
+		buf.Write(p)
 	}
 
-	n = copy(p, msg)
-	return n, nil
+	return buf.Read(p)
 }
 
 func (c *WebSocketConnection) Write(p []byte) (n int, err error) {
 	// TODO use 16KB payload??
-	var msg []byte
+	var buf bytes.Buffer
 
-	msg = append(msg, byte(0b10000001)) // fin, ..., opcode
+	buf.WriteByte(0b10000001)
 
-	payloadLength := len(p)
-	if payloadLength <= 125 {
-		msg = append(msg, byte(payloadLength))
-	} else if payloadLength <= 65535 {
-		msg = append(msg, byte(126))
-		x := make([]byte, 2)
-		binary.BigEndian.PutUint16(x, uint16(payloadLength))
-		msg = append(msg, x...)
-	} else if payloadLength > 65535 {
-		msg = append(msg, byte(127))
-		x := make([]byte, 8)
-		binary.BigEndian.PutUint64(x, uint64(payloadLength))
-		msg = append(msg, x...)
+	plen := len(p)
+
+	switch {
+	case plen <= 125:
+		buf.WriteByte(byte(plen))
+	case plen <= 65535:
+		buf.WriteByte(126)
+		binary.Write(&buf, binary.BigEndian, uint16(plen))
+	default:
+		buf.WriteByte(127)
+		binary.Write(&buf, binary.BigEndian, uint64(plen))
 	}
 
-	// fmt.Print(payloadLength, string(p))
-	msg = append(msg, p...) // payload
+	buf.Write(p)
 
-	n, err = c.rw.Write(msg)
+	_, err = c.rw.Write(buf.Bytes())
 	if err != nil {
-		return n, err
+		return 0, err
 	}
 
 	err = c.rw.Flush()
 	if err != nil {
-		return n, err
+		return 0, err
 	}
 
-	return payloadLength, nil
+	return plen, nil
 }
 
 func Upgrade(w http.ResponseWriter, r *http.Request) *WebSocketConnection {
