@@ -35,6 +35,11 @@ func NewServer() *Server {
 	serverHandler := handler.NewServerHandler(serverService)
 	serverHandler.RegisterHandlers(mux)
 
+	userRepository := repository.NewUserRepository(db)
+	userService := service.NewUserService(userRepository)
+	userHandler := handler.NewUserHandler(userService)
+	userHandler.RegisterHandlers(mux)
+
 	server := Server{
 		server: http.Server{
 			Addr:    "0.0.0.0:8000",
