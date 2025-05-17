@@ -1,6 +1,8 @@
 package service
 
 import (
+	"io"
+
 	"github.com/ayeama/panel/api/internal/domain"
 	"github.com/ayeama/panel/api/internal/repository"
 	"github.com/ayeama/panel/api/internal/runtime"
@@ -57,6 +59,11 @@ func (s *ServerService) Stop(server *domain.Server) {
 func (s *ServerService) Stats(server *domain.Server) chan domain.ContainerStat {
 	s.repository.ReadOne(server)
 	return s.runtime.Stats(server.Container)
+}
+
+func (s *ServerService) Attach(server *domain.Server, stdin io.Reader, stdout io.Writer, stderr io.Writer) {
+	s.repository.ReadOne(server)
+	s.runtime.Attach(server.Container, stdin, stdout, stderr)
 }
 
 func (s *ServerService) RefreshStatus(server *domain.Server) {

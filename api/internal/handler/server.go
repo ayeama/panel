@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"io"
 	"net/http"
 
 	"github.com/ayeama/panel/api/internal/domain"
@@ -110,6 +111,32 @@ func (h *ServerHandler) Stats(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (h *ServerHandler) Attach(w http.ResponseWriter, r *http.Request) {
+	c := Upgrade(w, r)
+	defer c.Close()
+
+	id := r.PathValue("id")
+	server := &domain.Server{Id: id}
+
+	done := make(chan bool, 1)
+	stdinReader, stdinWriter := io.Pipe()
+	stdoutReader, stdoutWriter := io.Pipe()
+
+	go func() {
+		defer stdinWriter.Close()
+		io.Copy(stdinWriter, c)
+		<-done
+	}()
+	go func() {
+		defer stdoutReader.Close()
+		io.Copy(c, stdoutReader)
+		<-done
+	}()
+
+	h.service.Attach(server, stdinReader, stdoutWriter, nil)
+	<-done
+}
+
 func (h *ServerHandler) RegisterHandlers(m *http.ServeMux) {
 	m.HandleFunc("POST /servers", h.Create)
 	m.HandleFunc("GET /servers", h.Read)
@@ -120,4 +147,5 @@ func (h *ServerHandler) RegisterHandlers(m *http.ServeMux) {
 	m.HandleFunc("POST /servers/{id}/stop", h.Stop)
 
 	m.HandleFunc("GET /servers/{id}/stats", h.Stats)
+	m.HandleFunc("GET /servers/{id}/attach", h.Attach)
 }

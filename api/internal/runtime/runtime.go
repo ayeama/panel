@@ -2,6 +2,7 @@ package runtime
 
 import (
 	"fmt"
+	"io"
 	"math/rand/v2"
 	"net"
 
@@ -19,6 +20,7 @@ type Runtime interface {
 	Start(container *domain.Container)
 	Stop(container *domain.Container)
 	Stats(container *domain.Container) chan domain.ContainerStat
+	Attach(container *domain.Container, stdin io.Reader, stdout io.Writer, stderr io.Writer)
 	Status(container *domain.Container) string
 }
 

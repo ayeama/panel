@@ -2,6 +2,8 @@ package runtime
 
 import (
 	"context"
+	"fmt"
+	"io"
 
 	"github.com/ayeama/panel/api/internal/domain"
 	nettypes "github.com/containers/common/libnetwork/types"
@@ -130,6 +132,21 @@ func (r *Podman) Stats(container *domain.Container) chan domain.ContainerStat {
 	}()
 
 	return stats
+}
+
+func (r *Podman) Attach(container *domain.Container, stdin io.Reader, stdout io.Writer, stderr io.Writer) {
+	ready := make(chan bool)
+
+	// TODO does this leak?
+	go func() {
+		err := containers.Attach(r.context, container.Id, stdin, stdout, stderr, ready, nil)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println("HERE")
+	}()
+
+	<-ready
 }
 
 func (r *Podman) Status(container *domain.Container) string {
