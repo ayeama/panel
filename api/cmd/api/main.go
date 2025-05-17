@@ -6,7 +6,6 @@ import (
 
 func main() {
 	// slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, nil)))
-
 	a := internal.NewServer()
 	a.Start()
 }

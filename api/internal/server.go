@@ -1,13 +1,15 @@
 package internal
 
 import (
+	"database/sql"
 	"log/slog"
 	"net/http"
 
-	"github.com/ayeama/panel/api/internal/broker"
-	"github.com/ayeama/panel/api/internal/database"
+	_ "github.com/mattn/go-sqlite3"
+
 	"github.com/ayeama/panel/api/internal/handler"
 	"github.com/ayeama/panel/api/internal/repository"
+	"github.com/ayeama/panel/api/internal/runtime"
 	"github.com/ayeama/panel/api/internal/service"
 )
 
@@ -16,22 +18,20 @@ type Server struct {
 }
 
 func NewServer() *Server {
-	database := database.NewDatabase()
+	db, err := sql.Open("sqlite3", "panel.db")
+	if err != nil {
+		panic(err)
+	}
 
-	broker, err := broker.NewBroker(broker.BrokerTypeRedis)
+	runtime, err := runtime.New(runtime.RuntimeTypePodman)
 	if err != nil {
 		panic(err)
 	}
 
 	mux := http.NewServeMux()
 
-	agentRepository := repository.NewAgentRepository(database.Db)
-	agentService := service.NewAgentService(agentRepository)
-	agentHandler := handler.NewAgentHandler(agentService)
-	agentHandler.RegisterHandlers(mux)
-
-	serverRepository := repository.NewServerRepository(database.Db) // todo .Db ugh
-	serverService := service.NewServerService(broker, serverRepository)
+	serverRepository := repository.NewServerRepository(db)
+	serverService := service.NewServerService(runtime, serverRepository)
 	serverHandler := handler.NewServerHandler(serverService)
 	serverHandler.RegisterHandlers(mux)
 

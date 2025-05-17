@@ -3,6 +3,7 @@ package runtime
 import (
 	"context"
 
+	"github.com/ayeama/panel/api/internal/domain"
 	nettypes "github.com/containers/common/libnetwork/types"
 	"github.com/containers/podman/v5/pkg/bindings"
 	"github.com/containers/podman/v5/pkg/bindings/containers"
@@ -60,16 +61,61 @@ func (r *Podman) Create() string {
 
 	// todo container restart: unless-stopped
 
-	createResponse, err := containers.CreateWithSpec(r.context, spec, nil)
+	resp, err := containers.CreateWithSpec(r.context, spec, nil)
 	if err != nil {
 		panic(err)
 	}
 
-	return createResponse.ID
+	return resp.ID
 }
 
-func (r *Podman) Delete() {}
+func (r *Podman) Delete(container *domain.Container) {
+	force := true
+	volumes := true
 
-func (r *Podman) Start() {}
+	options := &containers.RemoveOptions{
+		Force:   &force,
+		Volumes: &volumes,
+	}
 
-func (r *Podman) Stop() {}
+	_, err := containers.Remove(r.context, container.Id, options)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func (r *Podman) Start(container *domain.Container) {
+	err := containers.Start(r.context, container.Id, nil)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func (r *Podman) Stop(container *domain.Container) {
+	err := containers.Stop(r.context, container.Id, nil)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func (r *Podman) Status(container *domain.Container) string {
+	resp, err := containers.Inspect(r.context, container.Id, nil)
+	if err != nil {
+		panic(err)
+	}
+
+	switch resp.State.Status {
+	case "created":
+		return "created"
+	case "initialized":
+		return "created"
+	case "exited":
+		return "stopped"
+	case "paused":
+		return "stopped"
+	case "running":
+		return "running"
+	default:
+		return "unknown"
+	}
+}

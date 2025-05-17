@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"math/rand/v2"
 	"net"
+
+	"github.com/ayeama/panel/api/internal/domain"
 )
 
 const (
@@ -13,12 +15,13 @@ const (
 
 type Runtime interface {
 	Create() string
-	Delete()
-	Start()
-	Stop()
+	Delete(container *domain.Container)
+	Start(container *domain.Container)
+	Stop(container *domain.Container)
+	Status(container *domain.Container) string
 }
 
-func NewRuntime(t string) (Runtime, error) {
+func New(t string) (Runtime, error) {
 	switch t {
 	case RuntimeTypePodman:
 		return NewRuntimePodman(), nil
