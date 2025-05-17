@@ -13,3 +13,8 @@ type ServerResponse struct {
 	Name   string `json:"name"`
 	Status string `json:"status"`
 }
+
+type ServerStatResponse struct {
+	Cpu    float64 `json:"cpu"`
+	Memory float64 `json:"memory"`
+}

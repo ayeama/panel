@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"encoding/json"
 	"net/http"
 
 	"github.com/ayeama/panel/api/internal/domain"
@@ -83,11 +84,40 @@ func (h *ServerHandler) Stop(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+func (h *ServerHandler) Stats(w http.ResponseWriter, r *http.Request) {
+	c := Upgrade(w, r)
+	defer c.Close()
+
+	id := r.PathValue("id")
+	server := &domain.Server{Id: id}
+	stats := h.service.Stats(server)
+
+	for stat := range stats {
+		output := types.ServerStatResponse{
+			Cpu:    stat.Cpu,
+			Memory: stat.Memory,
+		}
+
+		data, err := json.Marshal(output)
+		if err != nil {
+			panic(err)
+		}
+
+		_, err = c.Write(data)
+		if err != nil {
+			panic(err)
+		}
+	}
+}
+
 func (h *ServerHandler) RegisterHandlers(m *http.ServeMux) {
 	m.HandleFunc("POST /servers", h.Create)
 	m.HandleFunc("GET /servers", h.Read)
 	m.HandleFunc("GET /servers/{id}", h.ReadOne)
 	m.HandleFunc("DELETE /servers/{id}", h.Delete)
+
 	m.HandleFunc("POST /servers/{id}/start", h.Start)
 	m.HandleFunc("POST /servers/{id}/stop", h.Stop)
+
+	m.HandleFunc("GET /servers/{id}/stats", h.Stats)
 }

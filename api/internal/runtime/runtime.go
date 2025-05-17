@@ -18,6 +18,7 @@ type Runtime interface {
 	Delete(container *domain.Container)
 	Start(container *domain.Container)
 	Stop(container *domain.Container)
+	Stats(container *domain.Container) chan domain.ContainerStat
 	Status(container *domain.Container) string
 }
 

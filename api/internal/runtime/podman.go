@@ -98,6 +98,40 @@ func (r *Podman) Stop(container *domain.Container) {
 	}
 }
 
+func (r *Podman) Stats(container *domain.Container) chan domain.ContainerStat {
+	all := false
+	stream := true
+	interval := 1
+
+	options := &containers.StatsOptions{
+		All:      &all,
+		Stream:   &stream,
+		Interval: &interval,
+	}
+
+	resp, err := containers.Stats(r.context, []string{container.Id}, options)
+	if err != nil {
+		panic(err)
+	}
+
+	stats := make(chan domain.ContainerStat)
+
+	go func() {
+		defer close(stats)
+
+		for report := range resp {
+			for _, stat := range report.Stats {
+				stats <- domain.ContainerStat{
+					Cpu:    stat.AvgCPU,
+					Memory: stat.MemPerc,
+				}
+			}
+		}
+	}()
+
+	return stats
+}
+
 func (r *Podman) Status(container *domain.Container) string {
 	resp, err := containers.Inspect(r.context, container.Id, nil)
 	if err != nil {

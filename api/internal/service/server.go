@@ -54,6 +54,11 @@ func (s *ServerService) Stop(server *domain.Server) {
 	s.RefreshStatus(server)
 }
 
+func (s *ServerService) Stats(server *domain.Server) chan domain.ContainerStat {
+	s.repository.ReadOne(server)
+	return s.runtime.Stats(server.Container)
+}
+
 func (s *ServerService) RefreshStatus(server *domain.Server) {
 	server.Status = s.runtime.Status(server.Container)
 	s.repository.UpdateStatus(server)
