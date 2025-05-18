@@ -2,7 +2,6 @@ package runtime
 
 import (
 	"context"
-	"fmt"
 	"io"
 
 	"github.com/ayeama/panel/api/internal/domain"
@@ -124,7 +123,7 @@ func (r *Podman) Stats(container *domain.Container) chan domain.ContainerStat {
 		for report := range resp {
 			for _, stat := range report.Stats {
 				stats <- domain.ContainerStat{
-					Cpu:    stat.AvgCPU,
+					Cpu:    stat.CPU,
 					Memory: stat.MemPerc,
 				}
 			}
@@ -143,7 +142,6 @@ func (r *Podman) Attach(container *domain.Container, stdin io.Reader, stdout io.
 		if err != nil {
 			panic(err)
 		}
-		fmt.Println("HERE")
 	}()
 
 	<-ready
