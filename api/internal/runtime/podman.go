@@ -93,10 +93,37 @@ func (r *Podman) Start(container *domain.Container) {
 }
 
 func (r *Podman) Stop(container *domain.Container) {
-	err := containers.Stop(r.context, container.Id, nil)
+	// err := containers.Stop(r.context, container.Id, nil)
+	// if err != nil {
+	// 	panic(err)
+	// }
+
+	stdinReader, stdinWriter := io.Pipe()
+	stdoutReader, stdoutWriter := io.Pipe()
+	ready := make(chan bool)
+	done := make(chan bool)
+
+	go func() {
+		err := containers.Attach(r.context, container.Id, stdinReader, stdoutWriter, stdoutWriter, ready, nil)
+		if err != nil {
+			panic(err)
+		}
+		done <- true
+	}()
+
+	<-ready
+
+	_, err := stdinWriter.Write([]byte("stop\n"))
 	if err != nil {
 		panic(err)
 	}
+	stdinWriter.Close()
+
+	<-done
+
+	stdinReader.Close()
+	stdoutReader.Close()
+	stdoutWriter.Close()
 }
 
 func (r *Podman) Stats(container *domain.Container) chan domain.ContainerStat {

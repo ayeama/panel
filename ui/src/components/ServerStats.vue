@@ -10,7 +10,7 @@ const props = defineProps({
 let socket = ref(null)
 let cpu = ref(0.0)
 let memory = ref(0.0)
-let disk = ref(12.0)
+// let disk = ref(12.0)
 
 onMounted(() => {
   create()
@@ -69,7 +69,7 @@ function create() {
       </div>
     </div>
 
-    <div class="row">
+    <!-- <div class="row">
       <div class="col-2">
         <p>disk</p>
       </div>
@@ -83,6 +83,6 @@ function create() {
           }" v-bind:style="{width: disk+'%'}">{{ disk }}%</div>
         </div>
       </div>
-    </div>
+    </div> -->
   </div>
 </template>

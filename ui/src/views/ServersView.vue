@@ -103,7 +103,7 @@ function serverView(id) {
           </table>
         </div>
 
-        <div class="card-footer pt-3 pb-0">
+        <div class="card-footer pt-3 pb-0 border-0">
           <div class="row">
             <div class="col my-auto">
               <p>
