@@ -2,6 +2,7 @@ package repository
 
 import (
 	"database/sql"
+	"strings"
 
 	"github.com/ayeama/panel/api/internal/domain"
 )
@@ -75,6 +76,30 @@ func (r *ServerRepository) ReadOne(server *domain.Server) {
 		server.Container = &domain.Container{}
 	}
 	err := r.db.QueryRow("SELECT server.id, server.name, server.status, container.id from servers server LEFT JOIN containers container on container.server_id = server.id WHERE server.id = ?", &server.Id).Scan(&server.Id, &server.Name, &server.Status, &server.Container.Id)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func (s *ServerRepository) Update(server *domain.Server) {
+	query := "UPDATE servers SET "
+	params := []interface{}{}
+	sets := []string{}
+
+	if server.Name != "" {
+		params = append(params, server.Name)
+		sets = append(sets, "name=?")
+	}
+	if server.Status != "" {
+		params = append(params, server.Status)
+		sets = append(sets, "status=?")
+	}
+
+	query += strings.Join(sets, ", ")
+	query += " WHERE id=? RETURNING name, status"
+	params = append(params, server.Id)
+
+	err := s.db.QueryRow(query, params...).Scan(&server.Name, &server.Status)
 	if err != nil {
 		panic(err)
 	}

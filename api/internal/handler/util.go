@@ -51,7 +51,30 @@ func NewWebSocketConnection(conn net.Conn, rw *bufio.ReadWriter) *WebSocketConne
 }
 
 func (c *WebSocketConnection) Close() {
+	if c.conn == nil {
+		return
+	}
+
 	// TODO send control frame
+	var msg []byte
+
+	msg = append(msg, byte(0b10001000))
+	msg = append(msg, byte(0b00000010))
+
+	code := make([]byte, 2)
+	binary.BigEndian.PutUint16(code, uint16(1000))
+	msg = append(msg, code...)
+
+	_, err := c.rw.Write(msg)
+	if err != nil {
+		panic(err)
+	}
+
+	err = c.rw.Flush()
+	if err != nil {
+		panic(err)
+	}
+
 	c.conn.Close()
 }
 

@@ -8,7 +8,10 @@ import (
 	nettypes "github.com/containers/common/libnetwork/types"
 	"github.com/containers/podman/v5/pkg/bindings"
 	"github.com/containers/podman/v5/pkg/bindings/containers"
+	"github.com/containers/podman/v5/pkg/bindings/system"
+	"github.com/containers/podman/v5/pkg/domain/entities"
 	"github.com/containers/podman/v5/pkg/specgen"
+	dockerevents "github.com/docker/docker/api/types/events"
 	"github.com/opencontainers/runtime-spec/specs-go"
 )
 
@@ -26,7 +29,7 @@ func NewRuntimePodman() *Podman {
 	return &Podman{context: context}
 }
 
-func (r *Podman) Create() string {
+func (r *Podman) Create(server *domain.Server) string {
 	stdin := true
 	terminal := true
 
@@ -57,8 +60,8 @@ func (r *Podman) Create() string {
 	}
 	spec.PortMappings = portMappings
 
-	// TODO add metadata to labels
-	// spec.Labels = map[string]string{"com.github.ayeama.panel.api.server.id": "id"}
+	spec.Labels = make(map[string]string)
+	spec.Labels["com.github.ayeama.panel.api.server.id"] = server.Id
 
 	// todo container restart: unless-stopped
 
@@ -161,6 +164,15 @@ func (r *Podman) Stats(container *domain.Container) chan domain.ContainerStat {
 }
 
 func (r *Podman) Attach(container *domain.Container, stdin io.Reader, stdout io.Writer, stderr io.Writer) {
+	resp, err := containers.Inspect(r.context, container.Id, nil)
+	if err != nil {
+		panic(err)
+	}
+
+	if resp.State.Status != "running" {
+		return
+	}
+
 	ready := make(chan bool)
 
 	// TODO does this leak?
@@ -172,6 +184,64 @@ func (r *Podman) Attach(container *domain.Container, stdin io.Reader, stdout io.
 	}()
 
 	<-ready
+}
+
+func (r *Podman) Events() chan domain.Event {
+	runtimeEvents := make(chan entities.Event)
+
+	stream := true
+
+	options := &system.EventsOptions{
+		Stream: &stream,
+	}
+
+	err := system.Events(r.context, runtimeEvents, nil, options)
+	if err != nil {
+		panic(err)
+	}
+
+	events := make(chan domain.Event)
+
+	go func() {
+		for event := range runtimeEvents {
+			serverId := event.Actor.ID
+			containerId := event.Actor.Attributes["com.github.ayeama.panel.api.server.id"]
+
+			if containerId == "" {
+				continue
+			}
+
+			switch event.Type {
+			case dockerevents.ContainerEventType:
+				switch event.Action {
+				case dockerevents.ActionCreate:
+					events <- domain.ServerCreatedEvent{
+						Id:          containerId,
+						ContainerId: serverId,
+					}
+				case dockerevents.ActionStart:
+					events <- domain.ServerStartedEvent{
+						Id:          containerId,
+						ContainerId: serverId,
+					}
+				case dockerevents.ActionStop, "died":
+					events <- domain.ServerStoppedEvent{
+						Id:          containerId,
+						ContainerId: serverId,
+					}
+				case dockerevents.ActionRemove:
+					events <- domain.ServerDeletedEvent{
+						Id:          containerId,
+						ContainerId: serverId,
+					}
+				default:
+				}
+			default:
+			}
+		}
+	}()
+
+	return events
 }
 
 func (r *Podman) Status(container *domain.Container) string {

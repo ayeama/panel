@@ -15,12 +15,13 @@ const (
 )
 
 type Runtime interface {
-	Create() string
+	Create(server *domain.Server) string
 	Delete(container *domain.Container)
 	Start(container *domain.Container)
 	Stop(container *domain.Container)
 	Stats(container *domain.Container) chan domain.ContainerStat
 	Attach(container *domain.Container, stdin io.Reader, stdout io.Writer, stderr io.Writer)
+	Events() chan domain.Event
 	Status(container *domain.Container) string
 }
 

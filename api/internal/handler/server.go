@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -93,22 +94,57 @@ func (h *ServerHandler) Stats(w http.ResponseWriter, r *http.Request) {
 	server := &domain.Server{Id: id}
 	stats := h.service.Stats(server)
 
-	for stat := range stats {
-		output := types.ServerStatResponse{
-			Cpu:    stat.Cpu,
-			Memory: stat.Memory,
-		}
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-		data, err := json.Marshal(output)
-		if err != nil {
-			panic(err)
+	go func() {
+		for {
+			var buf []byte
+			_, err := c.Read(buf)
+			if err != nil {
+				if err == io.EOF {
+					break
+				}
+			}
 		}
+		cancel()
+	}()
 
-		_, err = c.Write(data)
-		if err != nil {
-			panic(err)
+	go func() {
+		var previousStat domain.ContainerStat
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case stat, ok := <-stats:
+				if !ok {
+					return
+				}
+
+				if previousStat.Cpu == stat.Cpu && previousStat.Memory == stat.Memory {
+					continue
+				}
+				previousStat = stat
+
+				output := types.ServerStatResponse{
+					Cpu:    stat.Cpu,
+					Memory: stat.Memory,
+				}
+
+				data, err := json.Marshal(output)
+				if err != nil {
+					panic(err)
+				}
+
+				_, err = c.Write(data)
+				if err != nil {
+					panic(err)
+				}
+			}
 		}
-	}
+	}()
+
+	<-ctx.Done()
 }
 
 func (h *ServerHandler) Attach(w http.ResponseWriter, r *http.Request) {
@@ -118,23 +154,33 @@ func (h *ServerHandler) Attach(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	server := &domain.Server{Id: id}
 
-	done := make(chan bool, 1)
+	ctx, cancel := context.WithCancel(context.Background())
 	stdinReader, stdinWriter := io.Pipe()
 	stdoutReader, stdoutWriter := io.Pipe()
 
 	go func() {
 		defer stdinWriter.Close()
-		io.Copy(stdinWriter, c)
-		<-done
+		_, err := io.Copy(stdinWriter, c)
+		if err != nil {
+			if err != io.EOF {
+				panic(err)
+			}
+		}
+		cancel()
 	}()
 	go func() {
 		defer stdoutReader.Close()
-		io.Copy(c, stdoutReader)
-		<-done
+		_, err := io.Copy(c, stdoutReader)
+		if err != nil {
+			if err != io.EOF {
+				panic(err)
+			}
+		}
+		cancel()
 	}()
 
-	h.service.Attach(server, stdinReader, stdoutWriter, nil)
-	<-done
+	h.service.Attach(server, stdinReader, stdoutWriter, stdoutWriter)
+	<-ctx.Done()
 }
 
 func (h *ServerHandler) RegisterHandlers(m *http.ServeMux) {

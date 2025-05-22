@@ -19,10 +19,11 @@ func NewServerService(runtime runtime.Runtime, serverRepository *repository.Serv
 }
 
 func (s *ServerService) Create(server *domain.Server) {
-	containerId := s.runtime.Create()
-
 	server.Id = uuid.NewString()
 	server.Status = "created"
+
+	containerId := s.runtime.Create(server)
+
 	server.Container = &domain.Container{
 		Id: containerId,
 	}
@@ -38,6 +39,10 @@ func (s *ServerService) ReadOne(server *domain.Server) {
 	s.repository.ReadOne(server)
 }
 
+func (s *ServerService) Update(server *domain.Server) {
+	s.repository.Update(server)
+}
+
 func (s *ServerService) Delete(server *domain.Server) {
 	s.repository.ReadOne(server)
 	s.runtime.Delete(server.Container)
@@ -47,13 +52,13 @@ func (s *ServerService) Delete(server *domain.Server) {
 func (s *ServerService) Start(server *domain.Server) {
 	s.repository.ReadOne(server)
 	s.runtime.Start(server.Container)
-	s.RefreshStatus(server)
+	// s.RefreshStatus(server)
 }
 
 func (s *ServerService) Stop(server *domain.Server) {
 	s.repository.ReadOne(server)
 	s.runtime.Stop(server.Container)
-	s.RefreshStatus(server)
+	// s.RefreshStatus(server)
 }
 
 func (s *ServerService) Stats(server *domain.Server) chan domain.ContainerStat {
@@ -66,7 +71,11 @@ func (s *ServerService) Attach(server *domain.Server, stdin io.Reader, stdout io
 	s.runtime.Attach(server.Container, stdin, stdout, stderr)
 }
 
-func (s *ServerService) RefreshStatus(server *domain.Server) {
-	server.Status = s.runtime.Status(server.Container)
-	s.repository.UpdateStatus(server)
+func (s *ServerService) Events() chan domain.Event {
+	return s.runtime.Events()
 }
+
+// func (s *ServerService) RefreshStatus(server *domain.Server) {
+// 	server.Status = s.runtime.Status(server.Container)
+// 	s.repository.UpdateStatus(server)
+// }
