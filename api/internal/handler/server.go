@@ -149,7 +149,6 @@ func (h *ServerHandler) Stats(w http.ResponseWriter, r *http.Request) {
 
 func (h *ServerHandler) Attach(w http.ResponseWriter, r *http.Request) {
 	c := Upgrade(w, r)
-	defer c.Close()
 
 	id := r.PathValue("id")
 	server := &domain.Server{Id: id}
@@ -158,28 +157,31 @@ func (h *ServerHandler) Attach(w http.ResponseWriter, r *http.Request) {
 	stdinReader, stdinWriter := io.Pipe()
 	stdoutReader, stdoutWriter := io.Pipe()
 
+	closeAll := func() {
+		stdinWriter.Close()
+		stdoutReader.Close()
+		stdoutWriter.Close()
+		c.Close()
+	}
+
 	go func() {
-		defer stdinWriter.Close()
-		_, err := io.Copy(stdinWriter, c)
-		if err != nil {
-			if err != io.EOF {
-				panic(err)
-			}
-		}
-		cancel()
+		defer cancel()
+		io.Copy(stdinWriter, c)
 	}()
 	go func() {
-		defer stdoutReader.Close()
-		_, err := io.Copy(c, stdoutReader)
-		if err != nil {
-			if err != io.EOF {
-				panic(err)
-			}
-		}
-		cancel()
+		defer cancel()
+		io.Copy(c, stdoutReader)
 	}()
 
-	h.service.Attach(server, stdinReader, stdoutWriter, stdoutWriter)
+	go func() {
+		<-ctx.Done()
+		closeAll()
+	}()
+
+	err := h.service.Attach(server, stdinReader, stdoutWriter, stdoutWriter)
+	if err != nil {
+		cancel()
+	}
 	<-ctx.Done()
 }
 

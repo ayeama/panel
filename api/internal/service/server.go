@@ -66,9 +66,9 @@ func (s *ServerService) Stats(server *domain.Server) chan domain.ContainerStat {
 	return s.runtime.Stats(server.Container)
 }
 
-func (s *ServerService) Attach(server *domain.Server, stdin io.Reader, stdout io.Writer, stderr io.Writer) {
+func (s *ServerService) Attach(server *domain.Server, stdin io.Reader, stdout io.Writer, stderr io.Writer) error {
 	s.repository.ReadOne(server)
-	s.runtime.Attach(server.Container, stdin, stdout, stderr)
+	return s.runtime.Attach(server.Container, stdin, stdout, stderr)
 }
 
 func (s *ServerService) Events() chan domain.Event {

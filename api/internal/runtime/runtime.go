@@ -20,7 +20,7 @@ type Runtime interface {
 	Start(container *domain.Container)
 	Stop(container *domain.Container)
 	Stats(container *domain.Container) chan domain.ContainerStat
-	Attach(container *domain.Container, stdin io.Reader, stdout io.Writer, stderr io.Writer)
+	Attach(container *domain.Container, stdin io.Reader, stdout io.Writer, stderr io.Writer) error
 	Events() chan domain.Event
 	Status(container *domain.Container) string
 }

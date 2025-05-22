@@ -2,6 +2,7 @@ package runtime
 
 import (
 	"context"
+	"fmt"
 	"io"
 
 	"github.com/ayeama/panel/api/internal/domain"
@@ -163,17 +164,37 @@ func (r *Podman) Stats(container *domain.Container) chan domain.ContainerStat {
 	return stats
 }
 
-func (r *Podman) Attach(container *domain.Container, stdin io.Reader, stdout io.Writer, stderr io.Writer) {
+func (r *Podman) Attach(container *domain.Container, stdin io.Reader, stdout io.Writer, stderr io.Writer) error {
 	resp, err := containers.Inspect(r.context, container.Id, nil)
 	if err != nil {
 		panic(err)
 	}
 
 	if resp.State.Status != "running" {
-		return
+		return fmt.Errorf("container not running")
 	}
 
 	ready := make(chan bool)
+	logs := make(chan string)
+
+	go func() {
+		defer close(logs)
+		logTail := "30"
+		options := &containers.LogOptions{
+			Tail: &logTail,
+		}
+		err = containers.Logs(r.context, container.Id, options, logs, nil)
+		if err != nil {
+			panic(err)
+		}
+	}()
+
+	for log := range logs {
+		_, err := io.WriteString(stdout, log)
+		if err != nil {
+			panic(err)
+		}
+	}
 
 	// TODO does this leak?
 	go func() {
@@ -182,8 +203,8 @@ func (r *Podman) Attach(container *domain.Container, stdin io.Reader, stdout io.
 			panic(err)
 		}
 	}()
-
 	<-ready
+	return nil
 }
 
 func (r *Podman) Events() chan domain.Event {

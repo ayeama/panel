@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"encoding/binary"
 	"encoding/json"
+	"errors"
 	"io"
 	"net"
 	"net/http"
@@ -79,56 +80,69 @@ func (c *WebSocketConnection) Close() {
 }
 
 func (c *WebSocketConnection) Read(p []byte) (n int, err error) {
-	var msg []byte
+	var fullPayload []byte
 
-	fin := false
+	b0, err := c.rw.ReadByte()
+	if err != nil {
+		return 0, err
+	}
+	fin := b0&0b10000000 != 0
+	opcode := b0 & 0b00001111
 
-	for !fin {
-		b0, _ := c.rw.ReadByte()
-		fin = b0&0b10000000 != 0  // fin
-		opcode := b0 & 0b00001111 // opcode
-
-		// TODO handle correclty
-		if opcode == WebSocketOpcodeConnectionCloseFrame {
-			return n, io.EOF
-		}
-
-		b1, _ := c.rw.ReadByte()
-		mask := b1&0b10000000 != 0
-		payloadLength := b1 & 0b01111111
-
-		var uintPayloadLength uint64
-		if payloadLength <= 125 {
-			uintPayloadLength = uint64(payloadLength)
-		} else if payloadLength == 126 {
-			x := make([]byte, 2)
-			io.ReadFull(c.rw.Reader, x)
-			uintPayloadLength = uint64(binary.BigEndian.Uint16(x))
-		} else if payloadLength == 127 {
-			x := make([]byte, 8)
-			io.ReadFull(c.rw.Reader, x)
-			uintPayloadLength = binary.BigEndian.Uint64(x)
-		}
-
-		if !mask {
-			panic("websocket read: mask must be set")
-		}
-
-		maskingKey := make([]byte, 4)
-		io.ReadFull(c.rw.Reader, maskingKey)
-
-		payload := make([]byte, uintPayloadLength)
-		io.ReadFull(c.rw.Reader, payload)
-
-		msgPart := make([]byte, uintPayloadLength)
-		for i := 0; i < int(uintPayloadLength); i++ {
-			msgPart[i] = payload[i] ^ maskingKey[i%4]
-		}
-
-		msg = append(msg, msgPart...)
+	if opcode == WebSocketOpcodeConnectionCloseFrame {
+		return 0, io.EOF
 	}
 
-	n = copy(p, msg)
+	b1, err := c.rw.ReadByte()
+	if err != nil {
+		return 0, err
+	}
+	mask := b1&0b10000000 != 0
+	if !mask {
+		return 0, errors.New("websocket read: mask must be set")
+	}
+
+	payloadLength := b1 & 0b01111111
+	var payloadLen uint64
+
+	switch payloadLength {
+	case 126:
+		var lenBuf [2]byte
+		if _, err := io.ReadFull(c.rw, lenBuf[:]); err != nil {
+			return 0, err
+		}
+		payloadLen = uint64(binary.BigEndian.Uint16(lenBuf[:]))
+	case 127:
+		var lenBuf [8]byte
+		if _, err := io.ReadFull(c.rw, lenBuf[:]); err != nil {
+			return 0, err
+		}
+		payloadLen = binary.BigEndian.Uint64(lenBuf[:])
+	default:
+		payloadLen = uint64(payloadLength)
+	}
+
+	var maskingKey [4]byte
+	if _, err := io.ReadFull(c.rw, maskingKey[:]); err != nil {
+		return 0, err
+	}
+
+	payload := make([]byte, payloadLen)
+	if _, err := io.ReadFull(c.rw, payload); err != nil {
+		return 0, err
+	}
+
+	for i := range payload {
+		payload[i] ^= maskingKey[i%4]
+	}
+
+	fullPayload = payload
+	if !fin {
+		// Note: you’re not handling fragmented frames here
+		return 0, errors.New("fragmented frames not supported")
+	}
+
+	n = copy(p, fullPayload)
 	return n, nil
 }
 
