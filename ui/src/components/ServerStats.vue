@@ -42,13 +42,25 @@ function create() {
         <p>cpu</p>
       </div>
       <div class="col">
-        <div class="progress" role="progressbar" v-bind:aria-valuenow="cpu" aria-valuemin="0" aria-valuemax="100"
-          style="height: 25px">
-          <div class="progress-bar" v-bind:class="{
-            'bg-success': cpu < 75,
-            'bg-warning': cpu >= 75 && cpu < 85,
-            'bg-danger': cpu >= 85,
-          }" v-bind:style="{width: cpu+'%'}">{{ cpu }}%</div>
+        <div
+          class="progress"
+          role="progressbar"
+          v-bind:aria-valuenow="cpu"
+          aria-valuemin="0"
+          aria-valuemax="100"
+          style="height: 25px"
+        >
+          <div
+            class="progress-bar"
+            v-bind:class="{
+              'bg-success': cpu < 75,
+              'bg-warning': cpu >= 75 && cpu < 85,
+              'bg-danger': cpu >= 85,
+            }"
+            v-bind:style="{ width: cpu + '%' }"
+          >
+            {{ cpu }}%
+          </div>
         </div>
       </div>
     </div>
@@ -58,13 +70,25 @@ function create() {
         <p>memory</p>
       </div>
       <div class="col">
-        <div class="progress" role="progressbar" v-bind:aria-valuenow="memory" aria-valuemin="0" aria-valuemax="100"
-          style="height: 25px">
-          <div class="progress-bar" v-bind:class="{
-            'bg-success': memory < 75,
-            'bg-warning': memory >= 75 && memory < 85,
-            'bg-danger': memory >= 85,
-          }" v-bind:style="{width: memory+'%'}">{{ memory }}%</div>
+        <div
+          class="progress"
+          role="progressbar"
+          v-bind:aria-valuenow="memory"
+          aria-valuemin="0"
+          aria-valuemax="100"
+          style="height: 25px"
+        >
+          <div
+            class="progress-bar"
+            v-bind:class="{
+              'bg-success': memory < 75,
+              'bg-warning': memory >= 75 && memory < 85,
+              'bg-danger': memory >= 85,
+            }"
+            v-bind:style="{ width: memory + '%' }"
+          >
+            {{ memory }}%
+          </div>
         </div>
       </div>
     </div>

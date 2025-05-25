@@ -160,7 +160,7 @@ onMounted(async () => {
         </div>
 
         <div class="col-6">
-          <ServerStats v-bind:url="`wss://${HOST}/servers/${id}/stats`" /> 
+          <ServerStats v-bind:url="`wss://${HOST}/servers/${id}/stats`" />
         </div>
       </div>
     </div>
