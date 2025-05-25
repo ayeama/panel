@@ -30,6 +30,11 @@ func NewServer() *Server {
 
 	mux := http.NewServeMux()
 
+	nodeRepository := repository.NewNodeRepository(db)
+	nodeService := service.NewNodeService(nodeRepository)
+	nodeHandler := handler.NewNodeHandler(nodeService)
+	nodeHandler.RegisterHandlers(mux)
+
 	serverRepository := repository.NewServerRepository(db)
 	serverService := service.NewServerService(runtime, serverRepository)
 	serverHandler := handler.NewServerHandler(serverService)

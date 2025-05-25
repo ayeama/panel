@@ -12,11 +12,11 @@ import (
 )
 
 type ServerHandler struct {
-	service service.ServerService
+	service *service.ServerService
 }
 
 func NewServerHandler(service *service.ServerService) *ServerHandler {
-	return &ServerHandler{service: *service}
+	return &ServerHandler{service: service}
 }
 
 func (h *ServerHandler) Create(w http.ResponseWriter, r *http.Request) {
