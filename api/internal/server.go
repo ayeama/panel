@@ -40,6 +40,11 @@ func NewServer() *Server {
 	serverHandler := handler.NewServerHandler(serverService)
 	serverHandler.RegisterHandlers(mux)
 
+	manifestRepository := repository.NewManifestRepository(db)
+	manifestService := service.NewManifestService(manifestRepository)
+	manifestHandler := handler.NewManifestHandler(manifestService)
+	manifestHandler.RegisterHandlers(mux)
+
 	userRepository := repository.NewUserRepository(db)
 	userService := service.NewUserService(userRepository)
 	userHandler := handler.NewUserHandler(userService)
