@@ -6,6 +6,7 @@ type ManifestVariable struct {
 }
 
 type ManifestPayload struct {
+	Image     string             `json:"image"`
 	Variables []ManifestVariable `json:"variables"`
 }
 

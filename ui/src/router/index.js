@@ -6,6 +6,7 @@ import ServersView from '../views/ServersView.vue'
 import ServerView from '../views/ServerView.vue'
 import NodeCreateView from '../views/NodeCreateView.vue'
 import NodesView from '../views/NodesView.vue'
+import ManifestsView from '../views/ManifestsView.vue'
 import UsersView from '../views/UsersView.vue'
 import UserEditView from '../views/UserEditView.vue'
 
@@ -54,6 +55,11 @@ const router = createRouter({
       path: '/nodes',
       name: 'nodes',
       component: NodesView,
+    },
+    {
+      path: '/manifests',
+      name: 'manifests',
+      component: ManifestsView,
     },
     {
       path: '/users',

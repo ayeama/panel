@@ -27,7 +27,7 @@ func (r *ServerRepository) Create(server *domain.Server) {
 		panic(err)
 	}
 
-	_, err = tx.Exec("INSERT INTO containers (id, server_id) VALUES (?, ?)", server.Container.Id, server.Id)
+	_, err = tx.Exec("INSERT INTO containers (id, server_id, node_id) VALUES (?, ?, ?)", server.Container.Id, server.Id, server.Node.Id)
 	if err != nil {
 		panic(err)
 	}
@@ -39,7 +39,7 @@ func (r *ServerRepository) Create(server *domain.Server) {
 }
 
 func (r *ServerRepository) Read(p domain.Pagination) domain.PaginationResponse[domain.Server] {
-	rows, err := r.db.Query("SELECT server.id, server.name, server.status, container.id FROM servers server LEFT JOIN containers container ON container.server_id = server.id LIMIT ? OFFSET ?", p.Limit, p.Offset)
+	rows, err := r.db.Query("SELECT server.id, server.name, server.status, container.id, node.id, node.name, node.uri FROM servers server LEFT JOIN containers container ON container.server_id = server.id LEFT JOIN nodes node ON container.node_id = node.id LIMIT ? OFFSET ?", p.Limit, p.Offset)
 	if err != nil {
 		panic(err)
 	}
@@ -54,8 +54,9 @@ func (r *ServerRepository) Read(p domain.Pagination) domain.PaginationResponse[d
 	for rows.Next() {
 		var server domain.Server
 		server.Container = &domain.Container{}
+		server.Node = &domain.Node{}
 
-		err = rows.Scan(&server.Id, &server.Name, &server.Status, &server.Container.Id)
+		err = rows.Scan(&server.Id, &server.Name, &server.Status, &server.Container.Id, &server.Node.Id, &server.Node.Name, &server.Node.Uri)
 		if err != nil {
 			panic(err)
 		}
@@ -75,7 +76,10 @@ func (r *ServerRepository) ReadOne(server *domain.Server) {
 	if server.Container == nil {
 		server.Container = &domain.Container{}
 	}
-	err := r.db.QueryRow("SELECT server.id, server.name, server.status, container.id from servers server LEFT JOIN containers container on container.server_id = server.id WHERE server.id = ?", &server.Id).Scan(&server.Id, &server.Name, &server.Status, &server.Container.Id)
+	if server.Node == nil {
+		server.Node = &domain.Node{}
+	}
+	err := r.db.QueryRow("SELECT server.id, server.name, server.status, container.id, node.id, node.name, node.uri from servers server LEFT JOIN containers container on container.server_id = server.id LEFT JOIN nodes node on container.node_id = node.id WHERE server.id = ?", &server.Id).Scan(&server.Id, &server.Name, &server.Status, &server.Container.Id, &server.Node.Id, &server.Node.Name, &server.Node.Uri)
 	if err != nil {
 		panic(err)
 	}

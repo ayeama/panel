@@ -24,6 +24,7 @@ func (h *ServerHandler) Create(w http.ResponseWriter, r *http.Request) {
 	ReadRequestJson(r.Body, &serverCreate)
 
 	server := &domain.Server{Name: serverCreate.Name}
+	server.Manifest = &domain.Manifest{Id: serverCreate.ManifestId}
 	h.service.Create(server)
 
 	output := types.ServerResponse{Id: server.Id, Name: server.Name, Status: server.Status}
@@ -94,7 +95,7 @@ func (h *ServerHandler) Stats(w http.ResponseWriter, r *http.Request) {
 	server := &domain.Server{Id: id}
 	stats := h.service.Stats(server)
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(r.Context())
 	defer cancel()
 
 	go func() {
@@ -153,7 +154,7 @@ func (h *ServerHandler) Attach(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	server := &domain.Server{Id: id}
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(r.Context())
 	stdinReader, stdinWriter := io.Pipe()
 	stdoutReader, stdoutWriter := io.Pipe()
 
@@ -178,11 +179,17 @@ func (h *ServerHandler) Attach(w http.ResponseWriter, r *http.Request) {
 		closeAll()
 	}()
 
-	err := h.service.Attach(server, stdinReader, stdoutWriter, stdoutWriter)
+	done := make(chan struct{})
+	err := h.service.Attach(server, stdinReader, stdoutWriter, stdoutWriter, done)
 	if err != nil {
 		cancel()
 	}
-	<-ctx.Done()
+
+	select {
+	case <-ctx.Done():
+	case <-done:
+		cancel()
+	}
 }
 
 func (h *ServerHandler) RegisterHandlers(m *http.ServeMux) {

@@ -3,43 +3,38 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { HOST } from '@/config'
 import ArrowClockwise from '@/components/icons/ArrowClockwise.vue'
-import ServerStatusBadge from '@/components/ServerStatusBadge.vue'
 
 const router = useRouter()
 
 onMounted(async () => {
-  getServers()
+  getManifests()
 })
 
-// pagination
 const paginationLimits = [5, 10, 20, 50, 100] // TODO handle if there are many pages...
 const paginationLimit = ref(paginationLimits[1])
 
 async function paginationLimitSelect(value) {
   paginationLimit.value = value
-  await getServers()
+  await getManifests()
 }
 
-const loading = ref(true)
-const serversPaginated = ref({ limit: 10, offset: 0, total: 1, items: [] }) // TODO remvoe defaults?
+const manifestsPaginated = ref({ limit: 10, offset: 0, total: 1, items: [] }) // TODO remvoe defaults?
 
-async function getServers(page = 1) {
+async function getManifests(page = 1) {
   var limit = paginationLimit.value
   var offset = (page - 1) * paginationLimit.value
 
   try {
-    const response = await fetch(`https://${HOST}/servers?limit=${limit}&offset=${offset}`)
+    const response = await fetch(`https://${HOST}/manifests?limit=${limit}&offset=${offset}`)
     const data = await response.json()
-    serversPaginated.value = data
-  } catch (error) {
-    console.log('Failed to fetch servers', error)
-  } finally {
-    loading.value = false
+    manifestsPaginated.value = data
+  } catch (err) {
+    console.log('Failed to fetch manifests', err)
   }
 }
 
-function serverView(id) {
-  router.push(`/servers/${id}`)
+function manifestView(id) {
+  router.push(`/manifests/${id}`)
 }
 </script>
 
@@ -47,12 +42,12 @@ function serverView(id) {
   <div>
     <div class="row">
       <div class="col">
-        <h1>Servers</h1>
+        <h1>Manifests</h1>
       </div>
 
       <div class="col my-auto">
         <div class="float-end">
-          <RouterLink to="/servers/create" class="btn btn-primary">Create</RouterLink>
+          <!-- <RouterLink to="/manifests/create" class="btn btn-primary">Create</RouterLink> -->
         </div>
       </div>
     </div>
@@ -63,7 +58,9 @@ function serverView(id) {
           <a
             class="icon-link"
             href=""
-            v-on:click.prevent="getServers(serversPaginated.offset / serversPaginated.limit + 1)"
+            v-on:click.prevent="
+              getManifests(manifestsPaginated.offset / manifestsPaginated.limit + 1)
+            "
             >Refresh
             <ArrowClockwise />
           </a>
@@ -74,30 +71,20 @@ function serverView(id) {
             <thead>
               <tr>
                 <th scope="col">Name</th>
-                <th>Status</th>
+                <th>Variant</th>
+                <th>Version</th>
               </tr>
             </thead>
 
             <tbody>
-              <tr v-if="loading">
-                <td scope="role">
-                  <div class="placeholder-glow"><span class="placeholder col-8"></span></div>
-                </td>
-                <td>
-                  <div class="placeholder-glow"><span class="placeholder col-4"></span></div>
-                </td>
-              </tr>
-
               <tr
-                v-else
-                v-for="server in serversPaginated.items"
-                v-bind:key="server.id"
-                v-on:click="serverView(server.id)"
+                v-for="manifest in manifestsPaginated.items"
+                v-bind:key="manifest.id"
+                v-on:click="manifestView(manifest.id)"
               >
-                <td scope="row">{{ server.name }}</td>
-                <td>
-                  <ServerStatusBadge v-bind:status="server.status" />
-                </td>
+                <td scope="row">{{ manifest.name }}</td>
+                <td>{{ manifest.variant }}</td>
+                <td>{{ manifest.version }}</td>
               </tr>
             </tbody>
           </table>
@@ -107,13 +94,13 @@ function serverView(id) {
           <div class="row">
             <div class="col my-auto">
               <p>
-                Showing {{ serversPaginated.offset + 1 }} to
+                Showing {{ manifestsPaginated.offset + 1 }} to
                 {{
-                  serversPaginated.offset + serversPaginated.limit > serversPaginated.total
-                    ? serversPaginated.total
-                    : serversPaginated.offset + serversPaginated.limit
+                  manifestsPaginated.offset + manifestsPaginated.limit > manifestsPaginated.total
+                    ? manifestsPaginated.total
+                    : manifestsPaginated.offset + manifestsPaginated.limit
                 }}
-                of {{ serversPaginated.total }} results.</p>
+                of {{ manifestsPaginated.total }} results.</p>
             </div>
 
             <div class="col d-flex justify-content-center">
@@ -124,22 +111,19 @@ function serverView(id) {
                       class="page-link"
                       href="#"
                       aria-label="Previous"
-                      v-bind:class="{ disabled: !(serversPaginated.offset > 0) }"
+                      v-bind:class="{ disabled: !(manifestsPaginated.offset > 0) }"
                       v-on:click.prevent="
-                        getServers(serversPaginated.offset / serversPaginated.limit + 1 - 1)
+                        getManifests(manifestsPaginated.offset / manifestsPaginated.limit + 1 - 1)
                       "
                     >
                       <span aria-hidden="true">&laquo;</span>
                     </a>
                   </li>
 
-                  <!-- <li class="page-item"><a class="page-link active" href="#">1</a></li>
-                  <li class="page-item"><a class="page-link" href="#">2</a></li>
-                  <li class="page-item"><a class="page-link" href="#">3</a></li> -->
                   <li
                     class="page-item"
                     v-for="(item, index) in Math.ceil(
-                      serversPaginated.total / serversPaginated.limit,
+                      manifestsPaginated.total / manifestsPaginated.limit,
                     )"
                     v-bind:key="item"
                   >
@@ -147,9 +131,10 @@ function serverView(id) {
                       class="page-link"
                       href="#"
                       v-bind:class="{
-                        active: index + 1 == serversPaginated.offset / serversPaginated.limit + 1,
+                        active:
+                          index + 1 == manifestsPaginated.offset / manifestsPaginated.limit + 1,
                       }"
-                      v-on:click.prevent="getServers(index + 1)"
+                      v-on:click.prevent="getManifests(index + 1)"
                       >{{ index + 1 }}</a
                     >
                   </li>
@@ -161,12 +146,12 @@ function serverView(id) {
                       aria-label="Next"
                       v-bind:class="{
                         disabled: !(
-                          serversPaginated.offset + serversPaginated.limit <
-                          serversPaginated.total
+                          manifestsPaginated.offset + manifestsPaginated.limit <
+                          manifestsPaginated.total
                         ),
                       }"
                       v-on:click.prevent="
-                        getServers(serversPaginated.offset / serversPaginated.limit + 1 + 1)
+                        getManifests(manifestsPaginated.offset / manifestsPaginated.limit + 1 + 1)
                       "
                     >
                       <span aria-hidden="true">&raquo;</span>

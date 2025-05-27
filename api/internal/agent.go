@@ -25,8 +25,11 @@ func NewAgent() *Agent {
 		panic(err)
 	}
 
+	nodeRepository := repository.NewNodeRepository(db)
+	manifestRepository := repository.NewManifestRepository(db)
+
 	serverRepository := repository.NewServerRepository(db)
-	serverService := service.NewServerService(runtime, serverRepository)
+	serverService := service.NewServerService(runtime, serverRepository, nodeRepository, manifestRepository)
 
 	return &Agent{serverService: serverService}
 }

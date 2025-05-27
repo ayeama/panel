@@ -5,7 +5,7 @@ FROM docker.io/eclipse-temurin:21-jre-noble
 STOPSIGNAL SIGTERM
 
 WORKDIR /data
-VOLUME /data
+VOLUME ["/data"]
 
 RUN apt-get update -y && apt-get install -y jq
 

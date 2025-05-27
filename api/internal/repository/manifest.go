@@ -71,3 +71,27 @@ func (r *ManifestRepository) Read(p domain.Pagination) domain.PaginationResponse
 
 	return manifests
 }
+
+func (r *ManifestRepository) ReadOne(id string) domain.Manifest {
+	var manifest domain.Manifest
+	var variant sql.NullString
+	var payload string
+
+	err := r.db.QueryRow("SELECT id, name, variant, version, payload FROM manifests WHERE id=?", id).Scan(&manifest.Id, &manifest.Name, &variant, &manifest.Version, &payload)
+	if err != nil {
+		panic(err)
+	}
+
+	if variant.Valid {
+		manifest.Variant = &variant.String
+	} else {
+		manifest.Variant = nil
+	}
+
+	err = json.Unmarshal([]byte(payload), &manifest.Payload)
+	if err != nil {
+		panic(err)
+	}
+
+	return manifest
+}

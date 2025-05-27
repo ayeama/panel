@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"math/rand"
+	"sync"
 
 	"github.com/ayeama/panel/api/internal/domain"
 	nettypes "github.com/containers/common/libnetwork/types"
@@ -13,31 +15,123 @@ import (
 	"github.com/containers/podman/v5/pkg/domain/entities"
 	"github.com/containers/podman/v5/pkg/specgen"
 	dockerevents "github.com/docker/docker/api/types/events"
-	"github.com/opencontainers/runtime-spec/specs-go"
 )
 
-type Podman struct {
-	context context.Context
+type PodmanNode struct {
+	nodeName string
+	nodeUri  string
+	ctx      context.Context
 }
 
-func NewRuntimePodman() *Podman {
-	uri := "unix:///run/user/1000/podman/podman.sock"
-	context, err := bindings.NewConnection(context.Background(), uri)
+type PodmanRuntime struct {
+	mutex       sync.RWMutex
+	connections map[string]*PodmanNode
+	events      chan domain.Event
+}
+
+func NewPodmanRuntime() *PodmanRuntime {
+	return &PodmanRuntime{
+		connections: make(map[string]*PodmanNode, 0),
+		events:      make(chan domain.Event),
+	}
+}
+
+func (r *PodmanRuntime) AddNode(node *domain.Node) error {
+	ctx, err := bindings.NewConnectionWithIdentity(context.Background(), node.Uri, "/home/alex/.ssh/id_rsa", false)
 	if err != nil {
 		panic(err)
 	}
 
-	return &Podman{context: context}
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
+
+	r.connections[node.Name] = &PodmanNode{nodeName: node.Name, nodeUri: node.Uri, ctx: ctx}
+
+	return nil
 }
 
-func (r *Podman) Create(server *domain.Server) string {
+func (r *PodmanRuntime) RemoveNode(name string) error {
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
+
+	// TODO double check
+	_, ok := r.connections[name]
+	if !ok {
+		return fmt.Errorf("failed to find node: %s", name)
+	}
+
+	delete(r.connections, name)
+
+	return nil
+}
+
+func (r *PodmanRuntime) Node(name string) (Node, error) {
+	r.mutex.RLock()
+	defer r.mutex.RUnlock()
+
+	node, ok := r.connections[name]
+	if !ok {
+		return nil, fmt.Errorf("failed to find node: %s", name)
+	}
+
+	return node, nil
+}
+
+func (r *PodmanRuntime) RandomNode() (Node, error) {
+	r.mutex.RLock()
+	defer r.mutex.RUnlock()
+
+	keys := make([]string, 0, len(r.connections))
+	for k := range r.connections {
+		keys = append(keys, k)
+	}
+	name := keys[rand.Intn(len(keys))]
+
+	node, ok := r.connections[name]
+	if !ok {
+		return nil, fmt.Errorf("failed to find node: %s", name)
+	}
+
+	return node, nil
+}
+
+func (r *PodmanRuntime) Events() <-chan domain.Event {
+	return nil
+}
+
+func (r *PodmanRuntime) Ping() {
+	var wg sync.WaitGroup
+	for _, node := range r.connections {
+		wg.Add(1)
+		go func() {
+			_, err := system.Info(node.ctx, nil)
+			if err != nil {
+				panic(err)
+			}
+			fmt.Printf("pinged node %s", node.Name)
+		}()
+	}
+	wg.Wait()
+}
+
+func (r *PodmanRuntime) Close() {}
+
+func (n *PodmanNode) Name() string {
+	return n.nodeName
+}
+
+func (n *PodmanNode) Uri() string {
+	return n.nodeUri
+}
+
+func (r *PodmanNode) Create(server *domain.Server) string {
 	stdin := true
 	terminal := true
 
-	cpus := 1.0
-	cpuPeriod := uint64(100000)
-	cpuQuota := int64(float64(cpuPeriod) * cpus)
-	memLimit := int64(1000000000)
+	// cpus := 1.0
+	// cpuPeriod := uint64(100000)
+	// cpuQuota := int64(float64(cpuPeriod) * cpus)
+	// memLimit := int64(1000000000)
 
 	hostPort, err := freeHostPort()
 	if err != nil {
@@ -48,17 +142,18 @@ func (r *Podman) Create(server *domain.Server) string {
 	portMappings = append(portMappings, nettypes.PortMapping{HostPort: hostPort, ContainerPort: 25565})
 
 	spec := specgen.NewSpecGenerator("localhost/server/minecraft:latest", false)
+	// spec := specgen.NewSpecGenerator("localhost/server/valheim:latest", false)
 	spec.Stdin = &stdin
 	spec.Terminal = &terminal
-	spec.ResourceLimits = &specs.LinuxResources{
-		CPU: &specs.LinuxCPU{
-			Period: &cpuPeriod,
-			Quota:  &cpuQuota,
-		},
-		Memory: &specs.LinuxMemory{
-			Limit: &memLimit,
-		},
-	}
+	// spec.ResourceLimits = &specs.LinuxResources{
+	// 	CPU: &specs.LinuxCPU{
+	// 		Period: &cpuPeriod,
+	// 		Quota:  &cpuQuota,
+	// 	},
+	// 	Memory: &specs.LinuxMemory{
+	// 		Limit: &memLimit,
+	// 	},
+	// }
 	spec.PortMappings = portMappings
 
 	spec.Labels = make(map[string]string)
@@ -66,7 +161,7 @@ func (r *Podman) Create(server *domain.Server) string {
 
 	// todo container restart: unless-stopped
 
-	resp, err := containers.CreateWithSpec(r.context, spec, nil)
+	resp, err := containers.CreateWithSpec(r.ctx, spec, nil)
 	if err != nil {
 		panic(err)
 	}
@@ -74,7 +169,7 @@ func (r *Podman) Create(server *domain.Server) string {
 	return resp.ID
 }
 
-func (r *Podman) Delete(container *domain.Container) {
+func (r *PodmanNode) Delete(container *domain.Container) {
 	force := true
 	volumes := true
 
@@ -83,20 +178,20 @@ func (r *Podman) Delete(container *domain.Container) {
 		Volumes: &volumes,
 	}
 
-	_, err := containers.Remove(r.context, container.Id, options)
+	_, err := containers.Remove(r.ctx, container.Id, options)
 	if err != nil {
 		panic(err)
 	}
 }
 
-func (r *Podman) Start(container *domain.Container) {
-	err := containers.Start(r.context, container.Id, nil)
+func (r *PodmanNode) Start(container *domain.Container) {
+	err := containers.Start(r.ctx, container.Id, nil)
 	if err != nil {
 		panic(err)
 	}
 }
 
-func (r *Podman) Stop(container *domain.Container) {
+func (r *PodmanNode) Stop(container *domain.Container) {
 	// err := containers.Stop(r.context, container.Id, nil)
 	// if err != nil {
 	// 	panic(err)
@@ -108,7 +203,7 @@ func (r *Podman) Stop(container *domain.Container) {
 	done := make(chan bool)
 
 	go func() {
-		err := containers.Attach(r.context, container.Id, stdinReader, stdoutWriter, stdoutWriter, ready, nil)
+		err := containers.Attach(r.ctx, container.Id, stdinReader, stdoutWriter, stdoutWriter, ready, nil)
 		if err != nil {
 			panic(err)
 		}
@@ -130,7 +225,7 @@ func (r *Podman) Stop(container *domain.Container) {
 	stdoutWriter.Close()
 }
 
-func (r *Podman) Stats(container *domain.Container) chan domain.ContainerStat {
+func (r *PodmanNode) Stats(container *domain.Container) chan domain.ContainerStat {
 	all := false
 	stream := true
 	interval := 1
@@ -141,7 +236,7 @@ func (r *Podman) Stats(container *domain.Container) chan domain.ContainerStat {
 		Interval: &interval,
 	}
 
-	resp, err := containers.Stats(r.context, []string{container.Id}, options)
+	resp, err := containers.Stats(r.ctx, []string{container.Id}, options)
 	if err != nil {
 		panic(err)
 	}
@@ -164,8 +259,8 @@ func (r *Podman) Stats(container *domain.Container) chan domain.ContainerStat {
 	return stats
 }
 
-func (r *Podman) Attach(container *domain.Container, stdin io.Reader, stdout io.Writer, stderr io.Writer) error {
-	resp, err := containers.Inspect(r.context, container.Id, nil)
+func (r *PodmanNode) Attach(container *domain.Container, stdin io.Reader, stdout io.Writer, stderr io.Writer, done chan struct{}) error {
+	resp, err := containers.Inspect(r.ctx, container.Id, nil)
 	if err != nil {
 		panic(err)
 	}
@@ -183,7 +278,7 @@ func (r *Podman) Attach(container *domain.Container, stdin io.Reader, stdout io.
 		options := &containers.LogOptions{
 			Tail: &logTail,
 		}
-		err = containers.Logs(r.context, container.Id, options, logs, nil)
+		err = containers.Logs(r.ctx, container.Id, options, logs, nil)
 		if err != nil {
 			panic(err)
 		}
@@ -198,7 +293,9 @@ func (r *Podman) Attach(container *domain.Container, stdin io.Reader, stdout io.
 
 	// TODO does this leak?
 	go func() {
-		err := containers.Attach(r.context, container.Id, stdin, stdout, stderr, ready, nil)
+		defer close(done)
+
+		err := containers.Attach(r.ctx, container.Id, stdin, stdout, stderr, ready, nil)
 		if err != nil {
 			panic(err)
 		}
@@ -207,7 +304,7 @@ func (r *Podman) Attach(container *domain.Container, stdin io.Reader, stdout io.
 	return nil
 }
 
-func (r *Podman) Events() chan domain.Event {
+func (r *PodmanNode) Events() chan domain.Event {
 	runtimeEvents := make(chan entities.Event)
 
 	stream := true
@@ -216,7 +313,7 @@ func (r *Podman) Events() chan domain.Event {
 		Stream: &stream,
 	}
 
-	err := system.Events(r.context, runtimeEvents, nil, options)
+	err := system.Events(r.ctx, runtimeEvents, nil, options)
 	if err != nil {
 		panic(err)
 	}
@@ -265,8 +362,8 @@ func (r *Podman) Events() chan domain.Event {
 	return events
 }
 
-func (r *Podman) Status(container *domain.Container) string {
-	resp, err := containers.Inspect(r.context, container.Id, nil)
+func (r *PodmanNode) Status(container *domain.Container) string {
+	resp, err := containers.Inspect(r.ctx, container.Id, nil)
 	if err != nil {
 		panic(err)
 	}

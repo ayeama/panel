@@ -2,11 +2,13 @@ package internal
 
 import (
 	"database/sql"
+	"fmt"
 	"log/slog"
 	"net/http"
 
 	_ "github.com/mattn/go-sqlite3"
 
+	"github.com/ayeama/panel/api/internal/domain"
 	"github.com/ayeama/panel/api/internal/handler"
 	"github.com/ayeama/panel/api/internal/repository"
 	"github.com/ayeama/panel/api/internal/runtime"
@@ -35,20 +37,26 @@ func NewServer() *Server {
 	nodeHandler := handler.NewNodeHandler(nodeService)
 	nodeHandler.RegisterHandlers(mux)
 
-	serverRepository := repository.NewServerRepository(db)
-	serverService := service.NewServerService(runtime, serverRepository)
-	serverHandler := handler.NewServerHandler(serverService)
-	serverHandler.RegisterHandlers(mux)
-
 	manifestRepository := repository.NewManifestRepository(db)
 	manifestService := service.NewManifestService(manifestRepository)
 	manifestHandler := handler.NewManifestHandler(manifestService)
 	manifestHandler.RegisterHandlers(mux)
 
+	serverRepository := repository.NewServerRepository(db)
+	serverService := service.NewServerService(runtime, serverRepository, nodeRepository, manifestRepository)
+	serverHandler := handler.NewServerHandler(serverService)
+	serverHandler.RegisterHandlers(mux)
+
 	userRepository := repository.NewUserRepository(db)
 	userService := service.NewUserService(userRepository)
 	userHandler := handler.NewUserHandler(userService)
 	userHandler.RegisterHandlers(mux)
+
+	nodesPaginated := nodeService.Read(domain.Pagination{Limit: 20, Offset: 0})
+	for _, node := range nodesPaginated.Items {
+		fmt.Println(node)
+		runtime.AddNode(&node)
+	}
 
 	server := Server{
 		server: http.Server{

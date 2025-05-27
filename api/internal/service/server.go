@@ -10,69 +10,133 @@ import (
 )
 
 type ServerService struct {
-	runtime    runtime.Runtime
-	repository *repository.ServerRepository
+	runtime            runtime.Runtime
+	serverRepository   *repository.ServerRepository
+	nodeRepository     *repository.NodeRepository
+	manifestRepository *repository.ManifestRepository
 }
 
-func NewServerService(runtime runtime.Runtime, serverRepository *repository.ServerRepository) *ServerService {
-	return &ServerService{runtime: runtime, repository: serverRepository}
+func NewServerService(
+	runtime runtime.Runtime,
+	serverRepository *repository.ServerRepository,
+	nodeRepository *repository.NodeRepository,
+	manifestRepository *repository.ManifestRepository,
+) *ServerService {
+	return &ServerService{
+		runtime:            runtime,
+		serverRepository:   serverRepository,
+		nodeRepository:     nodeRepository,
+		manifestRepository: manifestRepository,
+	}
 }
 
 func (s *ServerService) Create(server *domain.Server) {
 	server.Id = uuid.NewString()
 	server.Status = "created"
 
-	containerId := s.runtime.Create(server)
+	node, err := s.runtime.RandomNode()
+	if err != nil {
+		panic(err)
+	}
+	server.Node = s.nodeRepository.ReadByName(node.Name())
+
+	manifest := s.manifestRepository.ReadOne(server.Manifest.Id)
+	server.Manifest = &manifest
+
+	// containerId := s.runtime.Create(server)
+	containerId := node.Create(server)
 
 	server.Container = &domain.Container{
 		Id: containerId,
 	}
 
-	s.repository.Create(server)
+	s.serverRepository.Create(server)
 }
 
 func (s *ServerService) Read(p domain.Pagination) domain.PaginationResponse[domain.Server] {
-	return s.repository.Read(p)
+	return s.serverRepository.Read(p)
 }
 
 func (s *ServerService) ReadOne(server *domain.Server) {
-	s.repository.ReadOne(server)
+	s.serverRepository.ReadOne(server)
 }
 
 func (s *ServerService) Update(server *domain.Server) {
-	s.repository.Update(server)
+	s.serverRepository.Update(server)
 }
 
 func (s *ServerService) Delete(server *domain.Server) {
-	s.repository.ReadOne(server)
-	s.runtime.Delete(server.Container)
-	s.repository.Delete(server)
+	s.serverRepository.ReadOne(server)
+
+	node, err := s.runtime.Node(server.Node.Name)
+	if err != nil {
+		panic(err)
+	}
+
+	// s.runtime.Delete(server.Container)
+	node.Delete(server.Container)
+	s.serverRepository.Delete(server)
 }
 
 func (s *ServerService) Start(server *domain.Server) {
-	s.repository.ReadOne(server)
-	s.runtime.Start(server.Container)
+	s.serverRepository.ReadOne(server)
+
+	node, err := s.runtime.Node(server.Node.Name)
+	if err != nil {
+		panic(err)
+	}
+
+	// s.runtime.Start(server.Container)
+	node.Start(server.Container)
 	// s.RefreshStatus(server)
 }
 
 func (s *ServerService) Stop(server *domain.Server) {
-	s.repository.ReadOne(server)
-	s.runtime.Stop(server.Container)
+	s.serverRepository.ReadOne(server)
+
+	node, err := s.runtime.Node(server.Node.Name)
+	if err != nil {
+		panic(err)
+	}
+
+	// s.runtime.Stop(server.Container)
+	node.Stop(server.Container)
 	// s.RefreshStatus(server)
 }
 
 func (s *ServerService) Stats(server *domain.Server) chan domain.ContainerStat {
-	s.repository.ReadOne(server)
-	return s.runtime.Stats(server.Container)
+	s.serverRepository.ReadOne(server)
+
+	node, err := s.runtime.Node(server.Node.Name)
+	if err != nil {
+		panic(err)
+	}
+
+	// return s.runtime.Stats(server.Container)
+	return node.Stats(server.Container)
 }
 
-func (s *ServerService) Attach(server *domain.Server, stdin io.Reader, stdout io.Writer, stderr io.Writer) error {
-	s.repository.ReadOne(server)
-	return s.runtime.Attach(server.Container, stdin, stdout, stderr)
+func (s *ServerService) Attach(server *domain.Server, stdin io.Reader, stdout io.Writer, stderr io.Writer, done chan struct{}) error {
+	s.serverRepository.ReadOne(server)
+
+	node, err := s.runtime.Node(server.Node.Name)
+	if err != nil {
+		panic(err)
+	}
+
+	// return s.runtime.Attach(server.Container, stdin, stdout, stderr)
+	return node.Attach(server.Container, stdin, stdout, stderr, done)
 }
 
 func (s *ServerService) Events() chan domain.Event {
-	return s.runtime.Events()
+	// TODO
+	node, err := s.runtime.Node("rt1")
+	if err != nil {
+		panic(err)
+	}
+
+	// return s.runtime.Events()
+	return node.Events()
 }
 
 // func (s *ServerService) RefreshStatus(server *domain.Server) {

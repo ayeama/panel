@@ -14,21 +14,34 @@ const (
 	RuntimeTypeDocker string = "docker"
 )
 
-type Runtime interface {
+type Node interface {
+	Name() string
+	Uri() string
+
 	Create(server *domain.Server) string
 	Delete(container *domain.Container)
 	Start(container *domain.Container)
 	Stop(container *domain.Container)
 	Stats(container *domain.Container) chan domain.ContainerStat
-	Attach(container *domain.Container, stdin io.Reader, stdout io.Writer, stderr io.Writer) error
+	Attach(container *domain.Container, stdin io.Reader, stdout io.Writer, stderr io.Writer, done chan struct{}) error
 	Events() chan domain.Event
 	Status(container *domain.Container) string
+}
+
+type Runtime interface {
+	AddNode(node *domain.Node) error
+	RemoveNode(name string) error
+	Node(name string) (Node, error)
+	RandomNode() (Node, error)
+	Events() <-chan domain.Event
+	Ping()
+	Close()
 }
 
 func New(t string) (Runtime, error) {
 	switch t {
 	case RuntimeTypePodman:
-		return NewRuntimePodman(), nil
+		return NewPodmanRuntime(), nil
 	default:
 		return nil, fmt.Errorf("unknown runtim: %s", t)
 	}

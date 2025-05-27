@@ -151,14 +151,14 @@ function toggle() {
                   type="submit"
                   class="btn btn-secondary border-0 border-top border-left border-right"
                 >
-                  Send
+                  send
                 </button>
                 <a
                   class="btn btn-secondary rounded-top-0 border-0 border-top border-left"
                   v-bind:class="{ active: follow }"
                   v-bind:aria-disabled="!follow"
                   v-on:click="follow = !follow"
-                  >Follow</a
+                  >follow</a
                 >
               </div>
             </div>

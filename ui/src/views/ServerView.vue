@@ -18,8 +18,8 @@ async function handleDeleteConfirmModalConfirm() {
     const response = await fetch(`https://${HOST}/servers/${id}`, {
       method: 'DELETE',
     })
-  } catch (err) {
-    console.log('Failed to delete server', err)
+  } catch (error) {
+    console.log('Failed to delete server', error)
   } finally {
     router.push('/servers')
   }
@@ -29,8 +29,8 @@ async function getServer(id) {
   try {
     const response = await fetch(`https://${HOST}/servers/${id}`)
     data.value = await response.json()
-  } catch (err) {
-    console.log('Failed to get server', err)
+  } catch (error) {
+    console.log('Failed to get server', error)
   }
 }
 
@@ -40,7 +40,7 @@ async function startServer() {
       method: 'POST',
     })
     // TODO handle?
-  } catch (err) {
+  } catch (error) {
     console.log('Failed to start server')
   }
 }
@@ -51,7 +51,7 @@ async function stopServer() {
       method: 'POST',
     })
     // TODO handle?
-  } catch (err) {
+  } catch (error) {
     console.log('Failed to stop server')
   }
 }

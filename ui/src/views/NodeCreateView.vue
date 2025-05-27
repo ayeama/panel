@@ -21,8 +21,8 @@ async function createNode() {
         uri: uri.value,
       }),
     })
-  } catch (err) {
-    console.log('Failed create node', err)
+  } catch (error) {
+    console.log('Failed create node', error)
   } finally {
     router.push('/nodes')
   }

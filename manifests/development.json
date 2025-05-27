@@ -1,0 +1,11 @@
+{
+  "name": "Minecraft",
+  "image": "localhost/server/minecraft:latest",
+  "variables": [
+    {
+      "type": "text",
+      "label": "Version",
+      "variable": "VERSION"
+    }
+  ]
+}

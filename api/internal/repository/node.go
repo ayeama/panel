@@ -52,3 +52,12 @@ func (r *NodeRepository) Read(p domain.Pagination) domain.PaginationResponse[dom
 
 	return nodes
 }
+
+func (r *NodeRepository) ReadByName(name string) *domain.Node {
+	var node domain.Node
+	err := r.db.QueryRow("SELECT id, name, uri FROM nodes WHERE name = ?", name).Scan(&node.Id, &node.Name, &node.Uri)
+	if err != nil {
+		panic(err)
+	}
+	return &node
+}

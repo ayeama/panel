@@ -1,7 +1,8 @@
 package types
 
 type ServerCreateRequest struct {
-	Name string `json:"name"`
+	ManifestId string `json:"manifest_id"`
+	Name       string `json:"name"`
 }
 
 type ServerUpdateRequest struct {

@@ -28,8 +28,8 @@ async function getNodes(page = 1) {
     const response = await fetch(`https://${HOST}/nodes?limit=${limit}&offset=${offset}`)
     const data = await response.json()
     nodesPaginated.value = data
-  } catch (err) {
-    console.log('Failed to fetch nodes', err)
+  } catch (error) {
+    console.log('Failed to fetch nodes', error)
   }
 }
 
@@ -96,8 +96,7 @@ function nodeView(id) {
                     ? nodesPaginated.total
                     : nodesPaginated.offset + nodesPaginated.limit
                 }}
-                of {{ nodesPaginated.total }} results.
-              </p>
+                of {{ nodesPaginated.total }} results.</p>
             </div>
 
             <div class="col d-flex justify-content-center">
