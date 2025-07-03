@@ -2,13 +2,13 @@ package internal
 
 import (
 	"database/sql"
-	"fmt"
 	"log/slog"
 	"net/http"
 
 	_ "github.com/mattn/go-sqlite3"
+	"golang.org/x/sync/errgroup"
 
-	"github.com/ayeama/panel/api/internal/domain"
+	"github.com/ayeama/panel/api/internal/config"
 	"github.com/ayeama/panel/api/internal/handler"
 	"github.com/ayeama/panel/api/internal/repository"
 	"github.com/ayeama/panel/api/internal/runtime"
@@ -16,60 +16,75 @@ import (
 )
 
 type Server struct {
-	server http.Server
+	server        http.Server
+	serverService *service.ServerService
 }
 
 func NewServer() *Server {
-	db, err := sql.Open("sqlite3", "panel.db")
+	db, err := sql.Open("sqlite3", "/data/panel.db")
 	if err != nil {
 		panic(err)
 	}
 
-	runtime, err := runtime.New(runtime.RuntimeTypePodman)
+	_, err = db.Exec("CREATE TABLE IF NOT EXISTS images (image VARCHAR(255) PRIMARY KEY)")
+	if err != nil {
+		panic(err)
+	}
+
+	_, err = db.Exec("CREATE TABLE IF NOT EXISTS servers (id VARCHAR(36) PRIMARY KEY,name VARCHAR(256) NOT NULL,status VARCHAR(32) NOT NULL,container_id VARCHAR(64) NOT NULL,container_port VARCHAR(5))")
+	if err != nil {
+		panic(err)
+	}
+
+	runtime, err := runtime.New()
 	if err != nil {
 		panic(err)
 	}
 
 	mux := http.NewServeMux()
 
-	nodeRepository := repository.NewNodeRepository(db)
-	nodeService := service.NewNodeService(nodeRepository)
-	nodeHandler := handler.NewNodeHandler(nodeService)
-	nodeHandler.RegisterHandlers(mux)
-
-	manifestRepository := repository.NewManifestRepository(db)
-	manifestService := service.NewManifestService(manifestRepository)
-	manifestHandler := handler.NewManifestHandler(manifestService)
-	manifestHandler.RegisterHandlers(mux)
+	imageRepository := repository.NewImageRepository(db)
+	imageService := service.NewImageService(imageRepository)
+	imageHandler := handler.NewImageHandler(imageService)
+	imageHandler.RegisterHandlers(mux)
 
 	serverRepository := repository.NewServerRepository(db)
-	serverService := service.NewServerService(runtime, serverRepository, nodeRepository, manifestRepository)
+	serverService := service.NewServerService(runtime, serverRepository, imageService)
 	serverHandler := handler.NewServerHandler(serverService)
 	serverHandler.RegisterHandlers(mux)
 
-	userRepository := repository.NewUserRepository(db)
-	userService := service.NewUserService(userRepository)
-	userHandler := handler.NewUserHandler(userService)
-	userHandler.RegisterHandlers(mux)
-
-	nodesPaginated := nodeService.Read(domain.Pagination{Limit: 20, Offset: 0})
-	for _, node := range nodesPaginated.Items {
-		fmt.Println(node)
-		runtime.AddNode(&node)
-	}
+	eventHandler := handler.NewEventHandler(serverService)
+	eventHandler.RegisterHandlers(mux)
 
 	server := Server{
 		server: http.Server{
-			Addr:    "0.0.0.0:8000",
+			Addr:    config.Config.ApiAddress,
 			Handler: Log(Cors(mux)), // TODO update middleware method
 		},
+		serverService: serverService,
 	}
 
 	return &server
 }
 
 func (s *Server) Start() {
-	slog.Info("starting")
-	// TODO run in go routine?
-	s.server.ListenAndServeTLS("cert.pem", "key.pem")
+	slog.Info("starting", slog.String("address", s.server.Addr))
+
+	var eg errgroup.Group
+
+	api := func() error {
+		return s.server.ListenAndServeTLS("cert.pem", "key.pem")
+	}
+
+	events := func() error {
+		return s.serverService.Events()
+	}
+
+	eg.Go(api)
+	eg.Go(events)
+
+	err := eg.Wait()
+	if err != nil {
+		panic(err)
+	}
 }

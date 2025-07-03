@@ -23,15 +23,15 @@ onBeforeUnmount(() => {
 })
 
 function create() {
-  socket.value = new WebSocket(props.url)
-  socket.value.onopen = () => {}
-  socket.value.onclose = () => {}
-  socket.value.onerror = () => {}
-  socket.value.onmessage = (event) => {
-    const data = JSON.parse(event.data)
-    cpu.value = data.cpu.toFixed(2)
-    memory.value = data.memory.toFixed(2)
-  }
+  // socket.value = new WebSocket(props.url)
+  // socket.value.onopen = () => {}
+  // socket.value.onclose = () => {}
+  // socket.value.onerror = () => {}
+  // socket.value.onmessage = (event) => {
+  //   const data = JSON.parse(event.data)
+  //   cpu.value = data.cpu.toFixed(2)
+  //   memory.value = data.memory.toFixed(2)
+  // }
 }
 </script>
 

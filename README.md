@@ -99,3 +99,10 @@ nvm use --lts
 
 | id (PK) | server_id (FK) | inviter_user_id (FK) | invited_user_id (FK) | role_id | status | invited_date | accepted_date |
 | --- | --- | --- | --- | --- | --- | --- | --- |
+
+
+# DNS
+
+```sh
+sudo dnf install -y podman-plugins
+```

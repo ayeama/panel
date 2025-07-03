@@ -11,15 +11,7 @@ import NavPanel from './components/NavPanel.vue'
     </div>
 
     <div class="container">
-      <div class="row">
-        <div class="col-2">
-          <NavPanel />
-        </div>
-
-        <div class="col-10">
-          <RouterView />
-        </div>
-      </div>
+      <RouterView />
     </div>
   </div>
 </template>

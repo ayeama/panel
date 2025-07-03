@@ -7,9 +7,10 @@ import Moon from '@/components/icons/Moon.vue'
   <header>
     <nav class="navbar navbar-expand-lg bg-body-tertiary">
       <div class="container">
-        <span class="navbar-brand mb-0 h1">Panel</span>
+        <!-- <span class="navbar-brand mb-0 h1">Panel</span> -->
+        <RouterLink class="navbar-brand mb-0 h1" to="/">Panel</RouterLink>
 
-        <div class="d-flex">
+        <!-- <div class="d-flex">
           <div>
             <button class="btn" type="button"><Moon /></button>
           </div>
@@ -25,7 +26,7 @@ import Moon from '@/components/icons/Moon.vue'
               </option>
             </select>
           </div>
-        </div>
+        </div> -->
       </div>
     </nav>
   </header>

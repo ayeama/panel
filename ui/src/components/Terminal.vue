@@ -1,49 +1,66 @@
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, watch, onBeforeUnmount } from 'vue'
+import { HOST } from '@/config'
 
 const props = defineProps({
-  url: {
+  server_id: {
+    type: String,
     required: true,
   },
+  command: {
+    type: String,
+    default: 'disconnect',
+  }
 })
 
+const emit = defineEmits(['status'])
+
 let socket = ref(null)
-const status = ref({})
+const status = ref({message: 'disconnected', class: 'text-bg-secondary'})
 const input = ref('')
 const output = ref('')
 const textarea = ref(null)
 const follow = ref(true)
 
-onMounted(() => {
-  updateStatus()
-  create()
-})
+// onMounted(() => {
+//   updateStatus()
+//   create()
+// })
 
 onBeforeUnmount(() => {
-  if (socket.value) {
-    socket.value.close()
-  }
+  disconnect()
 })
 
-function create() {
-  socket.value = new WebSocket(props.url)
+function connect() {
+  if (!props.server_id) {
+    return
+  }
+
+  socket.value = new WebSocket(`wss://${HOST}/servers/${props.server_id}/attach`)
   socket.value.onopen = () => {
     updateStatus()
   }
   socket.value.onclose = () => {
-    updateStatus()
+    disconnect()
   }
   socket.value.onerror = () => {
     updateStatus()
   }
   socket.value.onmessage = (event) => {
     output.value += event.data
-
     if (follow.value) {
       requestAnimationFrame(() => {
         textarea.value.scrollTop = textarea.value.scrollHeight
       })
     }
+  }
+}
+
+function disconnect() {
+  if (socket.value) {
+    socket.value.close()
+    socket.value = null
+    updateStatus()
   }
 }
 
@@ -57,6 +74,7 @@ async function send() {
 function updateStatus() {
   if (!socket.value) {
     status.value = { message: 'disconnected', class: 'text-bg-secondary' }
+    emit('status', status.value.message)
     return
   }
 
@@ -76,17 +94,29 @@ function updateStatus() {
     default:
       status.value = { message: 'unknown', class: 'text-bg-warning' }
   }
+  emit('status', status.value.message)
 }
 
 function toggle() {
   if (socket.value) {
-    socket.value.close()
-    socket.value = null
+    disconnect()
   } else {
-    create()
+    connect()
   }
   updateStatus()
 }
+
+watch(
+  () => props.command,
+  (cmd) => {
+    if (cmd === 'connect') {
+      connect()
+    } else if (cmd === 'disconnect') {
+      disconnect()
+    }
+  },
+  {immediate: true}
+)
 </script>
 
 <template>

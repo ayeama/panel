@@ -1,17 +1,19 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import ArrowLeft from '@/components/icons/ArrowLeft.vue'
 import ModalConfirm from '@/components/ModalConfirm.vue'
 import Terminal from '@/components/Terminal.vue'
 import ServerStats from '@/components/ServerStats.vue'
+import ServerStatusBadge from '@/components/ServerStatusBadge.vue'
 import { HOST } from '@/config'
 
 const route = useRoute()
 const router = useRouter()
 
 const id = route.params.id
-const data = ref('')
+const data = ref({})
+
+const command = computed(() => (data.value.status === 'running' ? 'connect' : 'disconnect'))
 
 async function handleDeleteConfirmModalConfirm() {
   try {
@@ -21,7 +23,7 @@ async function handleDeleteConfirmModalConfirm() {
   } catch (error) {
     console.log('Failed to delete server', error)
   } finally {
-    router.push('/servers')
+    router.push('/')
   }
 }
 
@@ -63,16 +65,11 @@ onMounted(async () => {
 
 <template>
   <div>
-    <div>
-      <RouterLink to="/servers" class="icon-link">
-        <ArrowLeft />
-        Servers
-      </RouterLink>
-    </div>
-
-    <div class="row">
+    <div class="row mb-2">
       <div class="col">
-        <h1>Server</h1>
+        <h2>
+          {{ data.name }} <ServerStatusBadge v-bind:server_id="data.id" v-bind:status="data.status" v-on:status="data.status=$event" class="fs-6 align-top" />
+        </h2>
       </div>
 
       <div class="col my-auto">
@@ -81,10 +78,6 @@ onMounted(async () => {
             <!-- TODO routing -->
             <button class="btn btn-secondary" v-on:click="startServer">Start</button>
             <button class="btn btn-secondary ms-2" v-on:click="stopServer">Stop</button>
-            <button class="btn btn-secondary ms-2">Edit</button>
-            <!-- <RouterLink to="{name: 'ServerEditView', params: {id: id}}" class="btn btn-secondary">
-              Edit
-            </RouterLink> -->
             <button
               type="button"
               class="btn btn-danger ms-2"
@@ -99,7 +92,7 @@ onMounted(async () => {
     </div>
 
     <div class="mb-2">
-      <Terminal v-bind:url="`wss://${HOST}/servers/${id}/attach`" />
+      <Terminal v-if="data.id" v-bind:server_id="data.id" v-bind:command="command" />
     </div>
 
     <div>
@@ -107,51 +100,16 @@ onMounted(async () => {
         <div class="col-6">
           <form>
             <div class="row gy-2">
-              <div class="col-12">
-                <div>
-                  <label for="idInput" class="form-label">ID</label>
-                  <input
-                    type="text"
-                    class="form-control"
-                    id="idInput"
-                    v-model="data.id"
-                    disabled
-                    readonly
-                  />
-                </div>
-              </div>
-
-              <div class="col-12">
+              <div class="col-6">
                 <div>
                   <label for="addressInput" class="form-label">Address</label>
                   <input
+                    v-bind:value="data.address"
                     type="text"
                     class="form-control"
                     id="addressInput"
-                    value="127.0.0.1:25565"
                     disabled
                     readonly
-                  />
-                </div>
-              </div>
-
-              <div class="col-12">
-                <div>
-                  <label for="nameInput" class="form-label">Name</label>
-                  <input type="text" class="form-control" id="nameInput" v-model="data.name" />
-                </div>
-              </div>
-
-              <div class="col-12">
-                <div>
-                  <label for="statusInput" class="form-label">Status</label>
-                  <input
-                    type="text"
-                    class="form-control"
-                    id="statusInput"
-                    disabled
-                    readonly
-                    v-model="data.status"
                   />
                 </div>
               </div>
@@ -159,9 +117,9 @@ onMounted(async () => {
           </form>
         </div>
 
-        <div class="col-6">
+        <!-- <div class="col-6">
           <ServerStats v-bind:url="`wss://${HOST}/servers/${id}/stats`" />
-        </div>
+        </div> -->
       </div>
     </div>
 

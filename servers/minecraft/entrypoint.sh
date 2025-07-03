@@ -4,7 +4,7 @@ set -x
 set -e
 
 MANIFEST_URL="https://piston-meta.mojang.com/mc/game/version_manifest_v2.json"
-ACCEPT_EULA=true
+# ACCEPT_EULA=true
 
 if [ ! -f server.jar ]; then
     MANIFEST=$(curl -s $MANIFEST_URL)
@@ -24,4 +24,3 @@ if [ $ACCEPT_EULA = true ]; then
 fi
 
 exec java -Xmx1024M -Xms1024M -jar server.jar --nogui
-

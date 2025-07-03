@@ -2,10 +2,12 @@ package handler
 
 import (
 	"context"
-	"encoding/json"
+	"errors"
+	"fmt"
 	"io"
 	"net/http"
 
+	"github.com/ayeama/panel/api/internal/config"
 	"github.com/ayeama/panel/api/internal/domain"
 	"github.com/ayeama/panel/api/internal/service"
 	"github.com/ayeama/panel/api/pkg/api/types"
@@ -23,11 +25,15 @@ func (h *ServerHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var serverCreate types.ServerCreateRequest
 	ReadRequestJson(r.Body, &serverCreate)
 
-	server := &domain.Server{Name: serverCreate.Name}
-	server.Manifest = &domain.Manifest{Id: serverCreate.ManifestId}
-	h.service.Create(server)
+	// TODO request model validation
+	if serverCreate.Image == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
 
-	output := types.ServerResponse{Id: server.Id, Name: server.Name, Status: server.Status}
+	server := h.service.Create(serverCreate.Image)
+
+	output := types.ServerResponse{Id: server.Id, Name: server.Name, Status: server.Status, Address: fmt.Sprintf("%s:%s", config.Config.ServerHost, server.Container.Port)}
 	WriteResponseJson(w, 200, output)
 }
 
@@ -44,7 +50,7 @@ func (h *ServerHandler) Read(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for _, s := range domainServerPaginated.Items {
-		serverPaginated.Items = append(serverPaginated.Items, types.ServerResponse{Id: s.Id, Name: s.Name, Status: s.Status})
+		serverPaginated.Items = append(serverPaginated.Items, types.ServerResponse{Id: s.Id, Name: s.Name, Status: s.Status, Address: fmt.Sprintf("%s:%s", config.Config.ServerHost, s.Container.Port)})
 	}
 
 	WriteResponseJson(w, 200, serverPaginated)
@@ -54,9 +60,17 @@ func (h *ServerHandler) ReadOne(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 
 	server := &domain.Server{Id: id}
-	h.service.ReadOne(server)
+	err := h.service.ReadOne(server)
+	if err != nil {
+		if errors.Is(err, domain.ErrNotFound) {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		} else {
+			panic(err)
+		}
+	}
 
-	output := types.ServerResponse{Id: server.Id, Name: server.Name, Status: server.Status}
+	output := types.ServerResponse{Id: server.Id, Name: server.Name, Status: server.Status, Address: fmt.Sprintf("%s:%s", config.Config.ServerHost, server.Container.Port)}
 	WriteResponseJson(w, 200, output)
 }
 
@@ -87,72 +101,77 @@ func (h *ServerHandler) Stop(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (h *ServerHandler) Stats(w http.ResponseWriter, r *http.Request) {
-	c := Upgrade(w, r)
-	defer c.Close()
+// func (h *ServerHandler) Stats(w http.ResponseWriter, r *http.Request) {
+// 	c := Upgrade(w, r)
+// 	defer c.Close()
 
-	id := r.PathValue("id")
-	server := &domain.Server{Id: id}
-	stats := h.service.Stats(server)
+// 	id := r.PathValue("id")
+// 	server := &domain.Server{Id: id}
+// 	stats := h.service.Stats(server)
 
-	ctx, cancel := context.WithCancel(r.Context())
-	defer cancel()
+// 	ctx, cancel := context.WithCancel(r.Context())
+// 	defer cancel()
 
-	go func() {
-		for {
-			var buf []byte
-			_, err := c.Read(buf)
-			if err != nil {
-				if err == io.EOF {
-					break
-				}
-			}
-		}
-		cancel()
-	}()
+// 	go func() {
+// 		for {
+// 			var buf []byte
+// 			_, err := c.Read(buf)
+// 			if err != nil {
+// 				if err == io.EOF {
+// 					break
+// 				}
+// 			}
+// 		}
+// 		cancel()
+// 	}()
 
-	go func() {
-		var previousStat domain.ContainerStat
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case stat, ok := <-stats:
-				if !ok {
-					return
-				}
+// 	go func() {
+// 		var previousStat domain.ContainerStat
+// 		for {
+// 			select {
+// 			case <-ctx.Done():
+// 				return
+// 			case stat, ok := <-stats:
+// 				if !ok {
+// 					return
+// 				}
 
-				if previousStat.Cpu == stat.Cpu && previousStat.Memory == stat.Memory {
-					continue
-				}
-				previousStat = stat
+// 				if previousStat.Cpu == stat.Cpu && previousStat.Memory == stat.Memory {
+// 					continue
+// 				}
+// 				previousStat = stat
 
-				output := types.ServerStatResponse{
-					Cpu:    stat.Cpu,
-					Memory: stat.Memory,
-				}
+// 				output := types.ServerStatResponse{
+// 					Cpu:    stat.Cpu,
+// 					Memory: stat.Memory,
+// 				}
 
-				data, err := json.Marshal(output)
-				if err != nil {
-					panic(err)
-				}
+// 				data, err := json.Marshal(output)
+// 				if err != nil {
+// 					panic(err)
+// 				}
 
-				_, err = c.Write(data)
-				if err != nil {
-					panic(err)
-				}
-			}
-		}
-	}()
+// 				_, err = c.Write(data)
+// 				if err != nil {
+// 					panic(err)
+// 				}
+// 			}
+// 		}
+// 	}()
 
-	<-ctx.Done()
-}
+// 	<-ctx.Done()
+// }
 
 func (h *ServerHandler) Attach(w http.ResponseWriter, r *http.Request) {
-	c := Upgrade(w, r)
-
 	id := r.PathValue("id")
 	server := &domain.Server{Id: id}
+
+	if !h.service.Running(server) {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	c := Upgrade(w, r)
 
 	ctx, cancel := context.WithCancel(r.Context())
 	stdinReader, stdinWriter := io.Pipe()
@@ -201,6 +220,6 @@ func (h *ServerHandler) RegisterHandlers(m *http.ServeMux) {
 	m.HandleFunc("POST /servers/{id}/start", h.Start)
 	m.HandleFunc("POST /servers/{id}/stop", h.Stop)
 
-	m.HandleFunc("GET /servers/{id}/stats", h.Stats)
+	// m.HandleFunc("GET /servers/{id}/stats", h.Stats)
 	m.HandleFunc("GET /servers/{id}/attach", h.Attach)
 }

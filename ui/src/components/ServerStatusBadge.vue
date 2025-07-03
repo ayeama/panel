@@ -1,8 +1,16 @@
 <script setup>
+import { ref, computed } from 'vue'
+import { eventBus } from '@/lib/eventbus.js'
+
 const props = defineProps({
+  server_id: {
+    type: String,
+    required: false,
+  },
   status: {
     type: String,
-    required: true,
+    required: false,
+    default: 'unknown',
     validator: (value) => {
       return [
         'configured',
@@ -17,10 +25,13 @@ const props = defineProps({
         'stopped',
         'stopping',
         'unhealthy',
+        'unknown',
       ].includes(value)
     },
   },
 })
+
+const emit = defineEmits(['status'])
 
 const statusClass = {
   created: 'text-bg-secondary',
@@ -30,8 +41,8 @@ const statusClass = {
   unknown: 'text-bg-warning',
 }
 
-function normalise(status) {
-  switch (status) {
+function normalise(s) {
+  switch (s) {
     case 'configured':
       return 'created'
     case 'created':
@@ -60,8 +71,24 @@ function normalise(status) {
       return 'unknown'
   }
 }
+
+const statusOverride = ref(null)
+const status = computed(() => {
+  if (statusOverride.value) {
+    emit('status', normalise(statusOverride.value))
+    return normalise(statusOverride.value)
+  }
+  emit('status', normalise(props.status))
+  return normalise(props.status)
+})
+
+eventBus.subscribe("server:status", (event) => {
+  if (props.server_id && props.server_id === event.detail.id) {
+    statusOverride.value = event.detail.status
+  }
+})
 </script>
 
 <template>
-  <span class="badge" v-bind:class="statusClass[normalise(status)]">{{ normalise(status) }}</span>
+  <span class="badge" v-bind:class="statusClass[status]">{{ status }}</span>
 </template>

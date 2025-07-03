@@ -1,6 +1,7 @@
 package service
 
 import (
+	"errors"
 	"io"
 
 	"github.com/ayeama/panel/api/internal/domain"
@@ -10,136 +11,120 @@ import (
 )
 
 type ServerService struct {
-	runtime            runtime.Runtime
-	serverRepository   *repository.ServerRepository
-	nodeRepository     *repository.NodeRepository
-	manifestRepository *repository.ManifestRepository
+	runtime          *runtime.Runtime
+	serverRepository *repository.ServerRepository
+	imageService     *ImageService
 }
 
-func NewServerService(
-	runtime runtime.Runtime,
-	serverRepository *repository.ServerRepository,
-	nodeRepository *repository.NodeRepository,
-	manifestRepository *repository.ManifestRepository,
-) *ServerService {
+func NewServerService(runtime *runtime.Runtime, serverRepository *repository.ServerRepository, imageService *ImageService) *ServerService {
 	return &ServerService{
-		runtime:            runtime,
-		serverRepository:   serverRepository,
-		nodeRepository:     nodeRepository,
-		manifestRepository: manifestRepository,
+		runtime:          runtime,
+		serverRepository: serverRepository,
+		imageService:     imageService,
 	}
 }
 
-func (s *ServerService) Create(server *domain.Server) {
-	server.Id = uuid.NewString()
-	server.Status = "created"
+func (s *ServerService) Create(image string) domain.Server {
+	id := uuid.NewString()
+	containerId := s.runtime.Create(id, image)
+	name := s.runtime.Name(containerId)
+	status := s.runtime.Status(containerId)
+	containerPort := s.runtime.Port(containerId)
 
-	node, err := s.runtime.RandomNode()
-	if err != nil {
-		panic(err)
-	}
-	server.Node = s.nodeRepository.ReadByName(node.Name())
-
-	manifest := s.manifestRepository.ReadOne(server.Manifest.Id)
-	server.Manifest = &manifest
-
-	// containerId := s.runtime.Create(server)
-	containerId := node.Create(server)
-
-	server.Container = &domain.Container{
-		Id: containerId,
-	}
-
-	s.serverRepository.Create(server)
+	server := domain.Server{Id: id, Name: name, Status: status}
+	server.Container = &domain.Container{Id: containerId, Port: containerPort}
+	s.serverRepository.Create(&server)
+	return server
 }
 
 func (s *ServerService) Read(p domain.Pagination) domain.PaginationResponse[domain.Server] {
 	return s.serverRepository.Read(p)
 }
 
-func (s *ServerService) ReadOne(server *domain.Server) {
-	s.serverRepository.ReadOne(server)
+func (s *ServerService) ReadOne(server *domain.Server) error {
+	return s.serverRepository.ReadOne(server)
 }
 
-func (s *ServerService) Update(server *domain.Server) {
-	s.serverRepository.Update(server)
-}
-
-func (s *ServerService) Delete(server *domain.Server) {
-	s.serverRepository.ReadOne(server)
-
-	node, err := s.runtime.Node(server.Node.Name)
+func (s *ServerService) Delete(server *domain.Server) error {
+	err := s.serverRepository.ReadOne(server)
 	if err != nil {
-		panic(err)
+		if errors.Is(err, domain.ErrNotFound) {
+			return err
+		} else {
+			panic(err)
+		}
 	}
 
-	// s.runtime.Delete(server.Container)
-	node.Delete(server.Container)
+	s.runtime.Delete(server.Container)
 	s.serverRepository.Delete(server)
+	return nil
 }
 
-func (s *ServerService) Start(server *domain.Server) {
-	s.serverRepository.ReadOne(server)
-
-	node, err := s.runtime.Node(server.Node.Name)
+func (s *ServerService) Start(server *domain.Server) error {
+	err := s.serverRepository.ReadOne(server)
 	if err != nil {
-		panic(err)
+		if errors.Is(err, domain.ErrNotFound) {
+			return err
+		} else {
+			panic(err)
+		}
 	}
 
-	// s.runtime.Start(server.Container)
-	node.Start(server.Container)
-	// s.RefreshStatus(server)
+	s.runtime.Start(server.Container)
+	return nil
 }
 
-func (s *ServerService) Stop(server *domain.Server) {
-	s.serverRepository.ReadOne(server)
-
-	node, err := s.runtime.Node(server.Node.Name)
+func (s *ServerService) Stop(server *domain.Server) error {
+	err := s.serverRepository.ReadOne(server)
 	if err != nil {
-		panic(err)
+		if errors.Is(err, domain.ErrNotFound) {
+			return err
+		} else {
+			panic(err)
+		}
 	}
 
-	// s.runtime.Stop(server.Container)
-	node.Stop(server.Container)
-	// s.RefreshStatus(server)
+	s.runtime.Stop(server.Container)
+	return nil
 }
 
-func (s *ServerService) Stats(server *domain.Server) chan domain.ContainerStat {
-	s.serverRepository.ReadOne(server)
-
-	node, err := s.runtime.Node(server.Node.Name)
-	if err != nil {
-		panic(err)
+func (s *ServerService) Events() error {
+	for event := range s.runtime.Events() {
+		switch e := event.(type) {
+		case domain.RuntimeEventServerStatusChanged:
+			server := domain.Server{Id: e.ServerId}
+			err := s.serverRepository.ReadOne(&server)
+			if err != nil {
+				if errors.Is(err, domain.ErrNotFound) {
+					continue
+				} else {
+					panic(err)
+				}
+			}
+			s.UpdateStatus(&server)
+		default:
+		}
 	}
-
-	// return s.runtime.Stats(server.Container)
-	return node.Stats(server.Container)
+	return nil
 }
+
+func (s *ServerService) UpdateStatus(server *domain.Server) {
+	status := s.runtime.Status(server.Container.Id)
+	server.Status = status
+	s.serverRepository.UpdateStatus(server)
+}
+
+// func (s *ServerService) Stats(server *domain.Server) chan domain.ContainerStat {
+// 	s.serverRepository.ReadOne(server)
+// 	return s.runtime.Stats(server.Container)
+// }
 
 func (s *ServerService) Attach(server *domain.Server, stdin io.Reader, stdout io.Writer, stderr io.Writer, done chan struct{}) error {
-	s.serverRepository.ReadOne(server)
-
-	node, err := s.runtime.Node(server.Node.Name)
-	if err != nil {
-		panic(err)
-	}
-
-	// return s.runtime.Attach(server.Container, stdin, stdout, stderr)
-	return node.Attach(server.Container, stdin, stdout, stderr, done)
+	s.ReadOne(server)
+	return s.runtime.Attach(server.Container, stdin, stdout, stderr, done)
 }
 
-func (s *ServerService) Events() chan domain.Event {
-	// TODO
-	node, err := s.runtime.Node("rt1")
-	if err != nil {
-		panic(err)
-	}
-
-	// return s.runtime.Events()
-	return node.Events()
+func (s *ServerService) Running(server *domain.Server) bool {
+	s.ReadOne(server)
+	return s.runtime.Running(server.Container.Id)
 }
-
-// func (s *ServerService) RefreshStatus(server *domain.Server) {
-// 	server.Status = s.runtime.Status(server.Container)
-// 	s.repository.UpdateStatus(server)
-// }

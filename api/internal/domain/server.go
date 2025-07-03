@@ -6,6 +6,4 @@ type Server struct {
 	Status string
 
 	Container *Container
-	Node      *Node
-	Manifest  *Manifest
 }
