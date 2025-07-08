@@ -14,7 +14,7 @@ class EventBus extends EventTarget {
 
 export const eventBus = new EventBus()
 
-var socket = new WebSocket("wss://127.0.0.1:8000/events")
+var socket = new WebSocket("wss://panel.ayeama.com:8443/api/events")
 socket.onmessage = (event) => {
     const data = JSON.parse(event.data)
     eventBus.publish("server:status", data)

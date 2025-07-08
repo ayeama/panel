@@ -10,6 +10,7 @@ type config struct {
 	ApiAddress      string
 	ServerHost      string
 	ServerPortRange string
+	Runtime         string
 	RuntimeUri      string
 }
 
@@ -30,6 +31,11 @@ func New() {
 		serverPortRange = "45000-45099"
 	}
 
+	runtime := os.Getenv("PANEL_RUNTIME")
+	if runtime == "" {
+		runtime = "docker" // TODO default should be podman
+	}
+
 	runtimeUri := os.Getenv("PANEL_RUNTIME_URI")
 	if runtimeUri == "" {
 		runtimeUri = "unix:/run/user/1000/podman/podman.sock"
@@ -39,6 +45,7 @@ func New() {
 		ApiAddress:      apiAddress,
 		ServerHost:      serverHost,
 		ServerPortRange: serverPortRange,
+		Runtime:         runtime,
 		RuntimeUri:      runtimeUri,
 	}
 }

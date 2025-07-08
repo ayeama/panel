@@ -21,7 +21,7 @@ type Server struct {
 }
 
 func NewServer() *Server {
-	db, err := sql.Open("sqlite3", "/data/panel.db")
+	db, err := sql.Open("sqlite3", "panel.db") // TODO
 	if err != nil {
 		panic(err)
 	}
@@ -36,7 +36,7 @@ func NewServer() *Server {
 		panic(err)
 	}
 
-	runtime, err := runtime.New()
+	runtime, err := runtime.New(runtime.RuntimeTypeDocker) // TODO use config
 	if err != nil {
 		panic(err)
 	}
@@ -73,7 +73,8 @@ func (s *Server) Start() {
 	var eg errgroup.Group
 
 	api := func() error {
-		return s.server.ListenAndServeTLS("cert.pem", "key.pem")
+		// return s.server.ListenAndServeTLS("cert.pem", "key.pem")
+		return s.server.ListenAndServe()
 	}
 
 	events := func() error {

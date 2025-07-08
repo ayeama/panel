@@ -1,7 +1,7 @@
 export const ENVIRONMENTS = [
   {
     name: 'evatt',
-    host: 'api.panel.ayeama.com:8443',
+    host: 'panel.ayeama.com:8443/api',
   },
   // {
   //   name: 'eu-west-2',

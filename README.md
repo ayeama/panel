@@ -21,6 +21,8 @@ podman run -di --cpus 1 --memory 1G -p 25565:25565 panel:latest
 
 ```sh
 openssl req -x509 -newkey rsa:2048 -nodes -keyout key.pem -out cert.pem -days 365 -subj "/CN=localhost"
+
+openssl req -x509 -newkey rsa:2048 -nodes -keyout cert.key -out cert.pem -days 365 -subj "/CN=panel.ayeama.com" --addext "subjectAltName=DNS:panel.ayeama.com"
 ```
 
 If using self signed certs for development, before running the UI manually vist a API endpoint and trust the certificate, otherwise it will not work.

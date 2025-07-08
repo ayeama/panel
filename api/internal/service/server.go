@@ -11,12 +11,12 @@ import (
 )
 
 type ServerService struct {
-	runtime          *runtime.Runtime
+	runtime          runtime.Runtime
 	serverRepository *repository.ServerRepository
 	imageService     *ImageService
 }
 
-func NewServerService(runtime *runtime.Runtime, serverRepository *repository.ServerRepository, imageService *ImageService) *ServerService {
+func NewServerService(runtime runtime.Runtime, serverRepository *repository.ServerRepository, imageService *ImageService) *ServerService {
 	return &ServerService{
 		runtime:          runtime,
 		serverRepository: serverRepository,
