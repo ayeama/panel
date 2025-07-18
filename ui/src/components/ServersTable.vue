@@ -67,6 +67,7 @@ function serverView(id) {
             v-for="server in serversPaginated.items"
             v-bind:key="server.id"
             v-on:click="serverView(server.id)"
+            style="cursor: pointer;"
           >
             <td scope="row">{{ server.name }}</td>
             <td>
