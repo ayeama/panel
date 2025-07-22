@@ -2,7 +2,9 @@ package runtime
 
 import (
 	"context"
+	"fmt"
 	"io"
+	"time"
 
 	"github.com/ayeama/panel/api/internal/config"
 	"github.com/ayeama/panel/api/internal/domain"
@@ -11,7 +13,9 @@ import (
 	"github.com/containers/podman/v5/pkg/bindings"
 	"github.com/containers/podman/v5/pkg/bindings/containers"
 	"github.com/containers/podman/v5/pkg/bindings/system"
+	"github.com/containers/podman/v5/pkg/bindings/volumes"
 	"github.com/containers/podman/v5/pkg/domain/entities"
+	entitiesTypes "github.com/containers/podman/v5/pkg/domain/entities/types"
 	"github.com/containers/podman/v5/pkg/specgen"
 	dockerevents "github.com/docker/docker/api/types/events"
 )
@@ -62,6 +66,43 @@ func (r *Podman) Running(id string) bool {
 }
 
 func (r *Podman) Create(id string, image string) string {
+	volumeOptions := entitiesTypes.VolumeCreateOptions{}
+	volumeResponse, err := volumes.Create(r.ctx, volumeOptions, nil)
+	if err != nil {
+		panic(err)
+	}
+
+	volumes := make([]*specgen.NamedVolume, 0)
+	volume := &specgen.NamedVolume{
+		Name: volumeResponse.Name,
+		Dest: "/data",
+	}
+	volumes = append(volumes, volume)
+
+	sftpHostPort, err := freeHostPort()
+	if err != nil {
+		panic(err)
+	}
+
+	var sftpPortMappings []nettypes.PortMapping
+	sftpPortMappings = append(sftpPortMappings, nettypes.PortMapping{HostPort: sftpHostPort, ContainerPort: 22})
+
+	sftpSpec := specgen.NewSpecGenerator("localhost/ayeama/panel/sidecar/sftp:0.0.1", false)
+	sftpSpec.Volumes = volumes
+	sftpSpec.PortMappings = sftpPortMappings
+	sftpSpec.RestartPolicy = "always"
+
+	sftpSpec.Env = make(map[string]string)
+	sftpSpec.Env["PUBLIC_KEY"] = ""
+
+	sftpSpec.Labels = make(map[string]string)
+	sftpSpec.Labels["com.github.ayeama.panel.api.server.id"] = id
+
+	sftpResponse, err := containers.CreateWithSpec(r.ctx, sftpSpec, nil)
+	if err != nil {
+		panic(err)
+	}
+
 	stdin := true
 	terminal := true
 
@@ -90,6 +131,7 @@ func (r *Podman) Create(id string, image string) string {
 	// 		Limit: &memLimit,
 	// 	},
 	// }
+	spec.Volumes = volumes
 	spec.PortMappings = portMappings
 
 	// restartRetries := uint(3)
@@ -98,25 +140,44 @@ func (r *Podman) Create(id string, image string) string {
 
 	spec.Labels = make(map[string]string)
 	spec.Labels["com.github.ayeama.panel.api.server.id"] = id
+	spec.Labels["com.github.ayeama.panel.api.server.sftp.id"] = sftpResponse.ID
 
-	resp, err := containers.CreateWithSpec(r.ctx, spec, nil)
+	serverResponse, err := containers.CreateWithSpec(r.ctx, spec, nil)
 	if err != nil {
 		panic(err)
 	}
 
-	return resp.ID
+	err = containers.ContainerInit(r.ctx, serverResponse.ID, nil)
+	if err != nil {
+		panic(err)
+	}
+
+	err = containers.Start(r.ctx, sftpResponse.ID, nil)
+	if err != nil {
+		panic(err)
+	}
+
+	return serverResponse.ID
 }
 
 func (r *Podman) Delete(container *domain.Container) {
 	force := true
 	volumes := true
 
+	resp := r.inspect(container.Id)
+	sftpId := resp.Config.Labels["com.github.ayeama.panel.api.server.sftp.id"]
+	sftpRemoveOptions := &containers.RemoveOptions{Force: &force}
+	_, err := containers.Remove(r.ctx, sftpId, sftpRemoveOptions)
+	if err != nil {
+		panic(err)
+	}
+
 	options := &containers.RemoveOptions{
 		Force:   &force,
 		Volumes: &volumes,
 	}
 
-	_, err := containers.Remove(r.ctx, container.Id, options)
+	_, err = containers.Remove(r.ctx, container.Id, options)
 	if err != nil {
 		panic(err)
 	}
@@ -127,6 +188,13 @@ func (r *Podman) Start(container *domain.Container) {
 	if err != nil {
 		panic(err)
 	}
+
+	resp := r.inspect(container.Id)
+	sftpId := resp.Config.Labels["com.github.ayeama.panel.api.server.sftp.id"]
+	err = containers.Start(r.ctx, sftpId, nil)
+	if err != nil {
+		panic(err)
+	}
 }
 
 func (r *Podman) Stop(container *domain.Container) {
@@ -134,6 +202,15 @@ func (r *Podman) Stop(container *domain.Container) {
 	// if err != nil {
 	// 	panic(err)
 	// }
+
+	resp := r.inspect(container.Id)
+	sftpId := resp.Config.Labels["com.github.ayeama.panel.api.server.sftp.id"]
+	sftpStopTimeout := uint(1)
+	sftpStopOptions := &containers.StopOptions{Timeout: &sftpStopTimeout}
+	err := containers.Stop(r.ctx, sftpId, sftpStopOptions)
+	if err != nil {
+		panic(err)
+	}
 
 	stdinReader, stdinWriter := io.Pipe()
 	stdoutReader, stdoutWriter := io.Pipe()
@@ -150,17 +227,33 @@ func (r *Podman) Stop(container *domain.Container) {
 
 	<-ready
 
-	_, err := stdinWriter.Write([]byte("stop\n"))
-	if err != nil {
-		panic(err)
+	writeDone := make(chan error, 1)
+	timeout := time.Second * 30
+
+	go func() {
+		_, err = stdinWriter.Write([]byte("stop\n"))
+		writeDone <- err
+	}()
+
+	select {
+	case err := <-writeDone:
+		if err != nil {
+			panic(err)
+		}
+		stdinWriter.Close()
+	case <-time.After(timeout):
+		_ = stdinWriter.CloseWithError(fmt.Errorf("write timeout after %s", timeout))
+		err := containers.Stop(r.ctx, container.Id, nil)
+		if err != nil {
+			panic(err)
+		}
 	}
-	stdinWriter.Close()
 
 	<-done
 
-	stdinReader.Close()
-	stdoutReader.Close()
-	stdoutWriter.Close()
+	_ = stdinReader.Close()
+	_ = stdoutReader.Close()
+	_ = stdoutWriter.Close()
 }
 
 func (r *Podman) Attach(container *domain.Container, stdin io.Reader, stdout io.Writer, stderr io.Writer, done chan struct{}) error {
