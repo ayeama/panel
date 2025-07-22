@@ -4,11 +4,11 @@ WORKDIR /data
 VOLUME ["/data"]
 
 LABEL org.opencontainers.image.authors="github.com/ayeama/panel"
-LABEL com.github.ayeama.panel.name="Minecraft Vanilla"
-LABEL com.github.ayeama.panel.version="1"
+LABEL com.github.ayeama.panel.workload.name="Minecraft Vanilla"
+LABEL com.github.ayeama.panel.workload.version="1"
 
-ENV VERSION="latest"
-ENV ACCEPT_EULA=true
+ENV PANEL_VERSION="latest"
+ENV PANEL_ACCEPT_EULA=true
 
 RUN apt-get update -y && \
     apt-get install -y jq && \
@@ -18,4 +18,4 @@ RUN apt-get update -y && \
 COPY ./entrypoint.sh /entrypoint.sh
 CMD ["/entrypoint.sh"]
 
-EXPOSE 25565/tcp
+EXPOSE 25565
