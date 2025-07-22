@@ -26,12 +26,19 @@ func NewServer() *Server {
 		panic(err)
 	}
 
-	_, err = db.Exec("CREATE TABLE IF NOT EXISTS images (image VARCHAR(255) PRIMARY KEY)")
-	if err != nil {
-		panic(err)
-	}
-
-	_, err = db.Exec("CREATE TABLE IF NOT EXISTS servers (id VARCHAR(36) PRIMARY KEY,name VARCHAR(256) NOT NULL,status VARCHAR(32) NOT NULL,container_id VARCHAR(64) NOT NULL,container_port VARCHAR(5))")
+	_, err = db.Exec(`
+		CREATE TABLE IF NOT EXISTS images(
+			image VARCHAR(255) PRIMARY KEY
+		);
+		CREATE TABLE IF NOT EXISTS servers(
+			id VARCHAR(36) PRIMARY KEY,
+			name VARCHAR(256) NOT NULL,
+			status VARCHAR(32) NOT NULL,
+			container_id VARCHAR(64) NOT NULL,
+			container_port VARCHAR(5)
+		);
+		INSERT INTO images (image) VALUES ('localhost/ayeama/panel/workload/minecraft:0.0.1-jre21') ON CONFLICT DO NOTHING;
+	`)
 	if err != nil {
 		panic(err)
 	}
