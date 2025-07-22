@@ -49,6 +49,12 @@ function connect() {
   }
   socket.value.onmessage = (event) => {
     output.value += event.data
+
+    const lines = output.value.split('\n')
+    if (lines.length > 1000) {
+      output.value = lines.slice(lines.length - 1000).join('\n')
+    }
+
     if (follow.value) {
       requestAnimationFrame(() => {
         textarea.value.scrollTop = textarea.value.scrollHeight
