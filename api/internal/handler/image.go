@@ -29,7 +29,7 @@ func (h *ImageHandler) Read(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for _, s := range domainImagePaginated.Items {
-		imagePaginated.Items = append(imagePaginated.Items, types.ImageResponse{Image: s.Image})
+		imagePaginated.Items = append(imagePaginated.Items, types.ImageResponse{Image: s.Tag})
 	}
 
 	WriteResponseJson(w, 200, imagePaginated)

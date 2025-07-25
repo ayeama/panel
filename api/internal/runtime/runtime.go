@@ -20,26 +20,24 @@ const RuntimeTypeDocker RuntimeType = "docker"
 type Runtime interface {
 	New() (Runtime, error)
 
-	Name(id string) string
-	Status(id string) string
-	Port(id string) string
-	Running(id string) bool
-
-	Create(id string, image string) string
-	Delete(container *domain.Container)
-
-	Start(container *domain.Container)
-	Stop(container *domain.Container)
-	Attach(container *domain.Container, stdin io.Reader, stdout io.Writer, stderr io.Writer, done chan struct{}) error
+	Inspect(container_id string) domain.Container
+	Create(id string, tag string) string
+	Delete(container_id string)
+	Start(container_id string)
+	Stop(container_id string)
+	Attach(container_id string, stdin io.Reader, stdout io.Writer, stderr io.Writer, done chan struct{}) error
 	Events() chan domain.RuntimeEvent
+
+	CreateSidecar(id string, tag string, server_id string) string
+	InjectCredentials(container_id string)
 }
 
 func New(t RuntimeType) (Runtime, error) {
 	switch t {
 	case RuntimeTypePodman:
 		return Podman{}.New()
-	case RuntimeTypeDocker:
-		return Docker{}.New()
+	// case RuntimeTypeDocker:
+	// 	return Docker{}.New()
 	default:
 		return nil, fmt.Errorf("unknown runtime: %s", t)
 	}

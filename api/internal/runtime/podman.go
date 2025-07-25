@@ -4,12 +4,11 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"time"
 
 	"github.com/ayeama/panel/api/internal/config"
 	"github.com/ayeama/panel/api/internal/domain"
 	nettypes "github.com/containers/common/libnetwork/types"
-	"github.com/containers/podman/v5/libpod/define"
+	"github.com/containers/podman/v5/pkg/api/handlers"
 	"github.com/containers/podman/v5/pkg/bindings"
 	"github.com/containers/podman/v5/pkg/bindings/containers"
 	"github.com/containers/podman/v5/pkg/bindings/system"
@@ -17,6 +16,7 @@ import (
 	"github.com/containers/podman/v5/pkg/domain/entities"
 	entitiesTypes "github.com/containers/podman/v5/pkg/domain/entities/types"
 	"github.com/containers/podman/v5/pkg/specgen"
+	dockerContainer "github.com/docker/docker/api/types/container"
 	dockerevents "github.com/docker/docker/api/types/events"
 )
 
@@ -32,40 +32,25 @@ func (r Podman) New() (Runtime, error) {
 	return &Podman{ctx: ctx}, nil
 }
 
-func (r *Podman) inspect(id string) *define.InspectContainerData {
-	resp, err := containers.Inspect(r.ctx, id, nil)
+func (r *Podman) Inspect(container_id string) domain.Container {
+	resp, err := containers.Inspect(r.ctx, container_id, nil)
 	if err != nil {
 		panic(err)
 	}
-	return resp
-}
-
-func (r *Podman) Name(id string) string {
-	resp := r.inspect(id)
-	return resp.Name
-}
-
-func (r *Podman) Status(id string) string {
-	resp := r.inspect(id)
-	return resp.State.Status
-}
-
-func (r *Podman) Port(id string) string {
-	resp := r.inspect(id)
-	for _, bindings := range resp.HostConfig.PortBindings {
-		for _, binding := range bindings {
-			return binding.HostPort
-		}
+	container := domain.Container{
+		Id:     resp.ID,
+		Name:   resp.Name,
+		Status: resp.State.Status,
+		Ports:  make([]string, 0),
 	}
-	return ""
+	for _, ports := range resp.NetworkSettings.Ports {
+		// TODO im assuming there is only ever one port, it is a list though
+		container.Ports = append(container.Ports, fmt.Sprintf("%s:%s", config.Config.ServerHost, ports[0].HostPort))
+	}
+	return container
 }
 
-func (r *Podman) Running(id string) bool {
-	resp := r.inspect(id)
-	return resp.State.Running
-}
-
-func (r *Podman) Create(id string, image string) string {
+func (r *Podman) Create(id string, tag string) string {
 	volumeOptions := entitiesTypes.VolumeCreateOptions{}
 	volumeResponse, err := volumes.Create(r.ctx, volumeOptions, nil)
 	if err != nil {
@@ -78,30 +63,6 @@ func (r *Podman) Create(id string, image string) string {
 		Dest: "/data",
 	}
 	volumes = append(volumes, volume)
-
-	sftpHostPort, err := freeHostPort()
-	if err != nil {
-		panic(err)
-	}
-
-	var sftpPortMappings []nettypes.PortMapping
-	sftpPortMappings = append(sftpPortMappings, nettypes.PortMapping{HostPort: sftpHostPort, ContainerPort: 22})
-
-	sftpSpec := specgen.NewSpecGenerator("localhost/ayeama/panel/sidecar/sftp:0.0.1", false)
-	sftpSpec.Volumes = volumes
-	sftpSpec.PortMappings = sftpPortMappings
-	sftpSpec.RestartPolicy = "always"
-
-	sftpSpec.Env = make(map[string]string)
-	sftpSpec.Env["PUBLIC_KEY"] = ""
-
-	sftpSpec.Labels = make(map[string]string)
-	sftpSpec.Labels["com.github.ayeama.panel.api.server.id"] = id
-
-	sftpResponse, err := containers.CreateWithSpec(r.ctx, sftpSpec, nil)
-	if err != nil {
-		panic(err)
-	}
 
 	stdin := true
 	terminal := true
@@ -119,7 +80,7 @@ func (r *Podman) Create(id string, image string) string {
 	var portMappings []nettypes.PortMapping
 	portMappings = append(portMappings, nettypes.PortMapping{HostPort: hostPort, ContainerPort: 25565})
 
-	spec := specgen.NewSpecGenerator(image, false)
+	spec := specgen.NewSpecGenerator(tag, false)
 	spec.Stdin = &stdin
 	spec.Terminal = &terminal
 	// spec.ResourceLimits = &specs.LinuxResources{
@@ -140,7 +101,6 @@ func (r *Podman) Create(id string, image string) string {
 
 	spec.Labels = make(map[string]string)
 	spec.Labels["com.github.ayeama.panel.api.server.id"] = id
-	spec.Labels["com.github.ayeama.panel.api.server.sftp.id"] = sftpResponse.ID
 
 	serverResponse, err := containers.CreateWithSpec(r.ctx, spec, nil)
 	if err != nil {
@@ -152,111 +112,95 @@ func (r *Podman) Create(id string, image string) string {
 		panic(err)
 	}
 
-	err = containers.Start(r.ctx, sftpResponse.ID, nil)
-	if err != nil {
-		panic(err)
-	}
-
 	return serverResponse.ID
 }
 
-func (r *Podman) Delete(container *domain.Container) {
+func (r *Podman) Delete(container_id string) {
 	force := true
 	volumes := true
-
-	resp := r.inspect(container.Id)
-	sftpId := resp.Config.Labels["com.github.ayeama.panel.api.server.sftp.id"]
-	sftpRemoveOptions := &containers.RemoveOptions{Force: &force}
-	_, err := containers.Remove(r.ctx, sftpId, sftpRemoveOptions)
-	if err != nil {
-		panic(err)
-	}
+	timeout := uint(1)
 
 	options := &containers.RemoveOptions{
 		Force:   &force,
 		Volumes: &volumes,
+		Timeout: &timeout,
 	}
 
-	_, err = containers.Remove(r.ctx, container.Id, options)
+	_, err := containers.Remove(r.ctx, container_id, options)
 	if err != nil {
 		panic(err)
 	}
 }
 
-func (r *Podman) Start(container *domain.Container) {
-	err := containers.Start(r.ctx, container.Id, nil)
-	if err != nil {
-		panic(err)
-	}
-
-	resp := r.inspect(container.Id)
-	sftpId := resp.Config.Labels["com.github.ayeama.panel.api.server.sftp.id"]
-	err = containers.Start(r.ctx, sftpId, nil)
+func (r *Podman) Start(container_id string) {
+	err := containers.Start(r.ctx, container_id, nil)
 	if err != nil {
 		panic(err)
 	}
 }
 
-func (r *Podman) Stop(container *domain.Container) {
-	// err := containers.Stop(r.context, container.Id, nil)
+func (r *Podman) Stop(container_id string) {
+	timeout := uint(1)
+	options := &containers.StopOptions{Timeout: &timeout}
+	err := containers.Stop(r.ctx, container_id, options)
+	if err != nil {
+		panic(err)
+	}
+
+	// resp := r.inspect(container_id)
+	// sftpId := resp.Config.Labels["com.github.ayeama.panel.api.server.sftp.id"]
+	// sftpStopTimeout := uint(1)
+	// sftpStopOptions := &containers.StopOptions{Timeout: &sftpStopTimeout}
+	// err := containers.Stop(r.ctx, sftpId, sftpStopOptions)
 	// if err != nil {
 	// 	panic(err)
 	// }
 
-	resp := r.inspect(container.Id)
-	sftpId := resp.Config.Labels["com.github.ayeama.panel.api.server.sftp.id"]
-	sftpStopTimeout := uint(1)
-	sftpStopOptions := &containers.StopOptions{Timeout: &sftpStopTimeout}
-	err := containers.Stop(r.ctx, sftpId, sftpStopOptions)
-	if err != nil {
-		panic(err)
-	}
+	// stdinReader, stdinWriter := io.Pipe()
+	// stdoutReader, stdoutWriter := io.Pipe()
+	// ready := make(chan bool)
+	// done := make(chan bool)
 
-	stdinReader, stdinWriter := io.Pipe()
-	stdoutReader, stdoutWriter := io.Pipe()
-	ready := make(chan bool)
-	done := make(chan bool)
+	// go func() {
+	// 	err := containers.Attach(r.ctx, container_id, stdinReader, stdoutWriter, stdoutWriter, ready, nil)
+	// 	if err != nil {
+	// 		panic(err)
+	// 	}
+	// 	done <- true
+	// }()
 
-	go func() {
-		err := containers.Attach(r.ctx, container.Id, stdinReader, stdoutWriter, stdoutWriter, ready, nil)
-		if err != nil {
-			panic(err)
-		}
-		done <- true
-	}()
+	// <-ready
 
-	<-ready
+	// writeDone := make(chan error, 1)
+	// timeout := time.Second * 30
 
-	writeDone := make(chan error, 1)
-	timeout := time.Second * 30
+	// go func() {
+	// 	_, err := stdinWriter.Write([]byte("stop\n"))
+	// 	writeDone <- err
+	// }()
 
-	go func() {
-		_, err = stdinWriter.Write([]byte("stop\n"))
-		writeDone <- err
-	}()
+	// select {
+	// case err := <-writeDone:
+	// 	if err != nil {
+	// 		panic(err)
+	// 	}
+	// 	stdinWriter.Close()
+	// case <-time.After(timeout):
+	// 	_ = stdinWriter.CloseWithError(fmt.Errorf("write timeout after %s", timeout))
+	// 	err := containers.Stop(r.ctx, container_id, nil)
+	// 	if err != nil {
+	// 		panic(err)
+	// 	}
+	// }
 
-	select {
-	case err := <-writeDone:
-		if err != nil {
-			panic(err)
-		}
-		stdinWriter.Close()
-	case <-time.After(timeout):
-		_ = stdinWriter.CloseWithError(fmt.Errorf("write timeout after %s", timeout))
-		err := containers.Stop(r.ctx, container.Id, nil)
-		if err != nil {
-			panic(err)
-		}
-	}
+	// <-done
 
-	<-done
-
-	_ = stdinReader.Close()
-	_ = stdoutReader.Close()
-	_ = stdoutWriter.Close()
+	// _ = stdinReader.Close()
+	// _ = stdoutReader.Close()
+	// _ = stdoutWriter.Close()
 }
 
-func (r *Podman) Attach(container *domain.Container, stdin io.Reader, stdout io.Writer, stderr io.Writer, done chan struct{}) error {
+func (r *Podman) Attach(container_id string, stdin io.Reader, stdout io.Writer, stderr io.Writer, done chan struct{}) error {
 	ready := make(chan bool)
 	logs := make(chan string)
 
@@ -266,7 +210,7 @@ func (r *Podman) Attach(container *domain.Container, stdin io.Reader, stdout io.
 		options := &containers.LogOptions{
 			Tail: &logTail,
 		}
-		err := containers.Logs(r.ctx, container.Id, options, logs, nil)
+		err := containers.Logs(r.ctx, container_id, options, logs, nil)
 		if err != nil {
 			panic(err)
 		}
@@ -283,7 +227,7 @@ func (r *Podman) Attach(container *domain.Container, stdin io.Reader, stdout io.
 	go func() {
 		defer close(done)
 
-		err := containers.Attach(r.ctx, container.Id, stdin, stdout, stderr, ready, nil)
+		err := containers.Attach(r.ctx, container_id, stdin, stdout, stderr, ready, nil)
 		if err != nil {
 			panic(err)
 		}
@@ -335,4 +279,62 @@ func (r *Podman) Events() chan domain.RuntimeEvent {
 	}()
 
 	return events
+}
+
+func (r *Podman) CreateSidecar(id string, tag string, server_id string) string {
+	server, err := containers.Inspect(r.ctx, server_id, nil)
+	if err != nil {
+		panic(err)
+	}
+
+	// get volumes mounted to the server
+	volumes := make([]*specgen.NamedVolume, 0)
+	for _, mount := range server.Mounts {
+		volumes = append(volumes, &specgen.NamedVolume{
+			Name: mount.Name,
+			Dest: fmt.Sprintf("/data%s", mount.Destination),
+		})
+	}
+
+	port, err := freeHostPort()
+	if err != nil {
+		panic(err)
+	}
+
+	spec := specgen.NewSpecGenerator(tag, false)
+	spec.Volumes = volumes
+	spec.PortMappings = []nettypes.PortMapping{{HostPort: port, ContainerPort: 22}}
+	spec.RestartPolicy = "always"
+
+	resp, err := containers.CreateWithSpec(r.ctx, spec, nil)
+	if err != nil {
+		panic(err)
+	}
+
+	return resp.ID
+}
+
+func (r *Podman) InjectCredentials(container_id string) {
+	credentials := []string{
+		"",
+		"",
+	}
+
+	for _, credential := range credentials {
+		createOptions := &handlers.ExecCreateConfig{
+			ExecOptions: dockerContainer.ExecOptions{
+				Cmd: []string{"add-key", credential},
+			},
+		}
+		exec, err := containers.ExecCreate(r.ctx, container_id, createOptions)
+		if err != nil {
+			panic(err)
+		}
+
+		err = containers.ExecStart(r.ctx, exec, nil)
+		if err != nil {
+			panic(err)
+		}
+	}
+
 }

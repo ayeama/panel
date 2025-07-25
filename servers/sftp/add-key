@@ -1,0 +1,5 @@
+#!/bin/ash
+
+PUBLIC_KEY="$1"
+
+grep -qxF "$PUBLIC_KEY" /root/.ssh/authorized_keys || echo "$PUBLIC_KEY" >> /root/.ssh/authorized_keys

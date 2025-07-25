@@ -1,8 +1,10 @@
 package domain
 
 type Container struct {
-	Id   string
-	Port string
+	Id     string
+	Name   string
+	Status string
+	Ports  []string
 }
 
 type ContainerStat struct {

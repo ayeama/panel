@@ -1,0 +1,9 @@
+[Container]
+ContainerName=ui
+Image=localhost/panel/ui:latest
+Network=panel
+User=0
+Volume=/home/panel/config.js:/usr/share/nginx/html/config.js:Z
+
+[Service]
+Restart=always

@@ -5,8 +5,9 @@ type ServerCreateRequest struct {
 }
 
 type ServerResponse struct {
-	Id      string `json:"id"`
-	Name    string `json:"name"`
-	Status  string `json:"status"`
-	Address string `json:"address"`
+	Id               string   `json:"id"`
+	Name             string   `json:"name"`
+	Status           string   `json:"status"`
+	Addresses        []string `json:"address"`
+	SidecarAddresses []string `json:"sidecar_addresses"`
 }

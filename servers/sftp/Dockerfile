@@ -12,6 +12,7 @@ ENV PUBLIC_KEY=
 RUN apk add --no-cache openssh
 
 COPY ./entrypoint.sh /entrypoint.sh
+COPY ./add-key /usr/local/bin/add-key
 COPY ./sshd_config /etc/ssh/sshd_config
 
 CMD ["/entrypoint.sh"]

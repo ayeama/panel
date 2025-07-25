@@ -46,7 +46,7 @@ func (h *EventHandler) Events(w http.ResponseWriter, r *http.Request) {
 				paginatedServers := h.serverService.Read(p)
 
 				for _, server := range paginatedServers.Items {
-					event := types.EventServerStatus{Id: server.Id, Status: server.Status}
+					event := types.EventServerStatus{Id: server.Id, Status: server.Container.Status}
 					data, err := json.Marshal(event)
 					if err != nil {
 						panic(err)

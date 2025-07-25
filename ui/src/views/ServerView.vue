@@ -77,6 +77,10 @@ onMounted(async () => {
 function copyAddress() {
   navigator.clipboard.writeText(data.value.address)
 }
+
+function copySFTPAddress(i) {
+  navigator.clipboard.writeText('sftp://root@' + data.value.sidecar_addresses[i])
+}
 </script>
 
 <template>
@@ -124,7 +128,7 @@ function copyAddress() {
             <div class="row gy-2">
               <div class="col-12 col-xl-6">
                 <div>
-                  <label for="addressInput" class="form-label">Address</label>
+                  <label for="addressInput" class="form-label">Server Address</label>
                   <div class="input-group">
                     <input
                       v-bind:value="data.address"
@@ -140,6 +144,30 @@ function copyAddress() {
                       id="addressCopyIcon"
                       style="cursor: pointer"
                       v-on:click="copyAddress()"
+                      ><Clipboard
+                    /></span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-12 col-xl-6" v-for="(sidecar_address, i) in data.sidecar_addresses">
+                <div>
+                  <label for="addressInput" class="form-label">SFTP Address</label>
+                  <div class="input-group">
+                    <input
+                      v-bind:value="'sftp://root@' + sidecar_address"
+                      type="text"
+                      class="form-control"
+                      id="addressInput"
+                      disabled
+                      readonly
+                      aria-describedby="addressCopyIcon"
+                    />
+                    <span
+                      class="input-group-text"
+                      id="addressCopyIcon"
+                      style="cursor: pointer"
+                      v-on:click="copySFTPAddress(i)"
                       ><Clipboard
                     /></span>
                   </div>
