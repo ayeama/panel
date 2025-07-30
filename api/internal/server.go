@@ -43,6 +43,7 @@ func NewServer() *Server {
 			FOREIGN KEY (server_id) REFERENCES servers(id)
 		);
 		INSERT INTO images (id, tag) VALUES ('5b3a4946-e16e-4b14-9e85-cf4ed4fbd017', 'localhost/ayeama/panel/server/minecraft:0.0.1-jre21') ON CONFLICT DO NOTHING;
+		INSERT INTO images (id, tag) VALUES ('9401033b-ce72-4a36-8400-96eb4d69ca01', 'localhost/ayeama/panel/server/terraria:0.0.1') ON CONFLICT DO NOTHING;
 	`)
 	if err != nil {
 		panic(err)

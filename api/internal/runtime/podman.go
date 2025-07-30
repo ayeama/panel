@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strconv"
+	"strings"
 
 	"github.com/ayeama/panel/api/internal/config"
 	"github.com/ayeama/panel/api/internal/domain"
@@ -11,6 +13,7 @@ import (
 	"github.com/containers/podman/v5/pkg/api/handlers"
 	"github.com/containers/podman/v5/pkg/bindings"
 	"github.com/containers/podman/v5/pkg/bindings/containers"
+	"github.com/containers/podman/v5/pkg/bindings/images"
 	"github.com/containers/podman/v5/pkg/bindings/system"
 	"github.com/containers/podman/v5/pkg/bindings/volumes"
 	"github.com/containers/podman/v5/pkg/domain/entities"
@@ -51,6 +54,17 @@ func (r *Podman) Inspect(container_id string) domain.Container {
 }
 
 func (r *Podman) Create(id string, tag string) string {
+	imageResp, err := images.GetImage(r.ctx, tag, nil)
+	if err != nil {
+		panic(err)
+	}
+
+	containerPorts := make(map[string]bool)
+	for key := range imageResp.Config.ExposedPorts {
+		port := strings.SplitN(key, "/", 2)[0]
+		containerPorts[port] = true
+	}
+
 	volumeOptions := entitiesTypes.VolumeCreateOptions{}
 	volumeResponse, err := volumes.Create(r.ctx, volumeOptions, nil)
 	if err != nil {
@@ -72,13 +86,20 @@ func (r *Podman) Create(id string, tag string) string {
 	// cpuQuota := int64(float64(cpuPeriod) * cpus)
 	// memLimit := int64(1000000000)
 
+	var portMappings []nettypes.PortMapping
+	for containerPort := range containerPorts {
 	hostPort, err := freeHostPort()
 	if err != nil {
 		panic(err)
 	}
 
-	var portMappings []nettypes.PortMapping
-	portMappings = append(portMappings, nettypes.PortMapping{HostPort: hostPort, ContainerPort: 25565})
+		port, err := strconv.ParseUint(containerPort, 10, 16)
+		if err != nil {
+			panic(err)
+		}
+
+		portMappings = append(portMappings, nettypes.PortMapping{HostPort: hostPort, ContainerPort: uint16(port)})
+	}
 
 	spec := specgen.NewSpecGenerator(tag, false)
 	spec.Stdin = &stdin
