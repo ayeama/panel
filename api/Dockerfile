@@ -37,8 +37,8 @@ WORKDIR /app
 RUN chown $USERNAME:$USERNAME /app
 USER $USERNAME
 
-COPY --chown=$USERNAME:$USERNAME --from=build /app/panel .
+COPY --chmod=755 --from=build /app/panel /usr/bin/panel
 
-CMD ["./panel"]
+CMD ["panel"]
 
 EXPOSE 8000

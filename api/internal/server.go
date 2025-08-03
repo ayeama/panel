@@ -44,6 +44,7 @@ func NewServer() *Server {
 		);
 		INSERT INTO images (id, tag) VALUES ('5b3a4946-e16e-4b14-9e85-cf4ed4fbd017', 'localhost/ayeama/panel/server/minecraft:0.0.1-jre21') ON CONFLICT DO NOTHING;
 		INSERT INTO images (id, tag) VALUES ('9401033b-ce72-4a36-8400-96eb4d69ca01', 'localhost/ayeama/panel/server/terraria:0.0.1') ON CONFLICT DO NOTHING;
+		INSERT INTO images (id, tag) VALUES ('afee984f-ff19-4682-b2fc-088ce9b4794e', 'localhost/ayeama/panel/server/valheim:0.0.1') ON CONFLICT DO NOTHING;
 	`)
 	if err != nil {
 		panic(err)
@@ -57,7 +58,7 @@ func NewServer() *Server {
 	mux := http.NewServeMux()
 
 	imageRepository := repository.NewImageRepository(db)
-	imageService := service.NewImageService(imageRepository)
+	imageService := service.NewImageService(runtime, imageRepository)
 	imageHandler := handler.NewImageHandler(imageService)
 	imageHandler.RegisterHandlers(mux)
 

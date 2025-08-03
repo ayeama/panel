@@ -154,7 +154,12 @@ func (s *ServerService) Start(id string) error {
 	return nil
 }
 
-func (s *ServerService) Stop(container_id string) error {
+func (s *ServerService) Stop(container_id string, force *bool) error {
+	if force == nil {
+		_force := false
+		force = &_force
+	}
+
 	server, err := s.serverRepository.ReadOne(container_id)
 	if err != nil {
 		if errors.Is(err, domain.ErrNotFound) {

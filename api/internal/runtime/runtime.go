@@ -30,6 +30,8 @@ type Runtime interface {
 
 	CreateSidecar(id string, tag string, server_id string) string
 	InjectCredentials(container_id string)
+
+	InspectImage(tag string) domain.Image
 }
 
 func New(t RuntimeType) (Runtime, error) {

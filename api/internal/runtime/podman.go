@@ -4,8 +4,14 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log/slog"
+	"net/http"
+	"os"
+	"path"
+	"slices"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/ayeama/panel/api/internal/config"
 	"github.com/ayeama/panel/api/internal/domain"
@@ -38,6 +44,7 @@ func (r Podman) New() (Runtime, error) {
 func (r *Podman) Inspect(container_id string) domain.Container {
 	resp, err := containers.Inspect(r.ctx, container_id, nil)
 	if err != nil {
+		slog.Error("error inspecting container", slog.String("error", err.Error()), slog.String("container_id", container_id))
 		panic(err)
 	}
 	container := domain.Container{
@@ -48,7 +55,10 @@ func (r *Podman) Inspect(container_id string) domain.Container {
 	}
 	for _, ports := range resp.NetworkSettings.Ports {
 		// TODO im assuming there is only ever one port, it is a list though
+		// Removes duplicates due to protocols (tcp, udp etc)
+		if !slices.Contains(container.Ports, fmt.Sprintf("%s:%s", config.Config.ServerHost, ports[0].HostPort)) {
 		container.Ports = append(container.Ports, fmt.Sprintf("%s:%s", config.Config.ServerHost, ports[0].HostPort))
+		}
 	}
 	return container
 }
@@ -56,6 +66,7 @@ func (r *Podman) Inspect(container_id string) domain.Container {
 func (r *Podman) Create(id string, tag string) string {
 	imageResp, err := images.GetImage(r.ctx, tag, nil)
 	if err != nil {
+		slog.Error("error getting image", slog.String("error", err.Error()))
 		panic(err)
 	}
 
@@ -68,6 +79,7 @@ func (r *Podman) Create(id string, tag string) string {
 	volumeOptions := entitiesTypes.VolumeCreateOptions{}
 	volumeResponse, err := volumes.Create(r.ctx, volumeOptions, nil)
 	if err != nil {
+		slog.Error("error creating volume", slog.String("error", err.Error()))
 		panic(err)
 	}
 
@@ -86,19 +98,21 @@ func (r *Podman) Create(id string, tag string) string {
 	// cpuQuota := int64(float64(cpuPeriod) * cpus)
 	// memLimit := int64(1000000000)
 
-	var portMappings []nettypes.PortMapping
+	portMappings := make([]nettypes.PortMapping, 0)
 	for containerPort := range containerPorts {
 	hostPort, err := freeHostPort()
 	if err != nil {
+			slog.Error("error getting free host port", slog.String("error", err.Error()))
 		panic(err)
 	}
 
 		port, err := strconv.ParseUint(containerPort, 10, 16)
 		if err != nil {
+			slog.Error("error parsing container port", slog.String("error", err.Error()))
 			panic(err)
 		}
 
-		portMappings = append(portMappings, nettypes.PortMapping{HostPort: hostPort, ContainerPort: uint16(port)})
+		portMappings = append(portMappings, nettypes.PortMapping{HostPort: hostPort, ContainerPort: uint16(port), Protocol: "tcp,udp"}) // TODO get tcp,udp from container
 	}
 
 	spec := specgen.NewSpecGenerator(tag, false)
@@ -125,11 +139,13 @@ func (r *Podman) Create(id string, tag string) string {
 
 	serverResponse, err := containers.CreateWithSpec(r.ctx, spec, nil)
 	if err != nil {
+		slog.Error("error creating container", slog.String("error", err.Error()))
 		panic(err)
 	}
 
 	err = containers.ContainerInit(r.ctx, serverResponse.ID, nil)
 	if err != nil {
+		slog.Error("error initializing container", slog.String("error", err.Error()))
 		panic(err)
 	}
 
@@ -358,4 +374,27 @@ func (r *Podman) InjectCredentials(container_id string) {
 		}
 	}
 
+}
+
+func (r *Podman) InspectImage(tag string) domain.Image {
+	var image domain.Image
+	resp, err := images.GetImage(r.ctx, tag, nil)
+	if err != nil {
+		panic(err)
+	}
+
+	variables := make(map[string]string)
+	for _, variable := range resp.Config.Env {
+		splitVariable := strings.SplitN(variable, "=", 2)
+		if strings.HasPrefix(splitVariable[0], "PANEL_") {
+			variables[strings.TrimPrefix(splitVariable[0], "PANEL_")] = splitVariable[1]
+		}
+	}
+
+	image = domain.Image{
+		Tag:       tag,
+		Variables: &variables,
+	}
+
+	return image
 }

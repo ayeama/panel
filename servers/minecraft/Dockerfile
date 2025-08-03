@@ -6,6 +6,7 @@ VOLUME ["/data"]
 LABEL org.opencontainers.image.authors="github.com/ayeama/panel"
 LABEL com.github.ayeama.panel.workload.name="Minecraft Vanilla"
 LABEL com.github.ayeama.panel.workload.version="1"
+LABEL com.github.ayeama.panel.workload.stop="stop"
 
 ENV PANEL_VERSION="latest"
 ENV PANEL_ACCEPT_EULA=true

@@ -7,6 +7,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"strconv"
 
 	"github.com/ayeama/panel/api/internal/domain"
 	"github.com/ayeama/panel/api/internal/service"
@@ -33,7 +34,7 @@ func (h *ServerHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	server := h.service.Create(serverCreate.Image)
 
-	output := types.ServerResponse{Id: server.Id, Name: server.Container.Name, Status: server.Container.Status, Addresses: server.Container.Ports}
+	output := types.ServerResponse{Id: server.Id, Name: server.Container.Name, Image: server.Image.String(), Status: server.Container.Status, Addresses: server.Container.Ports}
 	for _, sidecar := range server.Sidecars {
 		output.SidecarAddresses = append(output.SidecarAddresses, sidecar.Container.Ports...)
 	}
@@ -53,7 +54,7 @@ func (h *ServerHandler) Read(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for i, server := range domainServerPaginated.Items {
-		serverPaginated.Items = append(serverPaginated.Items, types.ServerResponse{Id: server.Id, Name: server.Container.Name, Status: server.Container.Status, Addresses: server.Container.Ports})
+		serverPaginated.Items = append(serverPaginated.Items, types.ServerResponse{Id: server.Id, Name: server.Container.Name, Image: server.Image.String(), Status: server.Container.Status, Addresses: server.Container.Ports})
 
 		for _, sidecar := range server.Sidecars {
 			serverPaginated.Items[i].SidecarAddresses = append(serverPaginated.Items[i].SidecarAddresses, sidecar.Container.Ports...)
@@ -76,7 +77,7 @@ func (h *ServerHandler) ReadOne(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	output := types.ServerResponse{Id: server.Id, Name: server.Container.Name, Status: server.Container.Status, Addresses: server.Container.Ports}
+	output := types.ServerResponse{Id: server.Id, Name: server.Container.Name, Image: server.Image.String(), Status: server.Container.Status, Addresses: server.Container.Ports}
 	for _, sidecar := range server.Sidecars {
 		output.SidecarAddresses = append(output.SidecarAddresses, sidecar.Container.Ports...)
 	}
@@ -108,8 +109,18 @@ func (h *ServerHandler) Start(w http.ResponseWriter, r *http.Request) {
 
 func (h *ServerHandler) Stop(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
+	params := r.URL.Query()
 
-	err := h.service.Stop(id)
+	forceParam := params.Get("force")
+	if forceParam == "" {
+		forceParam = "false"
+	}
+	force, err := strconv.ParseBool(forceParam)
+	if err != nil {
+		panic(err)
+	}
+
+	err = h.service.Stop(id, &force)
 	if err != nil {
 		panic(err)
 	}

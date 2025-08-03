@@ -6,6 +6,7 @@ VOLUME ["/data"]
 LABEL org.opencontainers.image.authors="github.com/ayeama/panel"
 LABEL com.github.ayeama.panel.workload.name="Terraria"
 LABEL com.github.ayeama.panel.workload.version="1"
+LABEL com.github.ayeama.panel.workload.stop="exit"
 
 ENV PANEL_VERSION="1449"
 

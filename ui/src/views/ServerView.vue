@@ -7,6 +7,7 @@ import ServerStats from '@/components/ServerStats.vue'
 import ServerStatusBadge from '@/components/ServerStatusBadge.vue'
 import Clipboard from '@/components/icons/Clipboard.vue'
 import Check2 from '@/components/icons/Check2.vue'
+import ThreeDotsVertical from '@/components/icons/ThreeDotsVertical.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -70,6 +71,19 @@ async function stopServer() {
   }
 }
 
+async function backupServer() {
+  try {
+    const response = await fetch(
+      `${window.CONFIG.api.scheme}://${window.CONFIG.api.host}${window.CONFIG.api.path}/servers/${id}/backup`,
+      {
+        method: 'POST',
+      },
+    )
+  } catch (error) {
+    console.log('Failed to backup server')
+  }
+}
+
 onMounted(async () => {
   await getServer(id)
 })
@@ -86,32 +100,75 @@ function copySFTPAddress(i) {
 <template>
   <div>
     <div class="row mb-2">
-      <div class="col">
+      <div class="col col-auto my-auto">
         <h2>
           {{ data.name }}
-          <ServerStatusBadge
-            v-bind:server_id="data.id"
-            v-bind:status="data.status"
-            v-on:status="data.status = $event"
-            class="fs-6 align-top"
-          />
         </h2>
+      </div>
+
+      <div class="col">
+        <div class="row">
+          <div>
+            <ServerStatusBadge
+              v-bind:server_id="data.id"
+              v-bind:status="data.status"
+              v-on:status="data.status = $event"
+              class="align-top"
+            />
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <span class="badge text-bg-secondary">{{ data.image }}</span>
+          </div>
+        </div>
       </div>
 
       <div class="col my-auto">
         <div class="float-end">
-          <div class="">
-            <!-- TODO routing -->
-            <button class="btn btn-secondary" v-on:click="startServer">Start</button>
-            <button class="btn btn-secondary ms-2" v-on:click="stopServer">Stop</button>
+          <div>
             <button
-              type="button"
-              class="btn btn-danger ms-2"
-              data-bs-toggle="modal"
-              data-bs-target="#modalConfirmDeleteServer"
+              class="btn btn-secondary"
+              v-if="data.status === 'running'"
+              v-on:click="stopServer"
             >
-              Delete
+              Stop
             </button>
+            <button class="btn btn-secondary" v-else v-on:click="startServer">Start</button>
+
+            <button
+              class="btn dropdown-toggle"
+              type="button"
+              data-bs-toggle="dropdown"
+              aria-expanded="false"
+            >
+              <ThreeDotsVertical />
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li>
+                <button class="dropdown-item" type="button" v-on:click="startServer">Start</button>
+              </li>
+              <li>
+                <button class="dropdown-item" type="button" v-on:click="stopServer">Stop</button>
+              </li>
+              <li>
+                <button class="dropdown-item" type="button" v-on:click="backupServer">
+                  Backup
+                </button>
+              </li>
+              <li><hr class="dropdown-divider" /></li>
+              <li>
+                <button
+                  class="dropdown-item btn-danger"
+                  type="button"
+                  data-bs-toggle="modal"
+                  data-bs-target="#modalConfirmDeleteServer"
+                >
+                  Delete
+                </button>
+              </li>
+            </ul>
           </div>
         </div>
       </div>
@@ -190,3 +247,10 @@ function copySFTPAddress(i) {
     />
   </div>
 </template>
+
+<style>
+/* TODO does this effect other dropdowns? */
+.dropdown-toggle::after {
+  display: none !important;
+}
+</style>
