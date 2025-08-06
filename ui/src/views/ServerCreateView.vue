@@ -61,7 +61,7 @@ async function createServer() {
         <h2>Create Server</h2>
       </div>
 
-      <div class="col my-auto">
+      <div class="col col-auto my-auto">
         <div class="float-end">
           <button form="createServer" type="submit" class="btn btn-primary">Create</button>
         </div>
@@ -95,8 +95,8 @@ async function createServer() {
       </div>
 
       <div class="row" v-if="image">
-        <div class="col" v-for="(value, key) in image.variables" v-bind:key="key">
-          <div>
+        <div class="col-md-4 col-sm-6" v-for="(value, key) in image.variables" v-bind:key="key">
+          <div class="mb-2">
             <label v-bind:for="`${key}Input`" class="form-label">{{ key }}</label>
             <input
               type="text"
