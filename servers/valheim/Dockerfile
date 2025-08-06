@@ -3,9 +3,10 @@ FROM docker.io/library/debian:12.11
 LABEL org.opencontainers.image.authors="github.com/ayeama/panel"
 LABEL com.github.ayeama.panel.workload.name="Valheim"
 LABEL com.github.ayeama.panel.workload.version="1"
-LABEL com.github.ayeama.panel.workload.stop="stop"
+LABEL com.github.ayeama.panel.workload.stop=""
 
-STOPSIGNAL SIGTERM
+ENV PANEL_NAME="My server"
+ENV PANEL_PASSWORD=""
 
 WORKDIR /data
 VOLUME ["/data"]
@@ -16,7 +17,8 @@ RUN apt-get update -y && \
         lib32gcc-s1 \
         libatomic1 \
         libpulse-dev \
-        libpulse0
+        libpulse0 && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
 
 COPY ./entrypoint.sh /entrypoint.sh
 ENTRYPOINT [ "/entrypoint.sh" ]

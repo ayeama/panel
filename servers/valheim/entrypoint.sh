@@ -5,9 +5,10 @@ if [ -f /data/run.sh ]; then
     exec /data/run.sh
 fi
 
-NAME="My server"
+NAME=$PANEL_NAME
+PASSWORD=$PANEL_PASSWORD
+
 WORLD="Dedicated"
-PASSWORD="secret"
 SAVEDIR="/data/Valheim"
 
 mkdir -p $SAVEDIR

@@ -4,16 +4,16 @@ if [ -f /data/run.sh ]; then
     exec /data/run.sh
 fi
 
-# PANEL_VERSION
+VERSION=$PANEL_VERSION
+WORLD_SIZE=$PANEL_WORLD_SIZE
+SEED=$PANEL_SEED
+DIFFICULTY=$PANEL_DIFFICULTY
+PASSWORD=$PANEL_PASSWORD
 
 WORLD="/data/worlds/world.wld"
-WORLD_SIZE="1"
-SEED=""
 WORLD_NAME="world"
-DIFFICULTY="0"
 MAX_PLAYERS="8"
 PORT="7777"
-PASSWORD=""
 MOTD=""
 WORLD_PATH="/data/worlds/"
 BANLIST="banlist.txt"
