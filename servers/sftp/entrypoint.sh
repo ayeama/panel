@@ -4,7 +4,6 @@ set -e
 
 if [ -z "$PUBLIC_KEY" ]; then
     echo "PUBLIC_KEY is not set"
-    exit 1
 fi
 
 if [ ! -f /etc/ssh/ssh_host_ed25519_key ]; then

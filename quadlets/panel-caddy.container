@@ -1,0 +1,11 @@
+[Container]
+ContainerName=caddy
+Image=docker.io/library/caddy:2.10.0-alpine
+Network=panel
+PublishPort=9443:443
+Volume=/home/panel/Caddyfile:/etc/caddy/Caddyfile:Z
+Volume=/home/panel/cert.pem:/cert.pem:Z
+Volume=/home/panel/cert.key:/cert.key:Z
+
+[Service]
+Restart=always

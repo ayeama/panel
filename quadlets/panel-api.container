@@ -1,0 +1,12 @@
+[Container]
+ContainerName=api
+Environment=PANEL_SERVER_HOST=localhost PANEL_RUNTIME=podman PANEL_RUNTIME_URI=unix:///app/podman.sock PANEL_SERVER_PORT_RANGE=45100-45199
+Image=localhost/panel/api:latest
+Network=panel
+SecurityLabelDisable=true
+UserNS=keep-id
+Volume=/run/user/42873/podman/podman.sock:/app/podman.sock:Z
+Volume=panel:/app
+
+[Service]
+Restart=always

@@ -1,11 +1,9 @@
 package domain
 
-type Server struct {
+type Sidecar struct {
 	Id          string
-	ImageId     string
 	ContainerId string
+	ServerId    string
 
-	Image     *Image
 	Container *Container
-	Sidecars  []*Sidecar
 }

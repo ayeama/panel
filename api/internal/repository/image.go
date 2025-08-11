@@ -2,6 +2,7 @@ package repository
 
 import (
 	"database/sql"
+	"errors"
 
 	"github.com/ayeama/panel/api/internal/domain"
 )
@@ -15,7 +16,7 @@ func NewImageRepository(db *sql.DB) *ImageRepository {
 }
 
 func (r *ImageRepository) Read(p domain.Pagination) domain.PaginationResponse[domain.Image] {
-	rows, err := r.db.Query("SELECT image.image FROM images image LIMIT ? OFFSET ?", p.Limit, p.Offset)
+	rows, err := r.db.Query("SELECT id, tag FROM images LIMIT ? OFFSET ?", p.Limit, p.Offset)
 	if err != nil {
 		panic(err)
 	}
@@ -30,7 +31,7 @@ func (r *ImageRepository) Read(p domain.Pagination) domain.PaginationResponse[do
 	for rows.Next() {
 		var image domain.Image
 
-		err = rows.Scan(&image.Image)
+		err = rows.Scan(&image.Id, &image.Tag)
 		if err != nil {
 			panic(err)
 		}
@@ -44,4 +45,30 @@ func (r *ImageRepository) Read(p domain.Pagination) domain.PaginationResponse[do
 	}
 
 	return images
+}
+
+func (r *ImageRepository) ReadById(id string) (domain.Image, error) {
+	var image domain.Image
+	err := r.db.QueryRow("SELECT id, tag FROM images WHERE id=?", id).Scan(&image.Id, &image.Tag)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return image, err
+		} else {
+			panic(err)
+		}
+	}
+	return image, nil
+}
+
+func (r *ImageRepository) ReadByTag(tag string) (domain.Image, error) {
+	var image domain.Image
+	err := r.db.QueryRow("SELECT id, tag FROM images WHERE tag=?", tag).Scan(&image.Id, &image.Tag)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return image, err
+		} else {
+			panic(err)
+		}
+	}
+	return image, nil
 }

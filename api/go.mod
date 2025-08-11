@@ -5,8 +5,8 @@ go 1.23.3
 require (
 	github.com/containers/common v0.63.1
 	github.com/containers/podman/v5 v5.5.2
+	github.com/containers/storage v1.58.0
 	github.com/docker/docker v28.3.1+incompatible
-	github.com/docker/go-connections v0.5.0
 	github.com/google/uuid v1.6.0
 	github.com/mattn/go-sqlite3 v1.14.28
 	golang.org/x/sync v0.14.0
@@ -35,7 +35,6 @@ require (
 	github.com/containers/libtrust v0.0.0-20230121012942-c1716e8a8d01 // indirect
 	github.com/containers/ocicrypt v1.2.1 // indirect
 	github.com/containers/psgo v1.9.0 // indirect
-	github.com/containers/storage v1.58.0 // indirect
 	github.com/coreos/go-systemd/v22 v22.5.1-0.20231103132048-7d375ecc2b09 // indirect
 	github.com/cyberphone/json-canonicalization v0.0.0-20241213102144-19d51d7fe467 // indirect
 	github.com/cyphar/filepath-securejoin v0.4.1 // indirect
@@ -43,6 +42,7 @@ require (
 	github.com/distribution/reference v0.6.0 // indirect
 	github.com/docker/distribution v2.8.3+incompatible // indirect
 	github.com/docker/docker-credential-helpers v0.9.3 // indirect
+	github.com/docker/go-connections v0.5.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect

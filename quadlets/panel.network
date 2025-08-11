@@ -1,0 +1,7 @@
+[Network]
+NetworkName=panel
+Driver=bridge
+Gateway=10.89.0.1
+IPAMDriver=host-local
+PodmanArgs=--interface-name podman1
+Subnet=10.89.0.0/24

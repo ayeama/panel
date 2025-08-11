@@ -58,6 +58,7 @@ function serverView(id) {
         <thead>
           <tr>
             <th scope="col">Name</th>
+            <th>Image</th>
             <th>Status</th>
           </tr>
         </thead>
@@ -67,9 +68,13 @@ function serverView(id) {
             v-for="server in serversPaginated.items"
             v-bind:key="server.id"
             v-on:click="serverView(server.id)"
-            style="cursor: pointer;"
+            style="cursor: pointer"
           >
             <td scope="row">{{ server.name }}</td>
+            <!-- <td>{{ server.image }}</td> -->
+            <td>
+              <span class="badge text-bg-secondary">{{ server.image }}</span>
+            </td>
             <td>
               <ServerStatusBadge v-bind:server_id="server.id" v-bind:status="server.status" />
             </td>

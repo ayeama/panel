@@ -3,7 +3,6 @@ package repository
 import (
 	"database/sql"
 	"errors"
-	"strings"
 
 	"github.com/ayeama/panel/api/internal/domain"
 )
@@ -16,15 +15,15 @@ func NewServerRepository(db *sql.DB) *ServerRepository {
 	return &ServerRepository{db: db}
 }
 
-func (r *ServerRepository) Create(server *domain.Server) {
-	_, err := r.db.Exec("INSERT INTO servers (id, name, status, container_id, container_port) VALUES (?, ?, ?, ?, ?)", server.Id, server.Name, server.Status, server.Container.Id, server.Container.Port)
+func (r *ServerRepository) Create(id string, image_id string, container_id string) {
+	_, err := r.db.Exec("INSERT INTO servers (id, image_id, container_id) VALUES (?, ?, ?)", id, image_id, container_id)
 	if err != nil {
 		panic(err)
 	}
 }
 
 func (r *ServerRepository) Read(p domain.Pagination) domain.PaginationResponse[domain.Server] {
-	rows, err := r.db.Query("SELECT server.id, server.name, server.status, container_id, container_port FROM servers server LIMIT ? OFFSET ?", p.Limit, p.Offset)
+	rows, err := r.db.Query("SELECT id, image_id, container_id FROM servers LIMIT ? OFFSET ?", p.Limit, p.Offset)
 	if err != nil {
 		panic(err)
 	}
@@ -38,9 +37,9 @@ func (r *ServerRepository) Read(p domain.Pagination) domain.PaginationResponse[d
 
 	for rows.Next() {
 		var server domain.Server
-		server.Container = &domain.Container{}
+		// server.Container = &domain.Container{}
 
-		err = rows.Scan(&server.Id, &server.Name, &server.Status, &server.Container.Id, &server.Container.Port)
+		err = rows.Scan(&server.Id, &server.ImageId, &server.ContainerId)
 		if err != nil {
 			panic(err)
 		}
@@ -56,54 +55,55 @@ func (r *ServerRepository) Read(p domain.Pagination) domain.PaginationResponse[d
 	return servers
 }
 
-func (r *ServerRepository) ReadOne(server *domain.Server) error {
+func (r *ServerRepository) ReadOne(id string) (domain.Server, error) {
+	var server domain.Server
 	if server.Container == nil {
 		server.Container = &domain.Container{}
 	}
-	err := r.db.QueryRow("SELECT server.id, server.name, server.status, container_id, container_port FROM servers server WHERE server.id = ?", &server.Id).Scan(&server.Id, &server.Name, &server.Status, &server.Container.Id, &server.Container.Port)
+	err := r.db.QueryRow("SELECT id, image_id, container_id FROM servers WHERE id=?", id).Scan(&server.Id, &server.ImageId, &server.ContainerId)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return domain.ErrNotFound
+			return server, domain.ErrNotFound
 		} else {
 			panic(err)
 		}
 	}
-	return nil
+	return server, nil
 }
 
 func (s *ServerRepository) Update(server *domain.Server) {
-	query := "UPDATE servers SET "
-	params := []any{}
-	sets := []string{}
+	// query := "UPDATE servers SET "
+	// params := []any{}
+	// sets := []string{}
 
-	if server.Name != "" {
-		params = append(params, server.Name)
-		sets = append(sets, "name=?")
-	}
-	if server.Status != "" {
-		params = append(params, server.Status)
-		sets = append(sets, "status=?")
-	}
+	// if server.Name != "" {
+	// 	params = append(params, server.Name)
+	// 	sets = append(sets, "name=?")
+	// }
+	// if server.Status != "" {
+	// 	params = append(params, server.Status)
+	// 	sets = append(sets, "status=?")
+	// }
 
-	query += strings.Join(sets, ", ")
-	query += " WHERE id=? RETURNING name, status"
-	params = append(params, server.Id)
+	// query += strings.Join(sets, ", ")
+	// query += " WHERE id=? RETURNING name, status"
+	// params = append(params, server.Id)
 
-	err := s.db.QueryRow(query, params...).Scan(&server.Name, &server.Status)
-	if err != nil {
-		panic(err)
-	}
+	// err := s.db.QueryRow(query, params...).Scan(&server.Name, &server.Status)
+	// if err != nil {
+	// 	panic(err)
+	// }
 }
 
 func (r *ServerRepository) UpdateStatus(server *domain.Server) {
-	_, err := r.db.Exec("UPDATE servers SET status=? WHERE id=?", server.Status, server.Id)
-	if err != nil {
-		panic(err)
-	}
+	// _, err := r.db.Exec("UPDATE servers SET status=? WHERE id=?", server.Status, server.Id)
+	// if err != nil {
+	// 	panic(err)
+	// }
 }
 
-func (r *ServerRepository) Delete(server *domain.Server) {
-	_, err := r.db.Exec("DELETE FROM servers WHERE id = ?", server.Id)
+func (r *ServerRepository) Delete(id string) {
+	_, err := r.db.Exec("DELETE FROM servers WHERE id=?", id)
 	if err != nil {
 		panic(err)
 	}

@@ -1,11 +1,13 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
 
 const images = ref([])
-const image = ref('')
+
+const selectedImageName = ref('')
+const image = computed(() => images.value.find((img) => img.image === selectedImageName.value))
 
 onMounted(async () => {
   getImages()
@@ -23,7 +25,7 @@ async function getImages() {
     images.value = data.items
 
     if (images.value.length > 0) {
-      image.value = data.items[0].image
+      selectedImageName.value = data.items[0].image
     }
   } catch (error) {
     console.log('failed to fetch images', error)
@@ -40,7 +42,7 @@ async function createServer() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          image: image.value,
+          image: image.value.image,
         }),
       },
     )
@@ -59,7 +61,7 @@ async function createServer() {
         <h2>Create Server</h2>
       </div>
 
-      <div class="col my-auto">
+      <div class="col col-auto my-auto">
         <div class="float-end">
           <button form="createServer" type="submit" class="btn btn-primary">Create</button>
         </div>
@@ -67,17 +69,19 @@ async function createServer() {
     </div>
 
     <form v-on:submit.prevent="createServer" id="createServer">
-      <div class="row">
+      <div class="row mb-2">
         <div class="col">
           <div>
             <label for="imageSelect" class="form-label">Image</label>
             <select
-              v-model="image"
+              v-model="selectedImageName"
               class="form-select"
               id="imageSelect"
               aria-label="Default select example"
             >
-              <option v-for="image in images" v-bind:id="image.image">{{ image.image }}</option>
+              <option v-for="image in images" v-bind:key="image.image" v-bind:value="image.image">
+                {{ image.image }}
+              </option>
             </select>
           </div>
         </div>
@@ -88,6 +92,20 @@ async function createServer() {
             <input type="text" class="form-control" id="nameInput" v-model="name" />
           </div>
         </div> -->
+      </div>
+
+      <div class="row" v-if="image">
+        <div class="col-md-4 col-sm-6" v-for="(value, key) in image.variables" v-bind:key="key">
+          <div class="mb-2">
+            <label v-bind:for="`${key}Input`" class="form-label">{{ key }}</label>
+            <input
+              type="text"
+              class="form-control"
+              v-bind:id="`${key}Input`"
+              v-model="image.variables[key]"
+            />
+          </div>
+        </div>
       </div>
 
       <!-- <div class="row mt-3">

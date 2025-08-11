@@ -21,23 +21,30 @@ type Server struct {
 }
 
 func NewServer() *Server {
-	db, err := sql.Open("sqlite3", "panel.db") // TODO
+	db, err := sql.Open("sqlite3", "file:panel.db?_foreign_keys=true&_busy_timeout=1000000") // TODO
 	if err != nil {
 		panic(err)
 	}
 
 	_, err = db.Exec(`
 		CREATE TABLE IF NOT EXISTS images(
-			image VARCHAR(255) PRIMARY KEY
+			id TEXT NOT NULL UNIQUE PRIMARY KEY,
+			tag TEXT NOT NULL UNIQUE
 		);
 		CREATE TABLE IF NOT EXISTS servers(
-			id VARCHAR(36) PRIMARY KEY,
-			name VARCHAR(256) NOT NULL,
-			status VARCHAR(32) NOT NULL,
-			container_id VARCHAR(64) NOT NULL,
-			container_port VARCHAR(5)
+			id TEXT NOT NULL UNIQUE PRIMARY KEY,
+			image_id TEXT NOT NULL,
+			container_id TEXT NOT NULL UNIQUE
 		);
-		INSERT INTO images (image) VALUES ('localhost/ayeama/panel/workload/minecraft:0.0.1-jre21') ON CONFLICT DO NOTHING;
+		CREATE TABLE IF NOT EXISTS sidecars(
+			id TEXT NOT NULL UNIQUE PRIMARY KEY,
+			container_id TEXT NOT NULL UNIQUE,
+			server_id TEXT NOT NULL,
+			FOREIGN KEY (server_id) REFERENCES servers(id)
+		);
+		INSERT INTO images (id, tag) VALUES ('5b3a4946-e16e-4b14-9e85-cf4ed4fbd017', 'localhost/ayeama/panel/server/minecraft:0.0.1-jre21') ON CONFLICT DO NOTHING;
+		INSERT INTO images (id, tag) VALUES ('9401033b-ce72-4a36-8400-96eb4d69ca01', 'localhost/ayeama/panel/server/terraria:0.0.1') ON CONFLICT DO NOTHING;
+		INSERT INTO images (id, tag) VALUES ('afee984f-ff19-4682-b2fc-088ce9b4794e', 'localhost/ayeama/panel/server/valheim:0.0.1') ON CONFLICT DO NOTHING;
 	`)
 	if err != nil {
 		panic(err)
@@ -51,12 +58,14 @@ func NewServer() *Server {
 	mux := http.NewServeMux()
 
 	imageRepository := repository.NewImageRepository(db)
-	imageService := service.NewImageService(imageRepository)
+	imageService := service.NewImageService(runtime, imageRepository)
 	imageHandler := handler.NewImageHandler(imageService)
 	imageHandler.RegisterHandlers(mux)
 
+	sidecarRepository := repository.NewSidecarRepository(db)
+
 	serverRepository := repository.NewServerRepository(db)
-	serverService := service.NewServerService(runtime, serverRepository, imageService)
+	serverService := service.NewServerService(runtime, serverRepository, imageRepository, sidecarRepository)
 	serverHandler := handler.NewServerHandler(serverService)
 	serverHandler.RegisterHandlers(mux)
 
