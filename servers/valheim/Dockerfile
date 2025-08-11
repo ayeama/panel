@@ -1,13 +1,5 @@
 FROM docker.io/library/debian:12.11
 
-LABEL org.opencontainers.image.authors="github.com/ayeama/panel"
-LABEL com.github.ayeama.panel.workload.name="Valheim"
-LABEL com.github.ayeama.panel.workload.version="1"
-LABEL com.github.ayeama.panel.workload.stop=""
-
-ENV PANEL_NAME="My server"
-ENV PANEL_PASSWORD=""
-
 WORKDIR /data
 VOLUME ["/data"]
 
@@ -24,3 +16,11 @@ COPY ./entrypoint.sh /entrypoint.sh
 ENTRYPOINT [ "/entrypoint.sh" ]
 
 EXPOSE 2456
+
+LABEL org.opencontainers.image.authors="github.com/ayeama/panel"
+LABEL com.github.ayeama.panel.workload.name="Valheim"
+LABEL com.github.ayeama.panel.workload.version="1"
+LABEL com.github.ayeama.panel.workload.stop=""
+
+ENV PANEL_NAME="My server"
+ENV PANEL_PASSWORD="secret"
