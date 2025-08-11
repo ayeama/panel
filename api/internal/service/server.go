@@ -3,6 +3,7 @@ package service
 import (
 	"errors"
 	"io"
+	"time"
 
 	"github.com/ayeama/panel/api/internal/domain"
 	"github.com/ayeama/panel/api/internal/repository"
@@ -14,14 +15,16 @@ type ServerService struct {
 	runtime           runtime.Runtime
 	serverRepository  *repository.ServerRepository
 	imageRepository   *repository.ImageRepository
+	keyRepository     *repository.KeyRepository
 	sidecarRepository *repository.SidecarRepository
 }
 
-func NewServerService(runtime runtime.Runtime, serverRepository *repository.ServerRepository, imageRepository *repository.ImageRepository, sidecarRepository *repository.SidecarRepository) *ServerService {
+func NewServerService(runtime runtime.Runtime, serverRepository *repository.ServerRepository, imageRepository *repository.ImageRepository, keyRepository *repository.KeyRepository, sidecarRepository *repository.SidecarRepository) *ServerService {
 	return &ServerService{
 		runtime:           runtime,
 		serverRepository:  serverRepository,
 		imageRepository:   imageRepository,
+		keyRepository:     keyRepository,
 		sidecarRepository: sidecarRepository,
 	}
 }
@@ -144,10 +147,21 @@ func (s *ServerService) Start(id string) error {
 		}
 	}
 
+	pagination := domain.Pagination{
+		Limit:  20,
+		Offset: 0,
+	}
+	paginatedKeys := s.keyRepository.Read(pagination)
+	credentials := make([]string, 0)
+	for _, key := range paginatedKeys.Items {
+		credentials = append(credentials, key.PublicKey)
+	}
+
 	sidecars := s.sidecarRepository.ReadByServerId(server.Id)
 	for _, sidecar := range sidecars {
 		s.runtime.Start(sidecar.ContainerId)
-		s.runtime.InjectCredentials(sidecar.ContainerId)
+		time.Sleep(time.Millisecond * 100)
+		s.runtime.InjectCredentials(sidecar.ContainerId, credentials)
 	}
 
 	s.runtime.Start(server.ContainerId)

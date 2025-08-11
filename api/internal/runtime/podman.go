@@ -351,12 +351,7 @@ func (r *Podman) CreateSidecar(id string, tag string, server_id string) string {
 	return resp.ID
 }
 
-func (r *Podman) InjectCredentials(container_id string) {
-	credentials := []string{
-		"",
-		"",
-	}
-
+func (r *Podman) InjectCredentials(container_id string, credentials []string) {
 	for _, credential := range credentials {
 		createOptions := &handlers.ExecCreateConfig{
 			ExecOptions: dockerContainer.ExecOptions{

@@ -10,8 +10,8 @@
         <!-- <span class="navbar-brand mb-0 h1">Panel</span> -->
         <RouterLink class="navbar-brand mb-0 h1" to="/">Panel</RouterLink>
 
-        <!-- <div class="d-flex">
-          <div>
+        <div class="d-flex">
+          <!-- <div>
             <button class="btn" type="button"><Moon /></button>
           </div>
 
@@ -25,8 +25,11 @@
                 {{ environment.name }}
               </option>
             </select>
-          </div>
-        </div> -->
+          </div> -->
+
+          <div><RouterLink class="nav-link" to="/keys">Keys</RouterLink></div>
+
+        </div>
       </div>
     </nav>
   </header>

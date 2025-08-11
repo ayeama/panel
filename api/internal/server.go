@@ -31,6 +31,11 @@ func NewServer() *Server {
 			id TEXT NOT NULL UNIQUE PRIMARY KEY,
 			tag TEXT NOT NULL UNIQUE
 		);
+		CREATE TABLE IF NOT EXISTS keys(
+			id TEXT NOT NULL UNIQUE PRIMARY KEY,
+			comment TEXT NOT NULL,
+			public_key TEXT NOT NULL UNIQUE
+		);
 		CREATE TABLE IF NOT EXISTS servers(
 			id TEXT NOT NULL UNIQUE PRIMARY KEY,
 			image_id TEXT NOT NULL,
@@ -62,10 +67,15 @@ func NewServer() *Server {
 	imageHandler := handler.NewImageHandler(imageService)
 	imageHandler.RegisterHandlers(mux)
 
+	keyRepository := repository.NewKeyRepository(db)
+	keyService := service.NewKeyService(keyRepository)
+	keyHandler := handler.NewKeyHandler(keyService)
+	keyHandler.RegisterHandlers(mux)
+
 	sidecarRepository := repository.NewSidecarRepository(db)
 
 	serverRepository := repository.NewServerRepository(db)
-	serverService := service.NewServerService(runtime, serverRepository, imageRepository, sidecarRepository)
+	serverService := service.NewServerService(runtime, serverRepository, imageRepository, keyRepository, sidecarRepository)
 	serverHandler := handler.NewServerHandler(serverService)
 	serverHandler.RegisterHandlers(mux)
 

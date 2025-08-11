@@ -29,7 +29,7 @@ type Runtime interface {
 	Events() chan domain.RuntimeEvent
 
 	CreateSidecar(id string, tag string, server_id string) string
-	InjectCredentials(container_id string)
+	InjectCredentials(container_id string, credentials []string)
 
 	InspectImage(tag string) domain.Image
 }
