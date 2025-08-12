@@ -8,8 +8,8 @@ const newKeyComment = ref('')
 const newKeyKey = ref('')
 
 async function refresh() {
-  newKeyComment.value = ""
-  newKeyKey.value = ""
+  newKeyComment.value = ''
+  newKeyKey.value = ''
   await getKeys()
 }
 
@@ -85,21 +85,31 @@ onMounted(async () => {
 
     <div>
       <form v-on:submit.prevent="createKey" id="createKey">
-        
         <div class="mb-3">
           <label for="commentInput" class="form-label">Comment</label>
-          <input v-model="newKeyComment" type="text" class="form-control" id="commentInput" placeholder="user@localhost">
+          <input
+            v-model="newKeyComment"
+            type="text"
+            class="form-control"
+            id="commentInput"
+            placeholder="user@localhost"
+          />
         </div>
 
         <div class="mb-3">
           <label for="keyInput" class="form-label">Key</label>
-          <textarea v-model="newKeyKey" class="form-control" id="keyInput" rows="6" placeholder="Begins with 'ssh-rsa', 'ecdsa-sha2-nistp256', 'ecdsa-sha2-nistp384', 'ecdsa-sha2-nistp521', 'ssh-ed25519', 'sk-ecdsa-sha2-nistp256@openssh.com', or 'sk-ssh-ed25519@openssh.com'"></textarea>
+          <textarea
+            v-model="newKeyKey"
+            class="form-control"
+            id="keyInput"
+            rows="6"
+            placeholder="Begins with 'ssh-rsa', 'ecdsa-sha2-nistp256', 'ecdsa-sha2-nistp384', 'ecdsa-sha2-nistp521', 'ssh-ed25519', 'sk-ecdsa-sha2-nistp256@openssh.com', or 'sk-ssh-ed25519@openssh.com'"
+          ></textarea>
         </div>
 
         <div class="mb-3">
           <button class="btn btn-primary" form="createKey" type="submit">Create</button>
         </div>
-
       </form>
     </div>
 
@@ -114,14 +124,20 @@ onMounted(async () => {
         </thead>
 
         <tbody>
-          <tr
-            v-for="key in data.items"
-            v-bind:key="key.key"
-            style="cursor: pointer"
-          >
+          <tr v-for="key in data.items" v-bind:key="key.key" style="cursor: pointer">
             <td scope="row" class="text-truncate">SHA256:{{ key.key }}</td>
             <td>{{ key.comment }}</td>
-            <td><button class="btn btn-danger" type="button" data-bs-toggle="modal" data-bs-target="#modalConfirmDeleteServer" v-on:click="setSelectedKey(key.id)">Delete</button></td>
+            <td>
+              <button
+                class="btn btn-danger"
+                type="button"
+                data-bs-toggle="modal"
+                data-bs-target="#modalConfirmDeleteServer"
+                v-on:click="setSelectedKey(key.id)"
+              >
+                Delete
+              </button>
+            </td>
           </tr>
         </tbody>
       </table>
