@@ -20,6 +20,7 @@ type session struct {
 
 type config struct {
 	ApiAddress      string
+	Domain          string
 	ServerHost      string
 	ServerPortRange string
 	Runtime         string
@@ -32,6 +33,11 @@ func New() {
 	apiAddress := os.Getenv("PANEL_ADDRESS")
 	if apiAddress == "" {
 		apiAddress = "0.0.0.0:8000"
+	}
+
+	domain := os.Getenv("PANEL_DOMAIN")
+	if domain == "" {
+		domain = "http://localhost:5173"
 	}
 
 	serverHost := os.Getenv("PANEL_SERVER_HOST")
@@ -75,6 +81,7 @@ func New() {
 
 	Config = &config{
 		ApiAddress:      apiAddress,
+		Domain:          domain,
 		ServerHost:      serverHost,
 		ServerPortRange: serverPortRange,
 		Runtime:         runtime,

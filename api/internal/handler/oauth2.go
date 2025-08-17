@@ -103,7 +103,7 @@ func (h *OAuth2Handler) Callback(w http.ResponseWriter, r *http.Request) {
 		SameSite: http.SameSiteLaxMode,
 	}
 	http.SetCookie(w, sessionCookie)
-	http.Redirect(w, r, "http://localhost:5173", http.StatusMovedPermanently)
+	http.Redirect(w, r, config.Config.Domain, http.StatusMovedPermanently)
 }
 
 func (h *OAuth2Handler) RegisterHandlers(m *http.ServeMux) {
