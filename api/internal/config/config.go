@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"os"
 	"strconv"
 )
@@ -9,13 +10,15 @@ var Config *config
 
 const SessionCookieName string = "PSID"
 
-const OAuth2RedirectURI string = ""
-const OAuth2ClientID string = ""
-const OAUth2ClientSecret string = ""
-
 type session struct {
 	CookieDomain string
 	CookieSecure bool
+}
+
+type oauth2 struct {
+	ClientId     string
+	RedirectURI  string
+	ClientSecret string
 }
 
 type config struct {
@@ -26,6 +29,7 @@ type config struct {
 	Runtime         string
 	RuntimeUri      string
 
+	OAuth2  *oauth2
 	Session *session
 }
 
@@ -60,6 +64,21 @@ func New() {
 		runtimeUri = "unix:/run/user/1000/podman/podman.sock"
 	}
 
+	oauth2ClientId := os.Getenv("PANEL_OAUTH2_CLIENT_ID")
+	if oauth2ClientId == "" {
+		panic(errors.New("missing oauth2 client id"))
+	}
+
+	oauth2ClientSecret := os.Getenv("PANEL_OAUTH2_CLIENT_SECRET")
+	if oauth2ClientSecret == "" {
+		panic(errors.New("missing oauth2 client secret"))
+	}
+
+	oauth2RedirectURI := os.Getenv("PANEL_OAUTH2_REDIRECT_URI")
+	if oauth2RedirectURI == "" {
+		oauth2RedirectURI = "http://localhost:8000/oauth2/callback"
+	}
+
 	sessionCookieDomain := os.Getenv("PANEL_SESSION_COOKIE_DOMAIN")
 	if sessionCookieDomain == "" {
 		sessionCookieDomain = "localhost"
@@ -79,6 +98,12 @@ func New() {
 		CookieSecure: sessionCookieSecure,
 	}
 
+	oauth2 := &oauth2{
+		ClientId:     oauth2ClientId,
+		ClientSecret: oauth2ClientSecret,
+		RedirectURI:  oauth2RedirectURI,
+	}
+
 	Config = &config{
 		ApiAddress:      apiAddress,
 		Domain:          domain,
@@ -86,6 +111,7 @@ func New() {
 		ServerPortRange: serverPortRange,
 		Runtime:         runtime,
 		RuntimeUri:      runtimeUri,
+		OAuth2:          oauth2,
 		Session:         session,
 	}
 }

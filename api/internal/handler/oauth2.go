@@ -33,7 +33,7 @@ func (h *OAuth2Handler) Callback(w http.ResponseWriter, r *http.Request) {
 	form := url.Values{}
 	form.Set("grant_type", "authorization_code")
 	form.Set("code", code)
-	form.Set("redirect_uri", config.OAuth2RedirectURI)
+	form.Set("redirect_uri", config.Config.OAuth2.RedirectURI)
 
 	body := strings.NewReader(form.Encode())
 	request, err := http.NewRequest("POST", "https://discord.com/api/oauth2/token", body)
@@ -42,7 +42,7 @@ func (h *OAuth2Handler) Callback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	request.SetBasicAuth(config.OAuth2ClientID, config.OAUth2ClientSecret)
+	request.SetBasicAuth(config.Config.OAuth2.ClientId, config.Config.OAuth2.ClientSecret)
 
 	client := &http.Client{}
 	response, err := client.Do(request)
