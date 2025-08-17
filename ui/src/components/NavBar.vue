@@ -1,6 +1,7 @@
 <script setup>
 // import { ENVIRONMENTS } from '@/config'
 // import Moon from '@/components/icons/Moon.vue'
+// import { authenticated } from '@/lib/client';
 </script>
 
 <template>
@@ -10,8 +11,10 @@
         <!-- <span class="navbar-brand mb-0 h1">Panel</span> -->
         <RouterLink class="navbar-brand mb-0 h1" to="/">Panel</RouterLink>
 
-        <!-- <div class="d-flex">
-          <div>
+        <div class="d-flex">
+          <!-- <RouterLink v-if="!authenticated" class="nav-link" to="/signin">Sign in</RouterLink> -->
+
+          <!-- <div>
             <button class="btn" type="button"><Moon /></button>
           </div>
 
@@ -25,8 +28,8 @@
                 {{ environment.name }}
               </option>
             </select>
-          </div>
-        </div> -->
+          </div> -->
+        </div>
       </div>
     </nav>
   </header>

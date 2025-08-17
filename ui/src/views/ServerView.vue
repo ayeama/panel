@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { request } from '@/lib/client'
 import ModalConfirm from '@/components/ModalConfirm.vue'
 import Terminal from '@/components/Terminal.vue'
 import ServerStats from '@/components/ServerStats.vue'
@@ -19,12 +20,9 @@ const command = computed(() => (data.value.status === 'running' ? 'connect' : 'd
 
 async function handleDeleteConfirmModalConfirm() {
   try {
-    const response = await fetch(
-      `${window.CONFIG.api.scheme}://${window.CONFIG.api.host}${window.CONFIG.api.path}/servers/${id}`,
-      {
-        method: 'DELETE',
-      },
-    )
+    const response = await request(`/servers/${id}`, {
+      method: 'DELETE',
+    })
   } catch (error) {
     console.log('Failed to delete server', error)
   } finally {
@@ -34,9 +32,7 @@ async function handleDeleteConfirmModalConfirm() {
 
 async function getServer(id) {
   try {
-    const response = await fetch(
-      `${window.CONFIG.api.scheme}://${window.CONFIG.api.host}${window.CONFIG.api.path}/servers/${id}`,
-    )
+    const response = await request(`/servers/${id}`)
     data.value = await response.json()
   } catch (error) {
     console.log('Failed to get server', error)
@@ -45,12 +41,9 @@ async function getServer(id) {
 
 async function startServer() {
   try {
-    const response = await fetch(
-      `${window.CONFIG.api.scheme}://${window.CONFIG.api.host}${window.CONFIG.api.path}/servers/${id}/start`,
-      {
-        method: 'POST',
-      },
-    )
+    const response = await request(`/servers/${id}/start`, {
+      method: 'POST',
+    })
     // TODO handle?
   } catch (error) {
     console.log('Failed to start server')
@@ -59,12 +52,9 @@ async function startServer() {
 
 async function stopServer() {
   try {
-    const response = await fetch(
-      `${window.CONFIG.api.scheme}://${window.CONFIG.api.host}${window.CONFIG.api.path}/servers/${id}/stop`,
-      {
-        method: 'POST',
-      },
-    )
+    const response = await request(`/servers/${id}/stop`, {
+      method: 'POST',
+    })
     // TODO handle?
   } catch (error) {
     console.log('Failed to stop server')
@@ -73,12 +63,9 @@ async function stopServer() {
 
 async function backupServer() {
   try {
-    const response = await fetch(
-      `${window.CONFIG.api.scheme}://${window.CONFIG.api.host}${window.CONFIG.api.path}/servers/${id}/backup`,
-      {
-        method: 'POST',
-      },
-    )
+    const response = await request(`/servers/${id}/backup`, {
+      method: 'POST',
+    })
   } catch (error) {
     console.log('Failed to backup server')
   }
