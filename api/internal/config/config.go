@@ -2,6 +2,7 @@ package config
 
 import (
 	"os"
+	"strconv"
 )
 
 var Config *config
@@ -12,12 +13,19 @@ const OAuth2RedirectURI string = ""
 const OAuth2ClientID string = ""
 const OAUth2ClientSecret string = ""
 
+type session struct {
+	CookieDomain string
+	CookieSecure bool
+}
+
 type config struct {
 	ApiAddress      string
 	ServerHost      string
 	ServerPortRange string
 	Runtime         string
 	RuntimeUri      string
+
+	Session *session
 }
 
 func New() {
@@ -46,11 +54,32 @@ func New() {
 		runtimeUri = "unix:/run/user/1000/podman/podman.sock"
 	}
 
+	sessionCookieDomain := os.Getenv("PANEL_SESSION_COOKIE_DOMAIN")
+	if sessionCookieDomain == "" {
+		sessionCookieDomain = "localhost"
+	}
+
+	_sessionCookieSecure := os.Getenv("PANEL_SESSION_COOKIE_SECURE")
+	if _sessionCookieSecure == "" {
+		_sessionCookieSecure = "true"
+	}
+	sessionCookieSecure, err := strconv.ParseBool(_sessionCookieSecure)
+	if err != nil {
+		panic(err)
+	}
+
+	session := &session{
+		CookieDomain: sessionCookieDomain,
+		CookieSecure: sessionCookieSecure,
+	}
+
 	Config = &config{
 		ApiAddress:      apiAddress,
 		ServerHost:      serverHost,
 		ServerPortRange: serverPortRange,
 		Runtime:         runtime,
 		RuntimeUri:      runtimeUri,
+		BackupDirectory: backupDirectory,
+		Session:         session,
 	}
 }

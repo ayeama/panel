@@ -96,9 +96,9 @@ func (h *OAuth2Handler) Callback(w http.ResponseWriter, r *http.Request) {
 		Name:     config.SessionCookieName,
 		Value:    session.Id,
 		Path:     "/",
-		Domain:   "localhost",
+		Domain:   config.Config.Session.CookieDomain,
 		MaxAge:   3600,
-		Secure:   false, // TODO: security
+		Secure:   config.Config.Session.CookieSecure,
 		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,
 	}
