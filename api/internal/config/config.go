@@ -79,7 +79,6 @@ func New() {
 		ServerPortRange: serverPortRange,
 		Runtime:         runtime,
 		RuntimeUri:      runtimeUri,
-		BackupDirectory: backupDirectory,
 		Session:         session,
 	}
 }
