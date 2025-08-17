@@ -1,6 +1,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { request } from '@/lib/client.js'
 import ArrowClockwise from '@/components/icons/ArrowClockwise.vue'
 import ServerStatusBadge from '@/components/ServerStatusBadge.vue'
 
@@ -26,9 +27,7 @@ async function getServers(page = 1) {
   var offset = (page - 1) * paginationLimit.value
 
   try {
-    const response = await fetch(
-      `${window.CONFIG.api.scheme}://${window.CONFIG.api.host}${window.CONFIG.api.path}/servers?limit=${limit}&offset=${offset}`,
-    )
+    const response = await request(`/servers?limit=${limit}&offset=${offset}`)
     const data = await response.json()
     serversPaginated.value = data
   } catch (error) {

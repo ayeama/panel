@@ -1,6 +1,7 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { request } from '@/lib/client'
 
 const router = useRouter()
 
@@ -18,9 +19,7 @@ async function getImages() {
   var offset = 0
 
   try {
-    const response = await fetch(
-      `${window.CONFIG.api.scheme}://${window.CONFIG.api.host}${window.CONFIG.api.path}/images?limit=${limit}&offset=${offset}`,
-    )
+    const response = await request(`/images?limit=${limit}&offset=${offset}`)
     const data = await response.json()
     images.value = data.items
 
@@ -34,18 +33,15 @@ async function getImages() {
 
 async function createServer() {
   try {
-    const response = await fetch(
-      `${window.CONFIG.api.scheme}://${window.CONFIG.api.host}${window.CONFIG.api.path}/servers`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          image: image.value.image,
-        }),
+    const response = await request('/servers', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
       },
-    )
+      body: JSON.stringify({
+        image: image.value.image,
+      }),
+    })
   } catch (error) {
     console.log('Failed creating server', error)
   } finally {
