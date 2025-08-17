@@ -6,6 +6,12 @@ import (
 
 var Config *config
 
+const SessionCookieName string = "PSID"
+
+const OAuth2RedirectURI string = ""
+const OAuth2ClientID string = ""
+const OAUth2ClientSecret string = ""
+
 type config struct {
 	ApiAddress      string
 	ServerHost      string
@@ -22,8 +28,7 @@ func New() {
 
 	serverHost := os.Getenv("PANEL_SERVER_HOST")
 	if serverHost == "" {
-		serverHost = "127.0.0.1"
-		// panic("config: server host requried")
+		serverHost = "localhost"
 	}
 
 	serverPortRange := os.Getenv("PANEL_SERVER_PORT_RANGE")

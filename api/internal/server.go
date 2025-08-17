@@ -10,6 +10,7 @@ import (
 
 	"github.com/ayeama/panel/api/internal/config"
 	"github.com/ayeama/panel/api/internal/handler"
+	"github.com/ayeama/panel/api/internal/middleware"
 	"github.com/ayeama/panel/api/internal/repository"
 	"github.com/ayeama/panel/api/internal/runtime"
 	"github.com/ayeama/panel/api/internal/service"
@@ -27,6 +28,16 @@ func NewServer() *Server {
 	}
 
 	_, err = db.Exec(`
+		CREATE TABLE IF NOT EXISTS users(
+			id TEXT NOT NULL UNIQUE PRIMARY KEY,
+			email TEXT NOT NULL UNIQUE
+		);
+		CREATE TABLE IF NOT EXISTS sessions(
+			id TEXT NOT NULL UNIQUE PRIMARY KEY,
+			user_id TEXT NOT NULL,
+			expires TEXT NOT NULL,
+			FOREIGN KEY (user_id) REFERENCES users(id)
+		);
 		CREATE TABLE IF NOT EXISTS images(
 			id TEXT NOT NULL UNIQUE PRIMARY KEY,
 			tag TEXT NOT NULL UNIQUE
@@ -57,6 +68,12 @@ func NewServer() *Server {
 
 	mux := http.NewServeMux()
 
+	userRepository := repository.NewUserRepository(db)
+	userService := service.NewUserService(userRepository)
+
+	sessionRepository := repository.NewSessionRepository(db)
+	sessionService := service.NewSessionService(sessionRepository)
+
 	imageRepository := repository.NewImageRepository(db)
 	imageService := service.NewImageService(runtime, imageRepository)
 	imageHandler := handler.NewImageHandler(imageService)
@@ -72,10 +89,13 @@ func NewServer() *Server {
 	eventHandler := handler.NewEventHandler(serverService)
 	eventHandler.RegisterHandlers(mux)
 
+	oauth2Handler := handler.NewOAuth2Handler(userService, sessionService)
+	oauth2Handler.RegisterHandlers(mux)
+
 	server := Server{
 		server: http.Server{
 			Addr:    config.Config.ApiAddress,
-			Handler: Log(Cors(mux)), // TODO update middleware method
+			Handler: middleware.Log(middleware.Cors(middleware.Session(mux, sessionService, userService))), // TODO update middleware method
 		},
 		serverService: serverService,
 	}
