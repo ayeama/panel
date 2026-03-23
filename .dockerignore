@@ -1,0 +1,38 @@
+################################################################################
+# Custom
+################################################################################
+
+server.crt
+server.key
+
+servers
+terraform-provider-panel
+
+################################################################################
+# Nuxt
+################################################################################
+
+# Nuxt dev/build outputs
+web/.output
+web/.data
+web/.nuxt
+web/.nitro
+web/.cache
+web/dist
+
+# Node dependencies
+web/node_modules
+
+# Logs
+web/logs
+web/*.log
+
+# Misc
+web/.DS_Store
+web/.fleet
+web/.idea
+
+# Local env files
+web/.env
+web/.env.*
+web/!.env.example

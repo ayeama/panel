@@ -1,5 +1,0 @@
-all:
-  hosts:
-    p00:
-      ansible_host: 192.168.104.8
-      ansible_become_password: ""

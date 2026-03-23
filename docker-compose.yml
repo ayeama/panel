@@ -1,31 +1,12 @@
 services:
-  caddy:
-    image: docker.io/library/caddy:2.10.0-alpine
-    restart: unless-stopped
-    ports:
-      - 8443:443
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile
-      - ./cert.pem:/cert.pem:Z
-      - ./cert.key:/cert.key:Z
-
-  ui:
-    image: panel/ui:latest
+  frontend:
+    image: panel-frontend
     build:
-      context: ./ui
-    restart: unless-stopped
-
-  api:
-    image: panel/api:latest
+      dockerfile: Dockerfile.frontend
+  
+  backend:
+    image: panel-backend
     build:
-      context: ./api
-    restart: unless-stopped
-    user: root
-    environment:
-      - PANEL_SERVER_HOST=ayeama.com
+      dockerfile: Dockerfile.backend
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:Z
-      - api_data:/app
-
-volumes:
-  api_data:
+      - "/run/user/1000/podman/podman.sock:/run/user/1000/podman/podman.sock:Z"

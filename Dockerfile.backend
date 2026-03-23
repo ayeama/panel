@@ -1,0 +1,72 @@
+FROM golang:1.24.2 AS build
+
+WORKDIR /app
+
+RUN apt-get update && \
+    apt-get install -y \
+        btrfs-progs \
+        gcc \
+        git \
+        golang-go \
+        go-md2man \
+        iptables \
+        libassuan-dev \
+        libbtrfs-dev \
+        libc6-dev \
+        libdevmapper-dev \
+        libglib2.0-dev \
+        libgpgme-dev \
+        libgpg-error-dev \
+        libprotobuf-dev \
+        libprotobuf-c-dev \
+        libseccomp-dev \
+        libselinux1-dev \
+        libsystemd-dev \
+        make \
+        netavark \
+        passt \
+        pkg-config \
+        runc \
+        uidmap
+
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY . .
+RUN GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o /panel ./cmd/panel
+
+FROM debian:bookworm-slim
+
+# TODO only install required
+RUN apt-get update && \
+    apt-get install -y \
+        btrfs-progs \
+        gcc \
+        git \
+        golang-go \
+        go-md2man \
+        iptables \
+        libassuan-dev \
+        libbtrfs-dev \
+        libc6-dev \
+        libdevmapper-dev \
+        libglib2.0-dev \
+        libgpgme-dev \
+        libgpg-error-dev \
+        libprotobuf-dev \
+        libprotobuf-c-dev \
+        libseccomp-dev \
+        libselinux1-dev \
+        libsystemd-dev \
+        make \
+        netavark \
+        passt \
+        pkg-config \
+        runc \
+        uidmap
+
+COPY --from=build /panel /usr/bin/panel
+
+EXPOSE 8000
+
+ENTRYPOINT [ "panel" ]

@@ -1,3 +1,3 @@
 # Panel
 
-An ayeama game panel.
+Game server management panel
