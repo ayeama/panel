@@ -1,9 +1,9 @@
 FROM docker.io/library/debian:12.11
 
 LABEL org.opencontainers.image.authors="github.com/ayeama/panel"
-LABEL com.github.ayeama.panel.workload.name="Terraria"
-LABEL com.github.ayeama.panel.workload.version="1"
-LABEL com.github.ayeama.panel.workload.stop="exit"
+LABEL com.github.ayeama.panel.server.name="Terraria"
+LABEL com.github.ayeama.panel.server.version="1"
+LABEL com.github.ayeama.panel.server.stop="exit"
 
 ENV PANEL_VERSION="1449"
 ENV PANEL_WORLD_SIZE="1"

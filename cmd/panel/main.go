@@ -123,7 +123,7 @@ func (h *ServerHandler) handle_create(w http.ResponseWriter, r *http.Request) {
 	// s := specgen.NewSpecGenerator(request.Image, false)
 	s := specgen.NewSpecGenerator(img.ID, false)
 
-	s.Labels = map[string]string{"com.github.ayeama.panel.api.server.id": "TODO"} // TODO
+	s.Labels = map[string]string{"com.github.ayeama.panel.server.id": "TODO"} // TODO
 
 	if s.Env == nil {
 		s.Env = make(map[string]string)
@@ -224,7 +224,7 @@ func (h *ServerHandler) handle_create(w http.ResponseWriter, r *http.Request) {
 
 func (h *ServerHandler) handle_read(w http.ResponseWriter, r *http.Request) {
 	all := true
-	filters := map[string][]string{"label": {"com.github.ayeama.panel.api.server.id"}} // TODO labels
+	filters := map[string][]string{"label": {"com.github.ayeama.panel.server.id"}} // TODO labels
 	options := &containers.ListOptions{
 		All:     &all,
 		Filters: filters,

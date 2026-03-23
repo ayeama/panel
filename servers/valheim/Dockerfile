@@ -1,9 +1,9 @@
 FROM docker.io/library/debian:12.11
 
 LABEL org.opencontainers.image.authors="github.com/ayeama/panel"
-LABEL com.github.ayeama.panel.workload.name="Valheim"
-LABEL com.github.ayeama.panel.workload.version="1"
-LABEL com.github.ayeama.panel.workload.stop=""
+LABEL com.github.ayeama.panel.server.name="Valheim"
+LABEL com.github.ayeama.panel.server.version="1"
+LABEL com.github.ayeama.panel.server.stop=""
 
 ENV PANEL_NAME="My server"
 ENV PANEL_PASSWORD=""
