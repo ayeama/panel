@@ -7,6 +7,7 @@ LABEL com.github.ayeama.panel.server.stop=""
 
 ENV PANEL_NAME="My server"
 ENV PANEL_PASSWORD=""
+ENV PANEL_PUBLIC="1"
 
 WORKDIR /data
 VOLUME ["/data"]

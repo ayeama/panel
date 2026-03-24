@@ -7,6 +7,7 @@ fi
 
 NAME=$PANEL_NAME
 PASSWORD=$PANEL_PASSWORD
+PUBLIC=$PANEL_PUBLIC
 
 WORLD="Dedicated"
 SAVEDIR="/data/Valheim"
@@ -24,10 +25,18 @@ fi
 
 if [ ! -f /data/start_server.sh ]; then
     cd /data
-    /opt/steam/steamcmd.sh +force_install_dir /data +login anonymous +app_update 896660 validate +quit
+
+    for i in 1 2 3; do
+        if /opt/steam/steamcmd.sh +force_install_dir /data +login anonymous +app_update 896660 validate +quit; then
+            break
+        fi
+
+        echo "SteamCMD install attempt $i failed, retrying..."
+        sleep 1
+    done
 fi
 
 export templdpath=$LD_LIBRARY_PATH
 export LD_LIBRARY_PATH=./linux64:$LD_LIBRARY_PATH
 export SteamAppId=892970
-exec ./valheim_server.x86_64 -name "$NAME" -port 2456 -world "$WORLD" -password "$PASSWORD" -savedir "$SAVEDIR"
+exec ./valheim_server.x86_64 -name "$NAME" -port 2456 -world "$WORLD" -password "$PASSWORD" -savedir "$SAVEDIR" -public "$PUBLIC"

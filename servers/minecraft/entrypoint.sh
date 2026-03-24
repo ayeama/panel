@@ -1,6 +1,6 @@
 #!/usr/bin/bash
 
-if [ -f "/data/run.sh" ]; then
+if [ -f /data/run.sh ]; then
     exec /data/run.sh
 fi
 
