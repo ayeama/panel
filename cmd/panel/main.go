@@ -171,6 +171,7 @@ func (h *ServerHandler) handle_create(w http.ResponseWriter, r *http.Request) {
 		s.PortMappings = append(s.PortMappings, nettypes.PortMapping{
 			ContainerPort: uint16(containerPort),
 			HostPort:      uint16(hostPort),
+			Protocol:      "tcp,udp",
 		})
 	}
 
