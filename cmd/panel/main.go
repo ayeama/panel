@@ -205,7 +205,7 @@ func (h *ServerHandler) handle_create(w http.ResponseWriter, r *http.Request) {
 	response := api.ServerResponse{
 		Id:     i.ID,
 		Name:   i.Name,
-		Image:  i.Image,
+		Image:  img.RepoTags[0], // TODO check
 		Status: i.State.Status,
 		Ports:  ports,
 	}
@@ -277,6 +277,13 @@ func (h *ServerHandler) handle_read_one(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	img, err := images.GetImage(*h.srv.podman, i.Image, nil)
+	if err != nil {
+		fmt.Println("server handle create get image:", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
 	ports := make([]string, 0, len(i.NetworkSettings.Ports))
 	for _, hostports := range i.NetworkSettings.Ports {
 		for _, hostport := range hostports {
@@ -287,7 +294,7 @@ func (h *ServerHandler) handle_read_one(w http.ResponseWriter, r *http.Request) 
 	response := api.ServerResponse{
 		Id:     i.ID,
 		Name:   i.Name,
-		Image:  i.Image,
+		Image:  img.RepoTags[0], // TODO check
 		Status: i.State.Status,
 		Ports:  ports,
 	}
@@ -819,7 +826,7 @@ func main() {
 	}
 	server_handler.Register(mux)
 
-	handler := middleware.Cors(mux)
+	handler := middleware.Log(middleware.Cors(mux))
 
 	err = http.ListenAndServe("0.0.0.0:8000", handler)
 	if err != nil {
