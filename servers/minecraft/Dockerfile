@@ -1,4 +1,4 @@
-FROM docker.io/eclipse-temurin:21-jre-noble
+FROM docker.io/eclipse-temurin:25-jre-noble
 
 LABEL org.opencontainers.image.authors="github.com/ayeama/panel"
 LABEL com.github.ayeama.panel.server.name="Minecraft Vanilla"
@@ -13,6 +13,7 @@ VOLUME ["/data"]
 
 RUN apt-get update -y && \
     apt-get install -y \
+        curl \
         jq && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
