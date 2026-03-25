@@ -144,6 +144,7 @@ func (p *PanelProvider) EphemeralResources(ctx context.Context) []func() ephemer
 
 func (p *PanelProvider) DataSources(ctx context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
+		NewImageDataSource,
 		NewImagesDataSource,
 		NewServerDataSource,
 	}

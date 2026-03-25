@@ -41,7 +41,26 @@ type ImageHandler struct {
 }
 
 func (h *ImageHandler) handle_read(w http.ResponseWriter, r *http.Request) {
-	filters := map[string][]string{"label": {"com.github.ayeama.panel.server.name"}} // TODO labels
+	var imageFilters = map[string]struct{}{
+		"label":     {},
+		"reference": {},
+	}
+	filters := make(map[string][]string)
+	filters["dangling"] = []string{"false"}
+	filters["label"] = []string{"com.github.ayeama.panel.server.name"}
+	for key, values := range r.URL.Query() {
+		if _, ok := imageFilters[key]; !ok {
+			continue
+		}
+		for _, v := range values {
+			if v == "" {
+				continue
+			}
+			// TODO validation
+			filters[key] = append(filters[key], v)
+		}
+	}
+
 	options := &images.ListOptions{
 		Filters: filters,
 	}
