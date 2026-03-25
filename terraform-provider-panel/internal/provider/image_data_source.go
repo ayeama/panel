@@ -34,6 +34,7 @@ type ImageDataSourceModel struct {
 	MostRecent types.Bool   `tfsdk:"most_recent"`
 
 	// ID         types.String `tfsdk:"id"`
+	Reference  types.String `tfsdk:"reference"`
 	Repository types.String `tfsdk:"repository"`
 	Tag        types.String `tfsdk:"tag"`
 	// Env        types.Map    `tfsdk:"env"`
@@ -62,6 +63,9 @@ func (d *ImageDataSource) Schema(ctx context.Context, req datasource.SchemaReque
 			// "id": schema.StringAttribute{
 			// 	Computed: true,
 			// },
+			"reference": schema.StringAttribute{
+				Computed: true,
+			},
 			"repository": schema.StringAttribute{
 				Computed: true,
 			},
@@ -206,6 +210,7 @@ func (d *ImageDataSource) Read(ctx context.Context, req datasource.ReadRequest, 
 	// }
 
 	// data.ID = types.StringValue(image.Id)
+	data.Reference = types.StringValue(image.Reference)
 	data.Repository = types.StringValue(image.Repository)
 	data.Tag = types.StringValue(image.Tag)
 	// data.Env = envValue
