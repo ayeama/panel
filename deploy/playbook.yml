@@ -34,30 +34,18 @@
         image: panel-frontend:latest
 
     - name: Copy caddy configuration file
-      ansible.builtin.copy:
-        src: files/Caddyfile
+      ansible.builtin.template:
+        src: templates/Caddyfile.j2
         dest: "{{ ansible_facts['user_dir'] }}/Caddyfile"
-
-    - name: Copy caddy certificate file
-      ansible.builtin.copy:
-        src: files/server.crt
-        dest: "{{ ansible_facts['user_dir'] }}/server.crt"
-
-    - name: Copy caddy certificate key file
-      ansible.builtin.copy:
-        src: files/server.key
-        dest: "{{ ansible_facts['user_dir'] }}/server.key"
 
     - name: Create caddy container
       containers.podman.podman_container:
         state: quadlet
         pod: panel.pod
         name: panel-caddy
-        image: caddy:latest
+        image: docker.io/caddybuilds/caddy-cloudflare:latest
         volume:
           - "%h/Caddyfile:/etc/caddy/Caddyfile:Z"
-          - "%h/server.crt:/etc/caddy/certs/server.crt:Z"
-          - "%h/server.key:/etc/caddy/certs/server.key:Z"
 
     - name: Reload systemd
       ansible.builtin.systemd_service:
@@ -67,27 +55,27 @@
     - name: Start pod
       ansible.builtin.systemd_service:
         scope: user
-        state: started
+        state: restarted
         enabled: true
         name: panel-pod
     
     - name: Start api container
       ansible.builtin.systemd_service:
         scope: user
-        state: started
+        state: restarted
         enabled: true
         name: panel-api
     
     - name: Start ui container
       ansible.builtin.systemd_service:
         scope: user
-        state: started
+        state: restarted
         enabled: true
         name: panel-ui
     
     - name: Start caddy container
       ansible.builtin.systemd_service:
         scope: user
-        state: started
+        state: restarted
         enabled: true
         name: panel-caddy

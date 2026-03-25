@@ -17,7 +17,7 @@ sudo firewall-cmd --list-all
 ```
 
 ```sh
-ansible-playbook -i inventory.yml playbook.yml
+ansible-playbook -i inventory.yml -J playbook.yml
 ```
 
 Reserve ephemeral ports for exposing servers.
