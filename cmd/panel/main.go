@@ -73,6 +73,7 @@ func (h *ImageHandler) handle_read(w http.ResponseWriter, r *http.Request) {
 
 		items = append(items, api.ImageResponse{
 			Id:         i.ID,
+			Reference:  repo.String(),
 			Repository: name,
 			Tag:        tag,
 			Env:        env,

@@ -9,5 +9,5 @@ function short(image: string) {
 </script>
 
 <template>
-    <UBadge variant="outline" color="neutral">{{ short(image) }}</UBadge>
+    <UBadge variant="outline" color="neutral">{{ image }}</UBadge>
 </template>

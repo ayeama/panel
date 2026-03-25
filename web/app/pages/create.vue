@@ -22,7 +22,7 @@ async function createServer() {
     }
 
     const request: ServerCreateRequest = {
-      image: selected.value.repository + ":" + selected.value.tag,
+      image: selected.value.reference,
       env: formState.env
     }
     const server = await create(request)
@@ -51,7 +51,7 @@ function envLabel(label: string) {
 }
 
 onMounted(async () => {
-  data.value = await read()
+  data.value = (await read()).sort((a, b) => a.reference.localeCompare(b.reference))
 })
 </script>
 
@@ -65,7 +65,7 @@ onMounted(async () => {
       <UForm :state="formState">
         <div class="mt-4">
           <UFormField label="Server">
-            <USelectMenu v-model="selected" :items="data" class="w-100" label-key="repository" placeholder="Select server" color="secondary" />
+            <USelectMenu v-model="selected" :items="data" class="w-100" label-key="reference" placeholder="Select server" color="secondary" />
           </UFormField>
         </div>
 
