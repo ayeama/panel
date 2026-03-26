@@ -244,8 +244,27 @@ func (h *ServerHandler) handle_create(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *ServerHandler) handle_read(w http.ResponseWriter, r *http.Request) {
+	var containerFilters = map[string]struct{}{
+		"name":   {},
+		"label":  {},
+		"status": {},
+	}
+	filters := make(map[string][]string)
+	filters["label"] = []string{"com.github.ayeama.panel.server.id"}
+	for key, values := range r.URL.Query() {
+		if _, ok := containerFilters[key]; !ok {
+			continue
+		}
+		for _, v := range values {
+			if v == "" {
+				continue
+			}
+			// TODO filtering
+			filters[key] = append(filters[key], v)
+		}
+	}
+
 	all := true
-	filters := map[string][]string{"label": {"com.github.ayeama.panel.server.id"}} // TODO labels
 	options := &containers.ListOptions{
 		All:     &all,
 		Filters: filters,
