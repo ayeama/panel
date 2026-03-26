@@ -38,6 +38,11 @@
         src: templates/Caddyfile.j2
         dest: "{{ ansible_facts['user_dir'] }}/Caddyfile"
 
+    - name: Create caddy data volume
+      containers.podman.podman_volume:
+        state: quadlet
+        name: panel-caddy-data
+
     - name: Create caddy container
       containers.podman.podman_container:
         state: quadlet
@@ -45,6 +50,7 @@
         name: panel-caddy
         image: docker.io/caddybuilds/caddy-cloudflare:latest
         volume:
+          - "panel-caddy-data:/data"
           - "%h/Caddyfile:/etc/caddy/Caddyfile:Z"
 
     - name: Reload systemd
