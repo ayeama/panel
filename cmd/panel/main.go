@@ -217,9 +217,9 @@ func (h *ServerHandler) handle_create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ports := make([]string, 0)
-	for port, hostports := range i.NetworkSettings.Ports {
+	for _, hostports := range i.NetworkSettings.Ports {
 		for _, hostport := range hostports {
-			ports = append(ports, fmt.Sprintf("%s %s:%s", port, hostport.HostIP, hostport.HostPort))
+			ports = append(ports, hostport.HostPort)
 		}
 	}
 
@@ -399,9 +399,9 @@ func (h *ServerHandler) handle_start(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ports := make([]string, 0)
-	for port, hostports := range i.NetworkSettings.Ports {
+	for _, hostports := range i.NetworkSettings.Ports {
 		for _, hostport := range hostports {
-			ports = append(ports, fmt.Sprintf("%s %s:%s", port, hostport.HostIP, hostport.HostPort))
+			ports = append(ports, hostport.HostPort)
 		}
 	}
 
@@ -483,9 +483,9 @@ func (h *ServerHandler) handle_stop(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ports := make([]string, 0)
-	for port, hostports := range i.NetworkSettings.Ports {
+	for _, hostports := range i.NetworkSettings.Ports {
 		for _, hostport := range hostports {
-			ports = append(ports, fmt.Sprintf("%s %s:%s", port, hostport.HostIP, hostport.HostPort))
+			ports = append(ports, hostport.HostPort)
 		}
 	}
 
