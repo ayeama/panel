@@ -166,7 +166,7 @@ const netMax = computed(() => {
           </div>
   
           <UCard
-          class="flex h-[40vh] flex-col overflow-hidden"
+          class="flex h-[60vh] flex-col overflow-hidden"
           :ui="{
               body: 'flex-1 min-h-0 p-0 sm:p-0'
           }"
@@ -177,7 +177,7 @@ const netMax = computed(() => {
               </div>
           </template>
   
-          <div ref="terminalEl" class="h-full w-full" />
+          <div ref="terminalEl" class="h-full w-full min-h-0"></div>
           </UCard>
   
           <div class="space-y-4">
