@@ -21,12 +21,16 @@ export function useServers() {
     await $fetch<Server>(api.http(`/servers/${id}`), {method: "DELETE"})
   }
 
-  const start = async (id: string): Promise<Server> => {
-    return await $fetch<Server>(api.http(`/servers/${id}/start`), {method: "POST"})
+  const start = async (id: string) => {
+    await $fetch<Server>(api.http(`/servers/${id}/start`), {method: "POST"})
   }
 
-  const stop = async (id: string): Promise<Server> => {
-    return await $fetch<Server>(api.http(`/servers/${id}/stop`), {method: "POST"})
+  const stop = async (id: string) => {
+    await $fetch<Server>(api.http(`/servers/${id}/stop`), {method: "POST"})
+  }
+
+  const restore = async(id: string, form: FormData) => {
+    await $fetch<Server>(api.http(`/servers/${id}/restore`), {method: "POST", body: form})
   }
 
   return {
@@ -36,5 +40,6 @@ export function useServers() {
     deleteOne,
     start,
     stop,
+    restore,
   }
 }

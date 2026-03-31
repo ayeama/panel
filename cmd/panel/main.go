@@ -278,12 +278,17 @@ func (h *ServerHandler) handle_read(w http.ResponseWriter, r *http.Request) {
 
 	items := make([]api.ServerResponse, 0, len(l))
 	for _, c := range l {
+		ports := make([]string, 0)
+		for _, port := range c.Ports {
+			ports = append(ports, fmt.Sprintf("%d", port.HostPort))
+		}
+
 		items = append(items, api.ServerResponse{
 			Id:     c.ID,
 			Name:   c.Names[0], // TODO: check
 			Image:  c.Image,
 			Status: c.State, // NOTE: state not status
-			// TODO ports
+			Ports:  ports,
 		})
 	}
 
@@ -391,38 +396,40 @@ func (h *ServerHandler) handle_start(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	i, err := containers.Inspect(*h.srv.podman, id, nil)
-	if err != nil {
-		fmt.Println(err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
+	// i, err := containers.Inspect(*h.srv.podman, id, nil)
+	// if err != nil {
+	// 	fmt.Println(err)
+	// 	w.WriteHeader(http.StatusInternalServerError)
+	// 	return
+	// }
 
-	ports := make([]string, 0)
-	for _, hostports := range i.NetworkSettings.Ports {
-		for _, hostport := range hostports {
-			ports = append(ports, hostport.HostPort)
-		}
-	}
+	// ports := make([]string, 0)
+	// for _, hostports := range i.NetworkSettings.Ports {
+	// 	for _, hostport := range hostports {
+	// 		ports = append(ports, hostport.HostPort)
+	// 	}
+	// }
 
-	response := api.ServerResponse{
-		Id:     i.ID,
-		Name:   i.Name,
-		Image:  i.Image,
-		Status: i.State.Status,
-		Ports:  ports,
-	}
+	// response := api.ServerResponse{
+	// 	Id:     i.ID,
+	// 	Name:   i.Name,
+	// 	Image:  i.Image,
+	// 	Status: i.State.Status,
+	// 	Ports:  ports,
+	// }
 
-	json, err := json.Marshal(response)
-	if err != nil {
-		fmt.Println(err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
+	// json, err := json.Marshal(response)
+	// if err != nil {
+	// 	fmt.Println(err)
+	// 	w.WriteHeader(http.StatusInternalServerError)
+	// 	return
+	// }
 
-	w.Header().Set("Content-Type", "application/json")
+	// w.Header().Set("Content-Type", "application/json")
+	// w.WriteHeader(http.StatusOK)
+	// w.Write(json)
+
 	w.WriteHeader(http.StatusOK)
-	w.Write(json)
 }
 
 func (h *ServerHandler) handle_stop(w http.ResponseWriter, r *http.Request) {
@@ -474,39 +481,41 @@ func (h *ServerHandler) handle_stop(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// get the container again
-	i, err := containers.Inspect(*h.srv.podman, id, nil)
-	if err != nil {
-		fmt.Println(err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
+	// // get the container again
+	// i, err := containers.Inspect(*h.srv.podman, id, nil)
+	// if err != nil {
+	// 	fmt.Println(err)
+	// 	w.WriteHeader(http.StatusInternalServerError)
+	// 	return
+	// }
 
-	ports := make([]string, 0)
-	for _, hostports := range i.NetworkSettings.Ports {
-		for _, hostport := range hostports {
-			ports = append(ports, hostport.HostPort)
-		}
-	}
+	// ports := make([]string, 0)
+	// for _, hostports := range i.NetworkSettings.Ports {
+	// 	for _, hostport := range hostports {
+	// 		ports = append(ports, hostport.HostPort)
+	// 	}
+	// }
 
-	response := api.ServerResponse{
-		Id:     i.ID,
-		Name:   i.Name,
-		Image:  i.Image,
-		Status: i.State.Status,
-		Ports:  ports,
-	}
+	// response := api.ServerResponse{
+	// 	Id:     i.ID,
+	// 	Name:   i.Name,
+	// 	Image:  i.Image,
+	// 	Status: i.State.Status,
+	// 	Ports:  ports,
+	// }
 
-	json, err := json.Marshal(response)
-	if err != nil {
-		fmt.Println(err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
+	// json, err := json.Marshal(response)
+	// if err != nil {
+	// 	fmt.Println(err)
+	// 	w.WriteHeader(http.StatusInternalServerError)
+	// 	return
+	// }
 
-	w.Header().Set("Content-Type", "application/json")
+	// w.Header().Set("Content-Type", "application/json")
+	// w.WriteHeader(http.StatusOK)
+	// w.Write(json)
+
 	w.WriteHeader(http.StatusOK)
-	w.Write(json)
 }
 
 func (h *ServerHandler) handle_attach(w http.ResponseWriter, r *http.Request) {
@@ -826,6 +835,23 @@ func (h *ServerHandler) handle_backup(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (h *ServerHandler) handle_restore(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	if id == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	file, _, err := r.FormFile("file")
+	if err != nil {
+		fmt.Println("server handle restore read file:", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	defer file.Close()
+
+}
+
 func (h *ServerHandler) Register(m *http.ServeMux) {
 	m.HandleFunc("POST /servers", h.handle_create)
 	m.HandleFunc("GET /servers", h.handle_read)
@@ -839,6 +865,7 @@ func (h *ServerHandler) Register(m *http.ServeMux) {
 	m.HandleFunc("GET /servers/{id}/stats", h.handle_stats)
 
 	m.HandleFunc("GET /servers/{id}/backup", h.handle_backup)
+	m.HandleFunc("POST /servers/{id}/restore", h.handle_restore)
 }
 
 func main() {

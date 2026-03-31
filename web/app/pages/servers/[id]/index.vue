@@ -21,7 +21,7 @@ useHead({
 
 const { copy, copied } = useClipboard()
 
-const { readOne, deleteOne, start, stop } = useServers()
+const { readOne, deleteOne, start, stop, restore } = useServers()
 const { data: server, status, error, refresh } = await useAsyncData(
   () => `server-${id.value}`,
   () => readOne(id.value),
@@ -100,6 +100,28 @@ function backupURL(): string {
   return api.http(`/servers/${id.value}/backup`)
 }
 
+const restoreFileInput = ref<HTMLInputElement | null>(null)
+const restoreFile = ref<File | null>(null)
+
+function restoreServer() {
+  restoreFileInput.value?.click()
+}
+
+async function restoreServerFileChange(e: Event) {
+  const input = e.target as HTMLInputElement
+  restoreFile.value = input.files?.[0] ?? null
+
+  if (!restoreFile.value) {
+    return
+  }
+
+  const form = new FormData()
+  form.append('file', restoreFile.value)
+
+  await restore(id.value, form)
+  restoreFile.value = null
+}
+
 const {
   cpuPoints,
   memPoints,
@@ -152,6 +174,8 @@ const netMax = computed(() => {
       <div class="flex h-full min-h-0 flex-col gap-3">
           <div class="flex gap-2">
             <UButton variant="outline" color="neutral" :to="backupURL()">Backup</UButton> <!-- TODO hover icon -->
+            <input ref="restoreFileInput" type="file" class="hidden" accept=".tar.gz" @change="restoreServerFileChange" />
+            <UButton variant="outline" color="neutral" v-on:click="restoreServer">Restore</UButton>
             <UButton variant="outline" color="neutral" v-on:click="startServer">Start</UButton>
             <UButton variant="outline" color="error" v-on:click="stopServer">Stop</UButton>
             <UButton variant="outline" color="error" v-on:click="deleteServer">Delete</UButton>
