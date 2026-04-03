@@ -4,11 +4,13 @@
 package provider
 
 import (
+	"cmp"
 	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"panel/pkg/api"
+	"slices"
 	"terraform-provider-panel/client"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -29,8 +31,9 @@ type ImagesDataSource struct {
 }
 
 type ImagesDataSourceModel struct {
-	Filter types.Set  `tfsdk:"filter"`
-	Images types.List `tfsdk:"images"`
+	Filter types.Set    `tfsdk:"filter"`
+	Images types.List   `tfsdk:"images"`
+	Sort   types.String `tfsdk:"sort"`
 }
 
 type ImagesDataSourceFilterModel struct {
@@ -73,6 +76,9 @@ func (d *ImagesDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 						},
 					},
 				},
+			},
+			"sort": schema.StringAttribute{
+				Optional: true,
 			},
 		},
 
@@ -151,6 +157,13 @@ func (d *ImagesDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 		return
 	}
 
+	// TODO sort API side
+	sortValue := "reference"
+	if !data.Sort.IsNull() && !data.Sort.IsUnknown() {
+		sortValue = data.Sort.ValueString()
+	}
+	sortImages(imagesResp.Items, sortValue)
+
 	var imageModels []ImagesDataSourceImageModel
 	for _, image := range imagesResp.Items {
 		envValue, diags := types.MapValueFrom(ctx, types.StringType, image.Env)
@@ -183,4 +196,20 @@ func (d *ImagesDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 	tflog.Trace(ctx, "read images data source")
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+}
+
+func sortImages(images []api.ImageResponse, sort string) {
+	slices.SortFunc(images, func(a, b api.ImageResponse) int {
+		// TODO podman default is "created"
+		switch sort {
+		case "repository":
+			return cmp.Compare(a.Repository, b.Reference)
+		case "tag":
+			return cmp.Compare(a.Tag, b.Tag)
+		case "reference":
+			return cmp.Compare(a.Reference, b.Reference)
+		default:
+			return 0
+		}
+	})
 }
