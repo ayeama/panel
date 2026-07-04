@@ -31,7 +31,7 @@ func cors(next http.Handler) http.Handler {
 func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /instances", func(w http.ResponseWriter, r *http.Request) {
-		io.WriteString(w, "[{\"id\":1,\"name\":\"another\",\"status\":\"stopped\"},{\"id\":2,\"name\":\"one\",\"status\":\"running\"}]")
+		io.WriteString(w, "[{\"id\":1,\"name\":\"another\",\"image\":\"minecraft\",\"status\":\"stopped\"},{\"id\":2,\"name\":\"one\",\"image\":\"valheim\",\"status\":\"running\"}]")
 		w.Header().Add("Content-Type", "application/json")
 	})
 
