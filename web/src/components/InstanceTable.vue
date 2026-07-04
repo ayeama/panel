@@ -1,8 +1,8 @@
 <script setup>
-import { RouterLink } from 'vue-router';
+import { RouterLink } from 'vue-router'
 
 defineProps({
-  instances: Array
+  instances: Array,
 })
 </script>
 
@@ -17,7 +17,9 @@ defineProps({
     </thead>
     <tbody>
       <tr v-for="item in instances" v-bind="item.id">
-        <td><RouterLink :to="`/instances/${item.id}`">{{ item.name }}</RouterLink></td>
+        <td>
+          <RouterLink :to="`/instances/${item.id}`">{{ item.name }}</RouterLink>
+        </td>
         <td>{{ item.image }}</td>
         <td>{{ item.status }}</td>
       </tr>

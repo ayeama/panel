@@ -1,13 +1,10 @@
 <script setup>
-import { onMounted } from 'vue';
+import { onMounted } from 'vue'
 
-import { useInstance } from '@/composables/useInstance';
-import InstanceTable from '@/components/InstanceTable.vue';
+import { useInstance } from '@/composables/useInstance'
+import InstanceTable from '@/components/InstanceTable.vue'
 
-const {
-  instances,
-  instanceRead,
-} = useInstance()
+const { instances, instanceRead } = useInstance()
 
 onMounted(() => {
   instanceRead()
