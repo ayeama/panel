@@ -21,7 +21,7 @@ var upgrader = websocket.Upgrader{
 }
 
 func main() {
-	db, err := sql.Open("sqlite3", "panel.db")
+	db, err := sql.Open("sqlite3", "panel.db?_busy_timeout=100&_foreign_keys=true&_journal_mode=WAL")
 	if err != nil {
 		log.Fatal(err)
 	}
