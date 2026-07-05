@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/ayeama/panel/internal"
 	"github.com/ayeama/panel/internal/middleware"
 	"github.com/gorilla/websocket"
 	_ "github.com/mattn/go-sqlite3"
@@ -85,9 +86,11 @@ func main() {
 		}
 	})
 
-	addr := "localhost:8000"
-	cert := "server.crt"
-	key := "server.key"
+	addr := "0.0.0.0:8000"
+	cert, key, err := internal.GetCertificate()
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	handler := middleware.Log(mux)
 	handler = middleware.Cors(handler)

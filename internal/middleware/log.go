@@ -2,7 +2,7 @@ package middleware
 
 import (
 	"bufio"
-	"fmt"
+	"log"
 	"net"
 	"net/http"
 	"time"
@@ -51,7 +51,7 @@ func Log(next http.Handler) http.Handler {
 		next.ServeHTTP(rec, r)
 		timeEnd := time.Now().UTC()
 
-		fmt.Printf(
+		log.Printf(
 			"handled request host=\"%s\" method=\"%s\" path=\"%s\" query=\"%s\" status=%d time=%d\n",
 			r.Host,
 			r.Method,

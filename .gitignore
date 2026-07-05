@@ -1,6 +1,8 @@
 tmp/
 
 *.db
+*.db-shm
+*.db-wal
 
 server.crt
 server.key
