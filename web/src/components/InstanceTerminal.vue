@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 
 import { Terminal } from '@xterm/xterm'
 import { AttachAddon } from '@xterm/addon-attach'
@@ -11,23 +11,60 @@ const props = defineProps({
   id: String,
 })
 
+const terminal_element = ref(null)
+
+let terminal = null
+let terminal_fit = null
+let terminal_attach = null
+
+let socket_attach = null
+
+function resize() {
+  if (terminal_fit) {
+    terminal_fit.fit()
+  }
+}
+
 onMounted(() => {
-  const terminal = new Terminal()
+  window.addEventListener('resize', resize)
+
+  terminal = new Terminal()
+  terminal_fit = new FitAddon()
+  terminal.loadAddon(terminal_fit)
   
-  const socket = new WebSocket(`${API_WS}/instances/${props.id}/attach`)
-  socket.onopen = () => {
-    const fitAddon = new FitAddon()
-    terminal.loadAddon(fitAddon)
+  socket_attach = new WebSocket(`${API_WS}/instances/${props.id}/attach`)
+  socket_attach.onopen = () => {
+    terminal_attach = new AttachAddon(socket_attach)
+    terminal.loadAddon(terminal_attach)
 
-    const attachAddon = new AttachAddon(socket)
-    terminal.loadAddon(attachAddon)
+    terminal.open(terminal_element.value)
+    terminal_fit.fit()
+  }
+})
 
-    terminal.open(document.getElementById('terminal'))
-    fitAddon.fit()
+onUnmounted(() => {
+  if (socket_attach) {
+    socket_attach.close()
+    socket_attach = null
+  }
+
+  if (terminal_attach) {
+    terminal_attach.dispose()
+    terminal_attach = null
+  }
+
+  if (terminal_fit) {
+    terminal_fit.dispose()
+    terminal_fit = null
+  }
+
+  if (terminal) {
+    terminal.dispose()
+    terminal = null
   }
 })
 </script>
 
 <template>
-  <div id="terminal"></div>
+  <div ref="terminal_element" class="py-2"></div>
 </template>
