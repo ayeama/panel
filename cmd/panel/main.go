@@ -1,11 +1,14 @@
 package main
 
 import (
+	"fmt"
 	"io"
 	"log"
+	"math/rand"
 	"net/http"
 	"time"
 
+	"github.com/ayeama/panel/internal/middleware"
 	"github.com/gorilla/websocket"
 )
 
@@ -13,28 +16,6 @@ var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
 		return true
 	},
-}
-
-func cors(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// TODO add configuration
-
-		origin := r.Header.Get("Origin")
-		if origin != "" {
-			w.Header().Set("Access-Control-Allow-Origin", origin)
-			w.Header().Set("Access-Control-Allow-Credentials", "true")
-			w.Header().Set("Vary", "Origin")
-		}
-
-		if r.Method == http.MethodOptions && r.Header.Get("Access-Control-Request-Method") != "" {
-			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-			w.Header().Set("Access-Control-Allow-Headers", r.Header.Get("Access-Control-Request-Headers"))
-			w.WriteHeader(http.StatusNoContent)
-			return
-		}
-
-		next.ServeHTTP(w, r)
-	})
 }
 
 func main() {
@@ -79,7 +60,12 @@ func main() {
 		defer c.Close()
 
 		for {
-			if err := c.WriteMessage(websocket.TextMessage, []byte("{\"cpu\":10,\"memory\":70,\"disk\":35}")); err != nil {
+			cpu := rand.Float64() * 100
+			memory := rand.Float64() * 100
+			disk := rand.Float64() * 100
+
+			msg := []byte(fmt.Sprintf("{\"cpu\":%.2f,\"memory\":%.2f,\"disk\":%.2f}", cpu, memory, disk))
+			if err := c.WriteMessage(websocket.TextMessage, msg); err != nil {
 				return
 			}
 			time.Sleep(time.Second)
@@ -89,7 +75,9 @@ func main() {
 	addr := "localhost:8000"
 	cert := "server.crt"
 	key := "server.key"
-	handler := cors(mux)
+
+	handler := middleware.Log(mux)
+	handler = middleware.Cors(handler)
 
 	log.Printf("starting https://%s\n", addr)
 
