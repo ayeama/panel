@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"io"
 	"log"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/ayeama/panel/internal/middleware"
 	"github.com/gorilla/websocket"
+	_ "github.com/mattn/go-sqlite3"
 )
 
 var upgrader = websocket.Upgrader{
@@ -19,6 +21,17 @@ var upgrader = websocket.Upgrader{
 }
 
 func main() {
+	db, err := sql.Open("sqlite3", "panel.db")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+
+	err = db.Ping()
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /instances/{id}", func(w http.ResponseWriter, r *http.Request) {
@@ -81,7 +94,7 @@ func main() {
 
 	log.Printf("starting https://%s\n", addr)
 
-	err := http.ListenAndServeTLS(addr, cert, key, handler)
+	err = http.ListenAndServeTLS(addr, cert, key, handler)
 	if err != nil {
 		log.Fatal(err)
 	}
