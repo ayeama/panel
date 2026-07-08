@@ -2,10 +2,7 @@ module github.com/ayeama/panel
 
 go 1.25.6
 
-require (
-	github.com/gorilla/websocket v1.5.3
-	github.com/mattn/go-sqlite3 v1.14.47
-)
+require github.com/gorilla/websocket v1.5.3
 
 require (
 	cyphar.com/go-pathrs v0.2.4 // indirect
