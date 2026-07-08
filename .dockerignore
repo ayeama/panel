@@ -1,5 +1,7 @@
 .vscode/
 
+tmp/
+
 web/.vscode/
 web/node_modules/
 web/dist/
@@ -7,6 +9,3 @@ web/dist/
 *.db
 *.db-shm
 *.db-wal
-
-server.crt
-server.key

@@ -6,7 +6,7 @@ import { RouterView } from 'vue-router'
   <header>
     <nav class="navbar bg-body-tertiary">
       <div class="container">
-        <RouterLink class="navbar-brand" to="/">panel</RouterLink>
+        <RouterLink class="navbar-brand" to="/">Panel</RouterLink>
       </div>
     </nav>
   </header>

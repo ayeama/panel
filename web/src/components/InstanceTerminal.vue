@@ -28,7 +28,7 @@ function resize() {
 onMounted(() => {
   window.addEventListener('resize', resize)
 
-  terminal = new Terminal()
+  terminal = new Terminal({rows: 18})
   terminal_fit = new FitAddon()
   terminal.loadAddon(terminal_fit)
   

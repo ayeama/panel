@@ -19,7 +19,7 @@ onMounted(() => {
 <template>
   <div class="row">
     <div class="col col-12">
-      <InstanceTerminal v-if="instance" v-bind:id="instance.id" />
+      <InstanceTerminal v-if="instance" :id="instance.id" />
     </div>
   
     <div class="col">
@@ -31,12 +31,7 @@ onMounted(() => {
     </div>
   
     <div class="col">
-      <InstanceStatistics v-if="instance" v-bind:id="instance.id" />
-    </div>
-  </div>
-
-  <div class="row">
-    <div class="col">
+      <InstanceStatistics v-if="instance" :id="instance.id" />
     </div>
   </div>
 </template>

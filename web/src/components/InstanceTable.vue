@@ -1,5 +1,7 @@
 <script setup>
-import { RouterLink } from 'vue-router'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
 
 defineProps({
   instances: Array,
@@ -7,7 +9,7 @@ defineProps({
 </script>
 
 <template>
-  <table class="table">
+  <table class="table table-hover clickable">
     <thead>
       <tr>
         <th scope="col">Name</th>
@@ -16,13 +18,17 @@ defineProps({
       </tr>
     </thead>
     <tbody>
-      <tr v-for="item in instances" v-bind="item.id">
-        <td>
-          <RouterLink :to="`/instances/${item.id}`">{{ item.name }}</RouterLink>
-        </td>
+      <tr v-for="item in instances" v-bind="item.id" v-on:click="router.push(`/instances/${item.id}`)">
+        <td>{{ item.name }}</td>
         <td>{{ item.image }}</td>
         <td>{{ item.status }}</td>
       </tr>
     </tbody>
   </table>
 </template>
+
+<style scoped>
+.clickable :deep(tbody > tr:hover) {
+  cursor: pointer;
+}
+</style>

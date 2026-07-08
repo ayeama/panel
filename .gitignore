@@ -4,9 +4,6 @@ tmp/
 *.db-shm
 *.db-wal
 
-server.crt
-server.key
-
 # Binaries for programs and plugins
 *.exe
 *.exe~

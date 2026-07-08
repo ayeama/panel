@@ -1,15 +1,16 @@
-CERT := server.crt
-KEY := server.key
-
-.PHONY: cert run clean
-
-cert: $(CERT) $(KEY)
-
-$(CERT) $(KEY):
-	openssl req -x509 -newkey rsa:4096 -sha256 -days 365 -nodes -keyout $(KEY) -out $(CERT) -subj "/CN=localhost" -addext "subjectAltName=DNS:localhost,IP:127.0.0.1"
+.PHONY: cert run build deploy clean
 
 run:
 	go run cmd/panel/main.go
 
+build:
+	podman build -f Dockerfile.backend -t panel/backend:0.0.1 .
+	podman build -f Dockerfile.frontend -t panel/frontend:0.0.1 .
+
+deploy:
+	podman pod create --name panel -p 8080:8080 --userns keep-id
+	podman run --pod panel --name backend -d --security-opt label=disable -v "/run/user/1000/podman/podman.sock:/run/user/1000/podman/podman.sock:Z" panel/backend:0.0.1
+	podman run --pod panel --name frontend -d panel/frontend:0.0.1
+
 clean:
-	rm -rf $(CERT) $(KEY)
+	podman pod rm -f panel
