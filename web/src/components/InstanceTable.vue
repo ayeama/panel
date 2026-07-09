@@ -18,7 +18,7 @@ defineProps({
       </tr>
     </thead>
     <tbody>
-      <tr v-for="item in instances" v-bind="item.id" v-on:click="router.push(`/instances/${item.id}`)">
+      <tr v-for="item in instances" :key="item.id" v-on:click="router.push(`/instances/${item.id}`)">
         <td>{{ item.name }}</td>
         <td>{{ item.image }}</td>
         <td>{{ item.status }}</td>

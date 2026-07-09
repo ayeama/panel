@@ -66,5 +66,5 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div ref="terminal_element" class="py-2"></div>
+  <div ref="terminal_element"></div>
 </template>

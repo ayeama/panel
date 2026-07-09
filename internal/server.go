@@ -25,8 +25,12 @@ func (s *Server) Run() {
 	}
 
 	mux := http.NewServeMux()
+
 	instanceHandler := handler.NewInstanceHandler(&podman)
 	instanceHandler.RegisterHandlers(mux)
+
+	imageHandler := handler.NewImageHandler(&podman)
+	imageHandler.RegisterHandlers(mux)
 
 	log.Println("starting")
 

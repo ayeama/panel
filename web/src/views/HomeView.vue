@@ -16,7 +16,7 @@ onMounted(() => {
   <div class="row row-cols-1 py-2">
     <div class="col">
       <div class="row pb-2">
-        <div class="col d-flex align-items-end">
+        <div class="col">
           <h1 class="mb-0">Instances</h1>
         </div>
         

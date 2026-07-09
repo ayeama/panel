@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
 import HomeView from '@/views/HomeView.vue'
+import InstanceCreateView from '@/views/InstanceCreateView.vue'
 import InstanceView from '@/views/InstanceView.vue'
 
 const router = createRouter({
@@ -10,6 +11,11 @@ const router = createRouter({
       path: '/',
       name: 'home',
       component: HomeView,
+    },
+    {
+      path: '/instances/create',
+      name: 'instanceCreate',
+      component: InstanceCreateView,
     },
     {
       path: '/instances/:id',
