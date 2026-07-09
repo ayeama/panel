@@ -4,8 +4,8 @@ run:
 	go run cmd/panel/main.go
 
 build:
-	podman build -f Dockerfile.backend -t panel/backend:0.0.1 .
-	podman build -f Dockerfile.frontend -t panel/frontend:0.0.1 .
+	podman build -f Dockerfile.backend --ignorefile .dockerignore.backend -t panel/backend:0.0.1 .
+	podman build -f Dockerfile.frontend --ignorefile .dockerignore.frontend -t panel/frontend:0.0.1 .
 
 deploy:
 	podman pod create --name panel -p 8080:8080 --userns keep-id

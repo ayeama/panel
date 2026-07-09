@@ -2,6 +2,34 @@ FROM docker.io/library/golang:1.25.6-trixie AS builder-backend
 
 WORKDIR /app
 
+RUN apt-get update && \
+    apt-get install -y \
+        btrfs-progs \
+        gcc \
+        git \
+        golang-go \
+        go-md2man \
+        iptables \
+        libassuan-dev \
+        libbtrfs-dev \
+        libc6-dev \
+        libdevmapper-dev \
+        libglib2.0-dev \
+        libgpgme-dev \
+        libgpg-error-dev \
+        libprotobuf-dev \
+        libprotobuf-c-dev \
+        libseccomp-dev \
+        libselinux1-dev \
+        libsystemd-dev \
+        make \
+        netavark \
+        passt \
+        pkg-config \
+        runc \
+        uidmap && \
+    apt-get clean
+
 COPY go.mod go.sum ./
 
 RUN go mod download
@@ -13,6 +41,10 @@ RUN CGO_ENABLED=1 go build -o panel cmd/panel/main.go
 FROM docker.io/library/debian:trixie-slim AS backend
 
 WORKDIR /app
+
+RUN apt-get update && \
+    apt-get install -y \
+        libgpgme11
 
 COPY --from=builder-backend /app/panel /usr/bin/panel
 
