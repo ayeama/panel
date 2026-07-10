@@ -71,6 +71,8 @@ func (h *InstanceHandler) handleInstanceCreate(w http.ResponseWriter, r *http.Re
 		}
 	}
 
+	// TODO create volume ourselves
+
 	spec := specgen.NewSpecGenerator(imageID, false)
 
 	publish := true

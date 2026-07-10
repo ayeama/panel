@@ -3,8 +3,10 @@ module github.com/ayeama/panel
 go 1.25.6
 
 require (
+	github.com/cloudflare/cloudflare-go/v7 v7.7.0
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/websocket v1.5.3
+	github.com/moby/moby/api v1.54.2
 )
 
 require (
@@ -56,7 +58,6 @@ require (
 	github.com/moby/buildkit v0.30.0 // indirect
 	github.com/moby/docker-image-spec v1.3.1 // indirect
 	github.com/moby/go-archive v0.2.0 // indirect
-	github.com/moby/moby/api v1.54.2 // indirect
 	github.com/moby/moby/client v0.4.1 // indirect
 	github.com/moby/patternmatcher v0.6.1 // indirect
 	github.com/moby/sys/devices v0.1.0 // indirect
@@ -82,6 +83,10 @@ require (
 	github.com/stefanberger/go-pkcs11uri v0.0.0-20230803200340-78284954bff6 // indirect
 	github.com/sylabs/sif/v2 v2.24.0 // indirect
 	github.com/tchap/go-patricia/v2 v2.3.3 // indirect
+	github.com/tidwall/gjson v1.14.4 // indirect
+	github.com/tidwall/match v1.1.1 // indirect
+	github.com/tidwall/pretty v1.2.1 // indirect
+	github.com/tidwall/sjson v1.2.5 // indirect
 	github.com/ulikunitz/xz v0.5.15 // indirect
 	github.com/vbatts/tar-split v0.12.3 // indirect
 	github.com/vbauerster/mpb/v8 v8.12.1 // indirect

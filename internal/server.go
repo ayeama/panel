@@ -24,6 +24,8 @@ func (s *Server) Run() {
 		log.Fatal(err)
 	}
 
+	go webhook(&podman)
+
 	mux := http.NewServeMux()
 
 	instanceHandler := handler.NewInstanceHandler(&podman)
