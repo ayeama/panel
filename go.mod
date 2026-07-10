@@ -131,7 +131,7 @@ require (
 	github.com/pkg/sftp v1.13.10 // indirect
 	github.com/sirupsen/logrus v1.9.4 // indirect
 	github.com/skeema/knownhosts v1.3.2 // indirect
-	go.podman.io/common v0.68.0 // indirect
+	go.podman.io/common v0.68.0
 	go.podman.io/podman/v6 v6.0.0
 	go.podman.io/storage v1.63.0 // indirect
 	golang.org/x/crypto v0.53.0 // indirect

@@ -2,36 +2,54 @@ package internal
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"log"
 	"net/http"
+	"net/url"
 
+	"github.com/ayeama/panel/internal/runtime"
 	"github.com/ayeama/panel/internal/types"
 	"github.com/google/uuid"
-	mobyEvents "github.com/moby/moby/api/types/events"
-	"go.podman.io/podman/v6/pkg/bindings/system"
-	podmanTypes "go.podman.io/podman/v6/pkg/domain/entities/types"
 )
 
-func webhook(runtime *context.Context) {
+func webhook(runtime runtime.Runtime) {
 	// TODO better lifecycle management
 	for {
 		// TODO use podman events or our own
-		events := make(chan podmanTypes.Event)
+		events := make(chan types.Event)
 		cancel := make(chan bool)
-		if err := system.Events(*runtime, events, cancel, nil); err != nil {
-			log.Fatal(err)
-		}
+
+		// TODO missing cleanup?
+		go func() {
+			if err := runtime.Events(events, cancel); err != nil {
+				log.Fatal(err)
+			}
+		}()
 
 		for event := range events {
 			switch event.Type {
-			case mobyEvents.ContainerEventType:
+			case types.EventTypeInstance:
 				switch event.Action {
-				case mobyEvents.ActionCreate:
-					webhookData, err := json.Marshal(types.WebhookEventDataInstance{
-						ID:   event.Actor.Attributes["com.github.ayeama.panel.instance.id"],
-						Name: event.Actor.Attributes["name"],
+				case types.EventActionCreate:
+					id := event.Actor.Attributes[types.InstanceLabelID]
+					if id == "" {
+						continue
+					}
+
+					instance, err := runtime.InstanceRead(id)
+					if err != nil {
+						log.Fatal(err)
+					}
+
+					// TODO move validation?
+					_, err = url.ParseRequestURI(instance.Webhook)
+					if err != nil {
+						log.Println(err)
+						continue
+					}
+
+					webhookData, err := json.Marshal(types.WebhookEventDataInstanceCreated{
+						Instance: instance,
 					})
 					if err != nil {
 						log.Fatal(err)
@@ -48,7 +66,7 @@ func webhook(runtime *context.Context) {
 						log.Fatal(err)
 					}
 
-					req, err := http.NewRequest(http.MethodPost, "http://localhost:8001/webhook", bytes.NewReader(body))
+					req, err := http.NewRequest(http.MethodPost, instance.Webhook, bytes.NewReader(body))
 					if err != nil {
 						log.Fatal(err)
 					}
@@ -57,13 +75,22 @@ func webhook(runtime *context.Context) {
 
 					resp, err := http.DefaultClient.Do(req)
 					if err != nil {
-						log.Fatal(err)
+						log.Println("WARNING", err.Error())
+						break
 					}
 					defer resp.Body.Close()
-				case mobyEvents.ActionRemove:
-					webhookData, err := json.Marshal(types.WebhookEventDataInstance{
-						ID:   event.Actor.Attributes["com.github.ayeama.panel.instance.id"],
-						Name: event.Actor.Attributes["name"],
+
+					log.Println("sent webhook")
+				case types.EventActionDelete:
+					id := event.Actor.Attributes[types.InstanceLabelID]
+					if id == "" {
+						continue
+					}
+
+					webhook := event.Actor.Attributes[types.InstanceLabelWebhook]
+
+					webhookData, err := json.Marshal(types.WebhookEventDataInstanceDeleted{
+						ID: id,
 					})
 					if err != nil {
 						log.Fatal(err)
@@ -80,7 +107,7 @@ func webhook(runtime *context.Context) {
 						log.Fatal(err)
 					}
 
-					req, err := http.NewRequest(http.MethodPost, "http://localhost:8001/webhook", bytes.NewReader(body))
+					req, err := http.NewRequest(http.MethodPost, webhook, bytes.NewReader(body))
 					if err != nil {
 						log.Fatal(err)
 					}
@@ -89,17 +116,18 @@ func webhook(runtime *context.Context) {
 
 					resp, err := http.DefaultClient.Do(req)
 					if err != nil {
-						log.Fatal(err)
+						log.Println("WARNING", err.Error())
+						break
 					}
 					defer resp.Body.Close()
+
+					log.Println("sent webhook")
 				default:
 					break
 				}
 			default:
 				break
 			}
-
-			// fmt.Println("event:", event.Actor.ID, event.Type, event.Action, event.Actor.Attributes)
 		}
 	}
 }

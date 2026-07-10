@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/ayeama/panel/internal/types"
@@ -49,7 +50,7 @@ func (h *WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 
 	switch event.Type {
 	case types.WebhookEventInstanceCreated:
-		var eventData types.WebhookEventDataInstance
+		var eventData types.WebhookEventDataInstanceCreated
 		if err := json.Unmarshal(event.Data, &eventData); err != nil {
 			log.Fatal(err)
 		}
@@ -63,6 +64,11 @@ func (h *WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 			log.Fatal(err)
 		}
 		content := ipaddresses[0].String()
+
+		port, err := strconv.ParseFloat(eventData.Ports["25565"], 10) // TODO hardcoded
+		if err != nil {
+			log.Fatal(err)
+		}
 
 		_, err = (*h.cf.client).DNS.Records.New(ctx, dns.RecordNewParams{
 			ZoneID: cloudflare.F(h.cf.zoneID),
@@ -87,7 +93,7 @@ func (h *WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 				Data: cloudflare.F(dns.SRVRecordDataParam{
 					Priority: cloudflare.F(float64(0)),
 					Weight:   cloudflare.F(float64(5)),
-					Port:     cloudflare.F(float64(25565)),
+					Port:     cloudflare.F(port),
 					Target:   cloudflare.F(name),
 				}),
 				TTL:     cloudflare.F(dns.TTL(60)),
@@ -99,7 +105,7 @@ func (h *WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 		}
 		log.Println("created", dns.SRVRecordTypeSRV, "_minecraft._tcp."+name)
 	case types.WebhookEventInstanceDeleted:
-		var eventData types.WebhookEventDataInstance
+		var eventData types.WebhookEventDataInstanceDeleted
 		if err := json.Unmarshal(event.Data, &eventData); err != nil {
 			log.Fatal(err)
 		}

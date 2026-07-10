@@ -69,6 +69,10 @@ function running(status) {
         <input id="instanceName" class="form-control-plaintext" type="text" :value="instance.name" readonly>
         <input id="instanceImage" class="form-control-plaintext" type="text" :value="instance.image" readonly>
         <input id="instanceStatus" class="form-control-plaintext" type="text" :value="instance.status" readonly>
+        
+        <input v-for="port in instance.ports" id="instancePort" class="form-control-plaintext" type="text" :value="port" readonly>
+        
+        <input id="instanceWebhook" class="form-control-plaintext" type="text" :value="instance.webhook" readonly>
       </div>
     </div>
   

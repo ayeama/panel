@@ -15,7 +15,10 @@ type WebhookEvent struct {
 	Data json.RawMessage  `json:"data"`
 }
 
-type WebhookEventDataInstance struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
+type WebhookEventDataInstanceCreated struct {
+	Instance
+}
+
+type WebhookEventDataInstanceDeleted struct {
+	ID string `json:"id"`
 }

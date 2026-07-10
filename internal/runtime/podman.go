@@ -1,0 +1,354 @@
+package runtime
+
+import (
+	"context"
+	"errors"
+	"log"
+	"strconv"
+
+	"github.com/ayeama/panel/internal/types"
+	"github.com/google/uuid"
+	"go.podman.io/podman/v6/pkg/bindings/containers"
+	"go.podman.io/podman/v6/pkg/bindings/images"
+	"go.podman.io/podman/v6/pkg/bindings/system"
+	podmanTypes "go.podman.io/podman/v6/pkg/domain/entities/types"
+	"go.podman.io/podman/v6/pkg/specgen"
+
+	mobyEvents "github.com/moby/moby/api/types/events"
+
+	netTypes "go.podman.io/common/libnetwork/types"
+)
+
+type PodmanRuntime struct {
+	ctx *context.Context
+}
+
+func NewPodmanRuntime(ctx *context.Context) PodmanRuntime {
+	return PodmanRuntime{ctx}
+}
+
+func (r *PodmanRuntime) ImageRead(id string) (types.Image, error) {
+	filters := map[string][]string{"label": {types.ImageLabelID + "=" + id}}
+	imageListOptions := &images.ListOptions{}
+	imageListOptions.WithAll(false).WithFilters(filters)
+
+	imageList, err := images.List(*r.ctx, imageListOptions)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, image := range imageList {
+		imageID := image.Labels[types.ImageLabelID]
+		if imageID == id {
+			return types.Image{
+				ID:   imageID,
+				Name: image.Names[0],
+			}, nil
+		}
+	}
+
+	return types.Image{}, errors.New("image not found")
+}
+
+func (r *PodmanRuntime) ImageReadMany() ([]types.Image, error) {
+	filters := map[string][]string{"label": {types.ImageLabelID}}
+	imageListOptions := &images.ListOptions{}
+	imageListOptions.WithAll(false).WithFilters(filters)
+
+	imageList, err := images.List(*r.ctx, imageListOptions)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	images := make([]types.Image, 0)
+	for _, image := range imageList {
+		id := image.Labels[types.ImageLabelID]
+
+		if id == "" {
+			continue
+		}
+
+		if len(image.Names) < 1 {
+			continue
+		}
+
+		images = append(images, types.Image{
+			ID:   image.Labels[types.ImageLabelID],
+			Name: image.Names[0],
+		})
+	}
+	return images, nil
+}
+
+func (r *PodmanRuntime) InstanceCreate(imageName string) (types.Instance, error) {
+	// TODO replace imageName with actual image id not panel id
+	// TODO create volume ourselves
+	spec := specgen.NewSpecGenerator(imageName, false)
+
+	publish := true
+	spec.PublishExposedPorts = &publish
+
+	stdin := true
+	spec.Stdin = &stdin
+
+	terminal := true
+	spec.Terminal = &terminal
+
+	// cpus := 1.0
+	// mem := 1.0
+	// cpuPeriod := uint64(100000)
+	// cpuQuota := int64(float64(cpuPeriod) * cpus)
+	// memLimit := int64(mem * 1000000000)
+	// spec.ResourceLimits = &specs.LinuxResources{
+	// 	CPU: &specs.LinuxCPU{
+	// 		Period: &cpuPeriod,
+	// 		Quota:  &cpuQuota,
+	// 	},
+	// 	Memory: &specs.LinuxMemory{
+	// 		Limit: &memLimit,
+	// 	},
+	// }
+
+	spec.Labels = make(map[string]string)
+
+	id, err := uuid.NewUUID()
+	if err != nil {
+		log.Fatal(err)
+	}
+	spec.Labels[types.InstanceLabelID] = id.String()
+	spec.Labels[types.InstanceLabelWebhook] = "http://localhost:8001/webhook" // TODO
+
+	container, err := containers.CreateWithSpec(*r.ctx, spec, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = containers.ContainerInit(*r.ctx, container.ID, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	instance, err := r.InstanceRead(id.String())
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return instance, nil
+}
+
+func (r *PodmanRuntime) InstanceRead(id string) (types.Instance, error) {
+	filters := map[string][]string{"label": {types.InstanceLabelID + "=" + id}}
+	containerListOptions := containers.ListOptions{}
+	containerListOptions.WithAll(true).WithFilters(filters)
+
+	containerList, err := containers.List(*r.ctx, &containerListOptions)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, container := range containerList {
+		instanceID := container.Labels[types.InstanceLabelID]
+		if instanceID == id {
+			instance := types.Instance{
+				ID:      instanceID,
+				Name:    container.Names[0],
+				Image:   container.Image,
+				Status:  container.State,
+				Ports:   transformPorts(container.Ports),
+				Webhook: container.Labels[types.InstanceLabelWebhook],
+			}
+			return instance, nil
+		}
+	}
+
+	return types.Instance{}, errors.New("instance not found")
+}
+
+func (r *PodmanRuntime) InstanceReadMany() ([]types.Instance, error) {
+	filters := map[string][]string{"label": {types.InstanceLabelID}}
+	containerListOptions := containers.ListOptions{}
+	containerListOptions.WithAll(true).WithFilters(filters)
+
+	containerList, err := containers.List(*r.ctx, &containerListOptions)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var instances []types.Instance
+	for _, container := range containerList {
+		instanceID := container.Labels[types.InstanceLabelID]
+
+		if instanceID == "" {
+			continue
+		}
+
+		instances = append(instances, types.Instance{
+			ID:      instanceID,
+			Name:    container.Names[0],
+			Image:   container.Image,
+			Status:  container.State,
+			Ports:   transformPorts(container.Ports),
+			Webhook: container.Labels[types.InstanceLabelWebhook],
+		})
+	}
+
+	return instances, nil
+}
+
+func (r *PodmanRuntime) InstanceDelete(id string) error {
+	containerID, err := r.containerID(id)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	containerRemoveOptions := containers.RemoveOptions{}
+	containerRemoveOptions.WithForce(true).WithVolumes(true).WithTimeout(1)
+
+	_, err = containers.Remove(*r.ctx, containerID, &containerRemoveOptions)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return nil
+}
+
+func (r *PodmanRuntime) InstanceStart(id string) error {
+	containerID, err := r.containerID(id)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if err = containers.Start(*r.ctx, containerID, nil); err != nil {
+		log.Fatal(err)
+	}
+
+	return nil
+}
+
+func (r *PodmanRuntime) InstanceStop(id string) error {
+	containerID, err := r.containerID(id)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	timeout := uint(1)
+	containerStopOptions := containers.StopOptions{
+		Timeout: &timeout,
+	}
+
+	if err = containers.Stop(*r.ctx, containerID, &containerStopOptions); err != nil {
+		log.Fatal(err)
+	}
+
+	return nil
+}
+
+// TODO not working
+func (r *PodmanRuntime) InstanceStats(id string, stats chan types.InstanceStat) error {
+	containerID, err := r.containerID(id)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	containerStatsOptions := containers.StatsOptions{}
+	containerStatsOptions.WithInterval(1)
+
+	statsReport, err := containers.Stats(*r.ctx, []string{containerID}, &containerStatsOptions)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for statReports := range statsReport {
+		for _, stat := range statReports.Stats {
+			netTx := uint64(0)
+			netRx := uint64(0)
+			for _, net := range stat.Network {
+				netTx += net.TxBytes
+				netRx += net.RxBytes
+			}
+
+			stats <- types.InstanceStat{
+				CpuPercent:     stat.CPU,
+				MemoryPercent:  stat.MemPerc,
+				DiskPercent:    float64(0), // TODO disk usage
+				NetworkTxBytes: netTx,
+				NetworkRxBytes: netRx,
+			}
+		}
+	}
+
+	return nil
+}
+
+func (r *PodmanRuntime) Events(events chan types.Event, cancel chan bool) error {
+	podmanEvents := make(chan podmanTypes.Event)
+	if err := system.Events(*r.ctx, podmanEvents, cancel, nil); err != nil {
+		log.Fatal(err)
+	}
+
+	for podmanEvent := range podmanEvents {
+		switch podmanEvent.Type {
+		case mobyEvents.ContainerEventType:
+			switch podmanEvent.Action {
+			case mobyEvents.ActionCreate:
+				events <- types.Event{
+					Type:   types.EventTypeInstance,
+					Action: types.EventActionCreate,
+					Actor: types.Actor{
+						ID:         podmanEvent.Actor.ID,
+						Attributes: podmanEvent.Actor.Attributes,
+					},
+				}
+			case mobyEvents.ActionRemove:
+				events <- types.Event{
+					Type:   types.EventTypeInstance,
+					Action: types.EventActionDelete,
+					Actor: types.Actor{
+						ID:         podmanEvent.Actor.ID,
+						Attributes: podmanEvent.Actor.Attributes,
+					},
+				}
+			}
+		default:
+			break
+		}
+	}
+
+	return nil
+}
+
+func (r *PodmanRuntime) containerID(id string) (string, error) {
+	filters := map[string][]string{"label": {types.InstanceLabelID + "=" + id}}
+	containerListOptions := containers.ListOptions{}
+	containerListOptions.WithAll(true).WithFilters(filters)
+
+	containerList, err := containers.List(*r.ctx, &containerListOptions)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, container := range containerList {
+		instanceID := container.Labels[types.InstanceLabelID]
+		if instanceID == id {
+			return container.ID, nil
+		}
+	}
+
+	return "", errors.New("instance not found")
+}
+
+func transformPorts(ports []netTypes.PortMapping) map[string]string {
+	transPorts := map[string]string{}
+	for _, port := range ports {
+		containerPort := strconv.FormatUint(uint64(port.ContainerPort), 10)
+		hostPort := strconv.FormatUint(uint64(port.HostPort), 10)
+
+		if transPorts[containerPort] != "" {
+			continue
+		}
+
+		transPorts[containerPort] = hostPort
+	}
+
+	return transPorts
+}

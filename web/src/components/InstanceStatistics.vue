@@ -7,9 +7,11 @@ const props = defineProps({
   id: String,
 })
 
-const cpu = ref(null)
-const memory = ref(null)
-const disk = ref(null)
+const cpu = ref(0.0)
+const memory = ref(0.0)
+const disk = ref(0.0)
+const netTx = ref(0)
+const netRx = ref(0)
 
 let socket_stats = null
 
@@ -18,9 +20,11 @@ onMounted(() => {
   socket_stats.onmessage = (e) => {
     try {
       const data = JSON.parse(e.data)
-      cpu.value = data.cpu
-      memory.value = data.memory
-      disk.value = data.disk
+      cpu.value = data.cpu_percent
+      memory.value = data.memory_percent
+      disk.value = data.disk_percent
+      netTx.value = data.network_tx_bytes
+      netRx.value = data.network_rx_bytes
     } catch (error) {
       console.error(error)
     }
@@ -49,6 +53,10 @@ function progressbar_color(v) {
   }
   return "text-bg-primary"
 }
+
+function network_mb(v) {
+  return (v / 1000 / 1000).toFixed(2)
+}
 </script>
 
 <template>
@@ -74,6 +82,15 @@ function progressbar_color(v) {
 
       <div class="progress" role="progressbar" aria-label="instance disk" :aria-valuenow="disk" aria-valuemin="0" aria-valuemax="100" aria-describedby="diskProgressbar" style="height: 1rem">
         <div class="progress-bar" :class="progressbar_color(disk)" :style="{ width: progressbar_width(disk) }"></div>
+      </div>
+    </div>
+
+    <div class="col col-12">
+      <span id="networkInput" class="form-text">Network</span>
+      
+      <div class="input-group" aria-label="instance network" aria-describedby="networkInput">
+        <input type="text", class="form-control" aria-label="network rx" :value="network_mb(netRx)" readonly>
+        <input type="text", class="form-control" aria-label="network tx" :value="network_mb(netTx)" readonly>
       </div>
     </div>
   </div>

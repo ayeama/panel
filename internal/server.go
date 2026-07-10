@@ -7,6 +7,7 @@ import (
 
 	"github.com/ayeama/panel/internal/handler"
 	"github.com/ayeama/panel/internal/middleware"
+	"github.com/ayeama/panel/internal/runtime"
 	"go.podman.io/podman/v6/pkg/bindings"
 )
 
@@ -24,15 +25,17 @@ func (s *Server) Run() {
 		log.Fatal(err)
 	}
 
-	go webhook(&podman)
+	runtime := runtime.NewPodmanRuntime(&podman)
 
 	mux := http.NewServeMux()
 
-	instanceHandler := handler.NewInstanceHandler(&podman)
+	instanceHandler := handler.NewInstanceHandler(&runtime)
 	instanceHandler.RegisterHandlers(mux)
 
-	imageHandler := handler.NewImageHandler(&podman)
+	imageHandler := handler.NewImageHandler(&runtime)
 	imageHandler.RegisterHandlers(mux)
+
+	go webhook(&runtime)
 
 	log.Println("starting")
 
