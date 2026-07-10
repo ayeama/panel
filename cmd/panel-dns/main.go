@@ -77,7 +77,7 @@ func (h *WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			log.Fatal(err)
 		}
-		log.Println("created DNS record")
+		log.Println("created", dns.ARecordTypeA, name)
 
 		_, err = (*h.cf.client).DNS.Records.New(ctx, dns.RecordNewParams{
 			ZoneID: cloudflare.F(h.cf.zoneID),
@@ -97,7 +97,7 @@ func (h *WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			log.Fatal(err)
 		}
-		log.Println("created DNS record")
+		log.Println("created", dns.SRVRecordTypeSRV, "_minecraft._tcp."+name)
 	case types.WebhookEventInstanceDeleted:
 		var eventData types.WebhookEventDataInstance
 		if err := json.Unmarshal(event.Data, &eventData); err != nil {
@@ -119,7 +119,7 @@ func (h *WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 			_, err = (*h.cf.client).DNS.Records.Delete(ctx, record.ID, dns.RecordDeleteParams{
 				ZoneID: cloudflare.F(h.cf.zoneID),
 			})
-			log.Println("deleted DNS record")
+			log.Println("deleted", record.Type, record.Name)
 		}
 	default:
 		log.Fatal("unknown webhook event type")
@@ -127,19 +127,19 @@ func (h *WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	host := os.Getenv("PANEL_CLOUDFLARE_HOST")
+	host := os.Getenv("PANEL_DNS_HOST")
 	if host == "" {
-		log.Fatal(errors.New("missing 'PANEL_CLOUDFLARE_HOST' environment variable"))
+		log.Fatal(errors.New("missing 'PANEL_DNS_HOST' environment variable"))
 	}
 
-	comment := os.Getenv("PANEL_CLOUDFLARE_COMMENT")
+	comment := os.Getenv("PANEL_DNS_COMMENT")
 	if comment == "" {
 		comment = "managed by panel"
 	}
 
-	zoneID := os.Getenv("PANEL_CLOUDFLARE_ZONE_ID")
+	zoneID := os.Getenv("PANEL_DNS_ZONE_ID")
 	if zoneID == "" {
-		log.Fatal(errors.New("missing 'PANEL_CLOUDFLARE_ZONE_ID' environment variable"))
+		log.Fatal(errors.New("missing 'PANEL_DNS_ZONE_ID' environment variable"))
 	}
 
 	client := cloudflare.NewClient()
