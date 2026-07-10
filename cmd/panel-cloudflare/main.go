@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/ayeama/panel/internal/types"
 	"github.com/cloudflare/cloudflare-go/v7"
@@ -22,8 +23,8 @@ type Cloudflare struct {
 	comment string
 }
 
-func (cf *Cloudflare) subdomainName(instanceName string) string {
-	return instanceName + "." + cf.host
+func (cf *Cloudflare) subdomainName(name string) string {
+	return name + "." + cf.host
 }
 
 type WebhookHandler struct {
@@ -48,13 +49,15 @@ func (h *WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 
 	switch event.Type {
 	case types.WebhookEventInstanceCreated:
-		var eventData types.WebhookEventDataInstanceCreated
+		var eventData types.WebhookEventDataInstance
 		if err := json.Unmarshal(event.Data, &eventData); err != nil {
 			log.Fatal(err)
 		}
 
+		comment := strings.ReplaceAll(eventData.ID, "-", "")
+
 		// TODO make async
-		name := h.cf.subdomainName(eventData.InstanceName)
+		name := h.cf.subdomainName(eventData.Name)
 		ipaddresses, err := net.LookupIP(h.cf.host)
 		if err != nil {
 			log.Fatal(err)
@@ -68,12 +71,13 @@ func (h *WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 				Name:    cloudflare.F(name),
 				Content: cloudflare.F(content),
 				TTL:     cloudflare.F(dns.TTL(60)),
-				Comment: cloudflare.F(h.cf.comment),
+				Comment: cloudflare.F(comment),
 			},
 		})
 		if err != nil {
 			log.Fatal(err)
 		}
+		log.Println("created DNS record")
 
 		_, err = (*h.cf.client).DNS.Records.New(ctx, dns.RecordNewParams{
 			ZoneID: cloudflare.F(h.cf.zoneID),
@@ -87,11 +91,35 @@ func (h *WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 					Target:   cloudflare.F(name),
 				}),
 				TTL:     cloudflare.F(dns.TTL(60)),
-				Comment: cloudflare.F(h.cf.comment),
+				Comment: cloudflare.F(comment),
 			},
 		})
 		if err != nil {
 			log.Fatal(err)
+		}
+		log.Println("created DNS record")
+	case types.WebhookEventInstanceDeleted:
+		var eventData types.WebhookEventDataInstance
+		if err := json.Unmarshal(event.Data, &eventData); err != nil {
+			log.Fatal(err)
+		}
+
+		comment := strings.ReplaceAll(eventData.ID, "-", "")
+
+		// TODO make async
+		records, err := (*h.cf.client).DNS.Records.List(ctx, dns.RecordListParams{
+			ZoneID:  cloudflare.F(h.cf.zoneID),
+			Comment: cloudflare.F(dns.RecordListParamsComment{Exact: cloudflare.F(comment)}),
+		})
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		for _, record := range records.Result {
+			_, err = (*h.cf.client).DNS.Records.Delete(ctx, record.ID, dns.RecordDeleteParams{
+				ZoneID: cloudflare.F(h.cf.zoneID),
+			})
+			log.Println("deleted DNS record")
 		}
 	default:
 		log.Fatal("unknown webhook event type")

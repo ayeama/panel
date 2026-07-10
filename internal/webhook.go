@@ -29,9 +29,9 @@ func webhook(runtime *context.Context) {
 			case mobyEvents.ContainerEventType:
 				switch event.Action {
 				case mobyEvents.ActionCreate:
-					webhookData, err := json.Marshal(types.WebhookEventDataInstanceCreated{
-						InstanceID:   event.Actor.Attributes["com.github.ayeama.panel.instance.id"],
-						InstanceName: event.Actor.Attributes["name"],
+					webhookData, err := json.Marshal(types.WebhookEventDataInstance{
+						ID:   event.Actor.Attributes["com.github.ayeama.panel.instance.id"],
+						Name: event.Actor.Attributes["name"],
 					})
 					if err != nil {
 						log.Fatal(err)
@@ -40,6 +40,38 @@ func webhook(runtime *context.Context) {
 					webhookRequest := types.WebhookEvent{
 						ID:   uuid.NewString(),
 						Type: types.WebhookEventInstanceCreated,
+						Data: webhookData,
+					}
+
+					body, err := json.Marshal(webhookRequest)
+					if err != nil {
+						log.Fatal(err)
+					}
+
+					req, err := http.NewRequest(http.MethodPost, "http://localhost:8001/webhook", bytes.NewReader(body))
+					if err != nil {
+						log.Fatal(err)
+					}
+
+					req.Header.Set("Content-Type", "application/json")
+
+					resp, err := http.DefaultClient.Do(req)
+					if err != nil {
+						log.Fatal(err)
+					}
+					defer resp.Body.Close()
+				case mobyEvents.ActionRemove:
+					webhookData, err := json.Marshal(types.WebhookEventDataInstance{
+						ID:   event.Actor.Attributes["com.github.ayeama.panel.instance.id"],
+						Name: event.Actor.Attributes["name"],
+					})
+					if err != nil {
+						log.Fatal(err)
+					}
+
+					webhookRequest := types.WebhookEvent{
+						ID:   uuid.NewString(),
+						Type: types.WebhookEventInstanceDeleted,
 						Data: webhookData,
 					}
 
