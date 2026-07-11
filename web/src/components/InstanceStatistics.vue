@@ -89,8 +89,7 @@ function network_mb(v) {
       <span id="networkInput" class="form-text">Network</span>
       
       <div class="input-group" aria-label="instance network" aria-describedby="networkInput">
-        <input type="text", class="form-control" aria-label="network rx" :value="network_mb(netRx)" readonly>
-        <input type="text", class="form-control" aria-label="network tx" :value="network_mb(netTx)" readonly>
+        {{ network_mb(netRx) }} / {{ network_mb(netTx) }}
       </div>
     </div>
   </div>
