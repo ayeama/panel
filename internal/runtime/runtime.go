@@ -1,6 +1,10 @@
 package runtime
 
-import "github.com/ayeama/panel/internal/types"
+import (
+	"io"
+
+	"github.com/ayeama/panel/internal/types"
+)
 
 type Runtime interface {
 	ImageRead(id string) (types.Image, error)
@@ -12,6 +16,7 @@ type Runtime interface {
 	InstanceDelete(id string) error
 	InstanceStart(id string) error
 	InstanceStop(id string) error
+	InstanceAttach(id string, stdin io.Reader, stdout io.Writer, stderr io.Writer, ready chan bool) error
 	InstanceStats(id string, stats chan types.InstanceStat) error
 
 	Events(events chan types.Event, cancel chan bool) error

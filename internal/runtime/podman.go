@@ -3,6 +3,7 @@ package runtime
 import (
 	"context"
 	"errors"
+	"io"
 	"log"
 	"strconv"
 
@@ -237,6 +238,39 @@ func (r *PodmanRuntime) InstanceStop(id string) error {
 	}
 
 	if err = containers.Stop(*r.ctx, containerID, &containerStopOptions); err != nil {
+		log.Fatal(err)
+	}
+
+	return nil
+}
+
+func (r *PodmanRuntime) InstanceAttach(id string, stdin io.Reader, stdout io.Writer, stderr io.Writer, ready chan bool) error {
+	containerID, err := r.containerID(id)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// msgs := make(chan string, 55)
+
+	// go func() {
+	// 	defer close(msgs)
+
+	// 	containerLogOptions := containers.LogOptions{}
+	// 	containerLogOptions.WithStdout(true).WithStderr(true).WithTail("50").WithFollow(false)
+	// 	if err := containers.Logs(*r.ctx, containerID, &containerLogOptions, msgs, msgs); err != nil {
+	// 		log.Fatal(err)
+	// 	}
+	// }()
+
+	// for msg := range msgs {
+	// 	if _, err = stdout.Write([]byte(msg)); err != nil {
+	// 		log.Fatal(err)
+	// 	}
+	// }
+
+	containerAttachOptions := containers.AttachOptions{}
+	containerAttachOptions.WithDetachKeys("")
+	if err = containers.Attach(*r.ctx, containerID, stdin, stdout, stderr, ready, &containerAttachOptions); err != nil {
 		log.Fatal(err)
 	}
 

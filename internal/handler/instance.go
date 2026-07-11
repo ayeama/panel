@@ -1,7 +1,9 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
+	"io"
 	"log"
 	"net/http"
 
@@ -34,6 +36,11 @@ func (h *InstanceHandler) RegisterHandlers(mux *http.ServeMux) {
 	mux.HandleFunc("POST /instances/{id}/stop", h.handleInstanceStop)
 	mux.HandleFunc("GET /instances/{id}/attach", h.handleInstanceAttach)
 	mux.HandleFunc("GET /instances/{id}/stats", h.handleInstanceStats)
+
+	// TODO
+	// mux.HandleFunc("GET /instances/{id}/backup", h.handleInstanceBackup)
+	// mux.HandleFunc("POST /instances/{id}/restore", h.handleInstanceRestore)
+	// mux.HandleFunc("GET /instances/{id}/logs", h.handleInstanceLogs)
 }
 
 func (h *InstanceHandler) handleInstanceCreate(w http.ResponseWriter, r *http.Request) {
@@ -133,14 +140,90 @@ func (h *InstanceHandler) handleInstanceAttach(w http.ResponseWriter, r *http.Re
 	}
 	defer c.Close()
 
-	for {
-		mt, msg, err := c.ReadMessage()
-		if err != nil {
-			return
-		}
+	ctx, cancel := context.WithCancel(r.Context())
+	defer cancel()
 
-		if err := c.WriteMessage(mt, msg); err != nil {
+	id := r.PathValue("id")
+
+	stdinReader, stdinWriter := io.Pipe()
+	stdoutReader, stdoutWriter := io.Pipe()
+	stderrReader, stderrWriter := io.Pipe()
+
+	ready := make(chan bool)
+
+	go func() {
+		defer stdinReader.Close()
+		defer stdoutWriter.Close()
+		defer stderrWriter.Close()
+
+		if err = h.runtime.InstanceAttach(id, stdinReader, stdoutWriter, stderrWriter, ready); err != nil {
+			cancel()
+		}
+	}()
+
+	msgs := make(chan []byte)
+
+	go func() {
+		defer cancel()
+		defer stdinWriter.Close()
+
+		for {
+			_, msg, err := c.ReadMessage()
+			if err != nil {
+				return
+			}
+
+			_, err = stdinWriter.Write(msg)
+			if err != nil {
+				return
+			}
+		}
+	}()
+
+	go func() {
+		defer cancel()
+		defer stdoutReader.Close()
+
+		buf := make([]byte, 1024)
+		for {
+			n, err := stdoutReader.Read(buf)
+			if err != nil {
+				return
+			}
+
+			msg := make([]byte, n)
+			copy(msg, buf[:n])
+			msgs <- msg
+		}
+	}()
+
+	go func() {
+		defer cancel()
+		defer stderrReader.Close()
+
+		buf := make([]byte, 1024)
+		for {
+			n, err := stderrReader.Read(buf)
+			if err != nil {
+				return
+			}
+
+			msg := make([]byte, n)
+			copy(msg, buf[:n])
+			msgs <- msg
+		}
+	}()
+
+	<-ready
+
+	for {
+		select {
+		case <-ctx.Done():
 			return
+		case msg := <-msgs:
+			if err := c.WriteMessage(websocket.TextMessage, msg); err != nil {
+				return
+			}
 		}
 	}
 }

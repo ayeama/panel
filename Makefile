@@ -9,8 +9,8 @@ build:
 
 deploy:
 	podman pod create --name panel -p 8080:8080 --userns keep-id
-	podman run --pod panel --name backend -d --security-opt label=disable -v "/run/user/1000/podman/podman.sock:/run/user/1000/podman/podman.sock:Z" panel/backend:0.0.1
-	podman run --pod panel --name frontend -d panel/frontend:0.0.1
+	podman run --pod panel --name backend --restart unless-stopped -d --security-opt label=disable -v "/run/user/1000/podman/podman.sock:/run/user/1000/podman/podman.sock:Z" panel/backend:0.0.1
+	podman run --pod panel --name frontend --restart unless-stopped -d panel/frontend:0.0.1
 
 clean:
 	podman pod rm -f panel
