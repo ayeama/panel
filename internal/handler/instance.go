@@ -53,12 +53,7 @@ func (h *InstanceHandler) handleInstanceCreate(w http.ResponseWriter, r *http.Re
 		log.Fatal(err)
 	}
 
-	image, err := h.runtime.ImageRead(request.ImageID)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	instance, err := h.runtime.InstanceCreate(image.Name)
+	instance, err := h.runtime.InstanceCreate(request.ImageID)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -132,6 +127,7 @@ func (h *InstanceHandler) handleInstanceStop(w http.ResponseWriter, r *http.Requ
 	}
 }
 
+// TODO bug unhandled closed pipe write?
 func (h *InstanceHandler) handleInstanceAttach(w http.ResponseWriter, r *http.Request) {
 	c, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {

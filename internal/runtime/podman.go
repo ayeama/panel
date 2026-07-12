@@ -12,7 +12,8 @@ import (
 	"go.podman.io/podman/v6/pkg/bindings/containers"
 	"go.podman.io/podman/v6/pkg/bindings/images"
 	"go.podman.io/podman/v6/pkg/bindings/system"
-	podmanTypes "go.podman.io/podman/v6/pkg/domain/entities/types"
+	"go.podman.io/podman/v6/pkg/bindings/volumes"
+	entitiesTypes "go.podman.io/podman/v6/pkg/domain/entities/types"
 	"go.podman.io/podman/v6/pkg/specgen"
 
 	mobyEvents "github.com/moby/moby/api/types/events"
@@ -81,10 +82,40 @@ func (r *PodmanRuntime) ImageReadMany() ([]types.Image, error) {
 	return images, nil
 }
 
-func (r *PodmanRuntime) InstanceCreate(imageName string) (types.Instance, error) {
+func (r *PodmanRuntime) InstanceCreate(imageID string) (types.Instance, error) {
 	// TODO replace imageName with actual image id not panel id
-	// TODO create volume ourselves
-	spec := specgen.NewSpecGenerator(imageName, false)
+
+	rimageID, err := r.imageID(imageID)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	image, err := images.GetImage(*r.ctx, rimageID, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	spec := specgen.NewSpecGenerator(image.ID, false)
+
+	spec.Volumes = make([]*specgen.NamedVolume, 0, len(image.Config.Volumes))
+	for k := range image.Config.Volumes {
+		volumeLabels := make(map[string]string)
+		volumeLabels["com.github.ayeama.panel.volume.id"] = uuid.NewString()
+
+		volumeCreateOptions := entitiesTypes.VolumeCreateOptions{
+			Labels: volumeLabels,
+		}
+
+		volume, err := volumes.Create(*r.ctx, volumeCreateOptions, &volumes.CreateOptions{})
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		spec.Volumes = append(spec.Volumes, &specgen.NamedVolume{
+			Name: volume.Name,
+			Dest: k,
+		})
+	}
 
 	publish := true
 	spec.PublishExposedPorts = &publish
@@ -112,11 +143,8 @@ func (r *PodmanRuntime) InstanceCreate(imageName string) (types.Instance, error)
 
 	spec.Labels = make(map[string]string)
 
-	id, err := uuid.NewUUID()
-	if err != nil {
-		log.Fatal(err)
-	}
-	spec.Labels[types.InstanceLabelID] = id.String()
+	id := uuid.NewString()
+	spec.Labels[types.InstanceLabelID] = id
 	spec.Labels[types.InstanceLabelWebhook] = "http://localhost:8001/webhook" // TODO
 
 	container, err := containers.CreateWithSpec(*r.ctx, spec, nil)
@@ -129,7 +157,7 @@ func (r *PodmanRuntime) InstanceCreate(imageName string) (types.Instance, error)
 		log.Fatal(err)
 	}
 
-	instance, err := r.InstanceRead(id.String())
+	instance, err := r.InstanceRead(id)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -315,7 +343,7 @@ func (r *PodmanRuntime) InstanceStats(id string, stats chan types.InstanceStat) 
 }
 
 func (r *PodmanRuntime) Events(events chan types.Event, cancel chan bool) error {
-	podmanEvents := make(chan podmanTypes.Event)
+	podmanEvents := make(chan entitiesTypes.Event)
 	if err := system.Events(*r.ctx, podmanEvents, cancel, nil); err != nil {
 		log.Fatal(err)
 	}
@@ -349,6 +377,26 @@ func (r *PodmanRuntime) Events(events chan types.Event, cancel chan bool) error 
 	}
 
 	return nil
+}
+
+func (r *PodmanRuntime) imageID(id string) (string, error) {
+	filters := map[string][]string{"label": {types.ImageLabelID + "=" + id}}
+	imageListOptions := &images.ListOptions{}
+	imageListOptions.WithAll(false).WithFilters(filters)
+
+	imageList, err := images.List(*r.ctx, imageListOptions)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, image := range imageList {
+		imageID := image.Labels[types.ImageLabelID]
+		if imageID == id {
+			return image.ID, nil
+		}
+	}
+
+	return "", errors.New("image not found")
 }
 
 func (r *PodmanRuntime) containerID(id string) (string, error) {
