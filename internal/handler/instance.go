@@ -1,11 +1,14 @@
 package handler
 
 import (
+	"archive/zip"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/ayeama/panel/internal/runtime"
 	"github.com/ayeama/panel/internal/types"
@@ -36,11 +39,11 @@ func (h *InstanceHandler) RegisterHandlers(mux *http.ServeMux) {
 	mux.HandleFunc("POST /instances/{id}/stop", h.handleInstanceStop)
 	mux.HandleFunc("GET /instances/{id}/attach", h.handleInstanceAttach)
 	mux.HandleFunc("GET /instances/{id}/stats", h.handleInstanceStats)
+	mux.HandleFunc("GET /instances/{id}/logs", h.handleInstanceLogs)
 
 	// TODO
 	// mux.HandleFunc("GET /instances/{id}/backup", h.handleInstanceBackup)
 	// mux.HandleFunc("POST /instances/{id}/restore", h.handleInstanceRestore)
-	// mux.HandleFunc("GET /instances/{id}/logs", h.handleInstanceLogs)
 }
 
 func (h *InstanceHandler) handleInstanceCreate(w http.ResponseWriter, r *http.Request) {
@@ -127,7 +130,7 @@ func (h *InstanceHandler) handleInstanceStop(w http.ResponseWriter, r *http.Requ
 	}
 }
 
-// TODO bug unhandled closed pipe write?
+// TODO bug: ERRO[0066] Failed to write input to service: io: read/write on closed pipe
 func (h *InstanceHandler) handleInstanceAttach(w http.ResponseWriter, r *http.Request) {
 	c, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -148,11 +151,12 @@ func (h *InstanceHandler) handleInstanceAttach(w http.ResponseWriter, r *http.Re
 	ready := make(chan bool)
 
 	go func() {
-		defer stdinReader.Close()
-		defer stdoutWriter.Close()
-		defer stderrWriter.Close()
+		// TODO bug: WARN[0206] Failed to close STDIN for writing: close unix @->/run/user/1000/podman/podman.sock: use of closed network connection
+		// defer stdinReader.Close()
+		// defer stdoutWriter.Close()
+		// defer stderrWriter.Close()
 
-		if err = h.runtime.InstanceAttach(id, stdinReader, stdoutWriter, stderrWriter, ready); err != nil {
+		if err := h.runtime.InstanceAttach(id, stdinReader, stdoutWriter, stderrWriter, ready); err != nil {
 			cancel()
 		}
 	}()
@@ -232,6 +236,8 @@ func (h *InstanceHandler) handleInstanceStats(w http.ResponseWriter, r *http.Req
 	}
 	defer c.Close()
 
+	// TODO add context with cancel?
+
 	id := r.PathValue("id")
 
 	stats := make(chan types.InstanceStat)
@@ -246,6 +252,61 @@ func (h *InstanceHandler) handleInstanceStats(w http.ResponseWriter, r *http.Req
 	for stat := range stats {
 		if err = c.WriteJSON(stat); err != nil {
 			log.Fatal(err)
+		}
+	}
+}
+
+func (h *InstanceHandler) handleInstanceLogs(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithCancel(r.Context())
+	defer cancel()
+
+	id := r.PathValue("id")
+
+	instance, err := h.runtime.InstanceRead(id)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	w.Header().Set("Content-Type", "application/zip")
+	w.Header().Set(
+		"Content-Disposition",
+		fmt.Sprintf(
+			"attachment; filename=\"panel-%s-%s.zip\"",
+			instance.Name,
+			time.Now().Format("20060102150405"),
+		),
+	)
+	w.WriteHeader(http.StatusOK)
+
+	logs := make(chan string)
+
+	go func() {
+		defer close(logs)
+
+		if err := h.runtime.InstanceLogs(instance.ID, logs); err != nil {
+			cancel()
+		}
+	}()
+
+	zw := zip.NewWriter(w)
+	defer zw.Close()
+
+	f, err := zw.Create("logs.txt")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case log, ok := <-logs:
+			if !ok {
+				return
+			}
+			if _, err := fmt.Fprint(f, log); err != nil {
+				return
+			}
 		}
 	}
 }

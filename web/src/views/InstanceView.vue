@@ -6,6 +6,8 @@ import { useInstance } from '@/composables/useInstance'
 import InstanceStatistics from '@/components/InstanceStatistics.vue'
 import InstanceTerminal from '@/components/InstanceTerminal.vue'
 
+import { API_URL } from '@/api'
+
 const route = useRoute()
 const router = useRouter()
 
@@ -52,6 +54,7 @@ function running(status) {
             <ul class="dropdown-menu">
               <li><a class="dropdown-item">Backup</a></li>
               <li><a class="dropdown-item">Restore</a></li>
+              <li><a class="dropdown-item" :href="`${API_URL}/instances/${id}/logs`" download="">Logs</a></li>
               <li><hr class="dropdown-divider"></li>
               <li><a class="dropdown-item text-danger" v-on:click="instanceDeleteRedirect(id)">Delete</a></li>
             </ul>

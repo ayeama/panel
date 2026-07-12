@@ -18,6 +18,7 @@ type Runtime interface {
 	InstanceStop(id string) error
 	InstanceAttach(id string, stdin io.Reader, stdout io.Writer, stderr io.Writer, ready chan bool) error
 	InstanceStats(id string, stats chan types.InstanceStat) error
+	InstanceLogs(id string, logs chan string) error
 
 	Events(events chan types.Event, cancel chan bool) error
 }

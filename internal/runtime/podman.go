@@ -284,7 +284,7 @@ func (r *PodmanRuntime) InstanceAttach(id string, stdin io.Reader, stdout io.Wri
 	// 	defer close(msgs)
 
 	// 	containerLogOptions := containers.LogOptions{}
-	// 	containerLogOptions.WithStdout(true).WithStderr(true).WithTail("50").WithFollow(false)
+	// 	containerLogOptions.WithStderr(true).WithStdout(true).WithTail("50").WithFollow(false)
 	// 	if err := containers.Logs(*r.ctx, containerID, &containerLogOptions, msgs, msgs); err != nil {
 	// 		log.Fatal(err)
 	// 	}
@@ -337,6 +337,21 @@ func (r *PodmanRuntime) InstanceStats(id string, stats chan types.InstanceStat) 
 				NetworkRxBytes: netRx,
 			}
 		}
+	}
+
+	return nil
+}
+
+func (r *PodmanRuntime) InstanceLogs(id string, logs chan string) error {
+	containerID, err := r.containerID(id)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	containerLogOptions := containers.LogOptions{}
+	containerLogOptions.WithStderr(true).WithStdout(true).WithTimestamps(true)
+	if err = containers.Logs(*r.ctx, containerID, &containerLogOptions, logs, logs); err != nil {
+		log.Fatal(err)
 	}
 
 	return nil
