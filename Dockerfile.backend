@@ -36,7 +36,7 @@ RUN go mod download
 
 COPY . .
 
-RUN CGO_ENABLED=1 go build -o panel cmd/panel/main.go
+RUN CGO_ENABLED=1 go build -tags=remote -o panel cmd/panel/main.go
 
 FROM docker.io/library/debian:trixie-slim AS backend
 
