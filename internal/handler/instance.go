@@ -130,6 +130,7 @@ func (h *InstanceHandler) handleInstanceStop(w http.ResponseWriter, r *http.Requ
 	}
 }
 
+// TODO bug: write: broken pipe
 // TODO bug: ERRO[0066] Failed to write input to service: io: read/write on closed pipe
 func (h *InstanceHandler) handleInstanceAttach(w http.ResponseWriter, r *http.Request) {
 	c, err := upgrader.Upgrade(w, r, nil)
@@ -151,7 +152,7 @@ func (h *InstanceHandler) handleInstanceAttach(w http.ResponseWriter, r *http.Re
 	ready := make(chan bool)
 
 	go func() {
-		// TODO bug: WARN[0206] Failed to close STDIN for writing: close unix @->/run/user/1000/podman/podman.sock: use of closed network connection
+		// // TODO bug: WARN[0206] Failed to close STDIN for writing: close unix @->/run/user/1000/podman/podman.sock: use of closed network connection
 		// defer stdinReader.Close()
 		// defer stdoutWriter.Close()
 		// defer stderrWriter.Close()

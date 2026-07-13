@@ -23,9 +23,9 @@ const router = createRouter({
       component: InstanceView,
     },
     {
-      path: "/:pathMatch(.*)*",
-      redirect: { name: "home" },
-    }
+      path: '/:pathMatch(.*)*',
+      redirect: { name: 'home' },
+    },
   ],
 })
 

@@ -19,9 +19,11 @@ onMounted(() => {
         <div class="col">
           <h1 class="mb-0">Instances</h1>
         </div>
-        
+
         <div class="col col-auto d-flex align-items-end">
-          <RouterLink class="btn btn-primary" role="button" to="/instances/create">Create</RouterLink>
+          <RouterLink class="btn btn-primary" role="button" to="/instances/create"
+            >Create</RouterLink
+          >
         </div>
       </div>
     </div>

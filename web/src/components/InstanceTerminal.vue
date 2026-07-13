@@ -28,10 +28,10 @@ function resize() {
 onMounted(() => {
   window.addEventListener('resize', resize)
 
-  terminal = new Terminal({rows: 18})
+  terminal = new Terminal({ rows: 20 })
   terminal_fit = new FitAddon()
   terminal.loadAddon(terminal_fit)
-  
+
   socket_attach = new WebSocket(`${API_WS}/instances/${props.id}/attach`)
   socket_attach.onopen = () => {
     terminal_attach = new AttachAddon(socket_attach)
