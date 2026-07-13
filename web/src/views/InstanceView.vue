@@ -77,7 +77,10 @@ function running(status) {
               </li>
               <li><hr class="dropdown-divider" /></li>
               <li>
-                <a class="dropdown-item text-danger" href="#todo" v-on:click="instanceDeleteRedirect(id)"
+                <a
+                  class="dropdown-item text-danger"
+                  href="#todo"
+                  v-on:click="instanceDeleteRedirect(id)"
                   >Delete</a
                 >
               </li>

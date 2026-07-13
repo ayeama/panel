@@ -62,20 +62,42 @@ async function instanceCreateRedirect() {
 
     <div class="col">
       <div class="row row-cols-3">
-          <div class="col">
-            <label for="cpuInput" class="form-label">CPU</label>
-            <input id="cpuInput" class="form-control" type="number" min=0 step="0.1" v-model.number="formCpu" />
-          </div>
-  
-          <div class="col">
-            <label for="memoryInput" class="form-label">Memory</label>
-            <input id="memoryInput" class="form-control" type="number" min=0 step="0.1" v-model.number="formMemory" />
-          </div>
-  
-          <div class="col">
-            <label for="diskInput" class="form-label">Disk</label>
-            <input id="diskInput" class="form-control" type="number" min=0 step="0.1" v-model.number="formDisk" disabled />
-          </div>
+        <div class="col">
+          <label for="cpuInput" class="form-label">CPU</label>
+          <input
+            id="cpuInput"
+            class="form-control"
+            type="number"
+            min="0"
+            step="0.1"
+            v-model.number="formCpu"
+          />
+        </div>
+
+        <div class="col">
+          <label for="memoryInput" class="form-label">Memory</label>
+          <input
+            id="memoryInput"
+            class="form-control"
+            type="number"
+            min="0"
+            step="0.1"
+            v-model.number="formMemory"
+          />
+        </div>
+
+        <div class="col">
+          <label for="diskInput" class="form-label">Disk</label>
+          <input
+            id="diskInput"
+            class="form-control"
+            type="number"
+            min="0"
+            step="0.1"
+            v-model.number="formDisk"
+            disabled
+          />
+        </div>
       </div>
     </div>
 
