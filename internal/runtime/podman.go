@@ -5,10 +5,12 @@ import (
 	"errors"
 	"io"
 	"log"
+	osruntime "runtime"
 	"strconv"
 
 	"github.com/ayeama/panel/internal/types"
 	"github.com/google/uuid"
+	"github.com/opencontainers/runtime-spec/specs-go"
 	"go.podman.io/podman/v6/pkg/bindings/containers"
 	"go.podman.io/podman/v6/pkg/bindings/images"
 	"go.podman.io/podman/v6/pkg/bindings/system"
@@ -19,6 +21,11 @@ import (
 	mobyEvents "github.com/moby/moby/api/types/events"
 
 	netTypes "go.podman.io/common/libnetwork/types"
+)
+
+const (
+	container_cpu_us    = 1_00_000
+	container_memory_gb = 1_000_000_000
 )
 
 type PodmanRuntime struct {
@@ -82,7 +89,8 @@ func (r *PodmanRuntime) ImageReadMany() ([]types.Image, error) {
 	return images, nil
 }
 
-func (r *PodmanRuntime) InstanceCreate(imageID string) (types.Instance, error) {
+// TODO pass resources limits into containers as environment variables for scripts?
+func (r *PodmanRuntime) InstanceCreate(imageID string, resources types.InstanceResources) (types.Instance, error) {
 	// TODO replace imageName with actual image id not panel id
 
 	rimageID, err := r.imageID(imageID)
@@ -126,20 +134,27 @@ func (r *PodmanRuntime) InstanceCreate(imageID string) (types.Instance, error) {
 	terminal := true
 	spec.Terminal = &terminal
 
-	// cpus := 1.0
-	// mem := 1.0
-	// cpuPeriod := uint64(100000)
-	// cpuQuota := int64(float64(cpuPeriod) * cpus)
-	// memLimit := int64(mem * 1000000000)
-	// spec.ResourceLimits = &specs.LinuxResources{
-	// 	CPU: &specs.LinuxCPU{
-	// 		Period: &cpuPeriod,
-	// 		Quota:  &cpuQuota,
-	// 	},
-	// 	Memory: &specs.LinuxMemory{
-	// 		Limit: &memLimit,
-	// 	},
-	// }
+	spec.ResourceLimits = &specs.LinuxResources{}
+
+	if resources.Cpu > 0 {
+		cpuPeriod := uint64(container_cpu_us)
+		cpuQuota := int64(float64(cpuPeriod) * resources.Cpu)
+		spec.ResourceLimits.CPU = &specs.LinuxCPU{
+			Period: &cpuPeriod,
+			Quota:  &cpuQuota,
+		}
+	}
+
+	if resources.Memory > 0 {
+		memLimit := int64(resources.Memory * container_memory_gb)
+		spec.ResourceLimits.Memory = &specs.LinuxMemory{
+			Limit: &memLimit,
+		}
+	}
+
+	if resources.Disk > 0 {
+		// TODO not implemented
+	}
 
 	spec.Labels = make(map[string]string)
 
@@ -178,12 +193,34 @@ func (r *PodmanRuntime) InstanceRead(id string) (types.Instance, error) {
 	for _, container := range containerList {
 		instanceID := container.Labels[types.InstanceLabelID]
 		if instanceID == id {
+			containerDeep, err := containers.Inspect(*r.ctx, container.ID, nil)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			cpus := 0.0
+			memory := 0.0
+			disk := 0.0 // TODO
+
+			if containerDeep.HostConfig.CpuPeriod > 0 && containerDeep.HostConfig.CpuQuota > 0 {
+				cpus = float64(containerDeep.HostConfig.CpuQuota) / float64(containerDeep.HostConfig.CpuPeriod)
+			}
+
+			if containerDeep.HostConfig.Memory > 0 {
+				memory = float64(containerDeep.HostConfig.Memory) / container_memory_gb
+			}
+
 			instance := types.Instance{
-				ID:      instanceID,
-				Name:    container.Names[0],
-				Image:   container.Image,
-				Status:  container.State,
-				Ports:   transformPorts(container.Ports),
+				ID:     instanceID,
+				Name:   container.Names[0],
+				Image:  container.Image,
+				Status: container.State,
+				Ports:  transformPorts(container.Ports),
+				Resources: types.InstanceResources{
+					Cpu:    cpus,
+					Memory: memory,
+					Disk:   disk,
+				},
 				Webhook: container.Labels[types.InstanceLabelWebhook],
 			}
 			return instance, nil
@@ -211,12 +248,34 @@ func (r *PodmanRuntime) InstanceReadMany() ([]types.Instance, error) {
 			continue
 		}
 
+		containerDeep, err := containers.Inspect(*r.ctx, container.ID, nil)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		cpus := 0.0
+		memory := 0.0
+		disk := 0.0 // TODO
+
+		if containerDeep.HostConfig.CpuPeriod > 0 && containerDeep.HostConfig.CpuQuota > 0 {
+			cpus = float64(containerDeep.HostConfig.CpuQuota) / float64(containerDeep.HostConfig.CpuPeriod)
+		}
+
+		if containerDeep.HostConfig.Memory > 0 {
+			memory = float64(containerDeep.HostConfig.Memory) / container_memory_gb
+		}
+
 		instances = append(instances, types.Instance{
-			ID:      instanceID,
-			Name:    container.Names[0],
-			Image:   container.Image,
-			Status:  container.State,
-			Ports:   transformPorts(container.Ports),
+			ID:     instanceID,
+			Name:   container.Names[0],
+			Image:  container.Image,
+			Status: container.State,
+			Ports:  transformPorts(container.Ports),
+			Resources: types.InstanceResources{
+				Cpu:    cpus,
+				Memory: memory,
+				Disk:   disk,
+			},
 			Webhook: container.Labels[types.InstanceLabelWebhook],
 		})
 	}
@@ -312,6 +371,21 @@ func (r *PodmanRuntime) InstanceStats(id string, stats chan types.InstanceStat) 
 		log.Fatal(err)
 	}
 
+	containerDeep, err := containers.Inspect(*r.ctx, containerID, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	cpus := 0.0
+
+	if containerDeep.HostConfig.CpuPeriod > 0 && containerDeep.HostConfig.CpuQuota > 0 {
+		cpus = float64(containerDeep.HostConfig.CpuQuota) / float64(containerDeep.HostConfig.CpuPeriod)
+	}
+
+	if cpus == 0 {
+		cpus = float64(osruntime.NumCPU())
+	}
+
 	containerStatsOptions := containers.StatsOptions{}
 	containerStatsOptions.WithInterval(1)
 
@@ -322,6 +396,8 @@ func (r *PodmanRuntime) InstanceStats(id string, stats chan types.InstanceStat) 
 
 	for statReports := range statsReport {
 		for _, stat := range statReports.Stats {
+			cpu := stat.CPU / cpus
+
 			netTx := uint64(0)
 			netRx := uint64(0)
 			for _, net := range stat.Network {
@@ -330,7 +406,7 @@ func (r *PodmanRuntime) InstanceStats(id string, stats chan types.InstanceStat) 
 			}
 
 			stats <- types.InstanceStat{
-				CpuPercent:     stat.CPU,
+				CpuPercent:     cpu,
 				MemoryPercent:  stat.MemPerc,
 				DiskPercent:    float64(0), // TODO disk usage
 				NetworkTxBytes: netTx,
@@ -386,8 +462,6 @@ func (r *PodmanRuntime) Events(events chan types.Event, cancel chan bool) error 
 					},
 				}
 			}
-		default:
-			break
 		}
 	}
 

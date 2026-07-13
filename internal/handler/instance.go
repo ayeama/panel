@@ -48,15 +48,16 @@ func (h *InstanceHandler) RegisterHandlers(mux *http.ServeMux) {
 
 func (h *InstanceHandler) handleInstanceCreate(w http.ResponseWriter, r *http.Request) {
 	type instanceCreateRequest struct {
-		ImageID string `json:"image_id"`
+		ImageID   string                  `json:"image_id"`
+		Resources types.InstanceResources `json:"resources"`
 	}
-	var request instanceCreateRequest
+	var req instanceCreateRequest
 
-	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		log.Fatal(err)
 	}
 
-	instance, err := h.runtime.InstanceCreate(request.ImageID)
+	instance, err := h.runtime.InstanceCreate(req.ImageID, req.Resources)
 	if err != nil {
 		log.Fatal(err)
 	}

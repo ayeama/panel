@@ -10,7 +10,7 @@ type Runtime interface {
 	ImageRead(id string) (types.Image, error)
 	ImageReadMany() ([]types.Image, error)
 
-	InstanceCreate(imageID string) (types.Instance, error)
+	InstanceCreate(imageID string, resources types.InstanceResources) (types.Instance, error)
 	InstanceRead(id string) (types.Instance, error)
 	InstanceReadMany() ([]types.Instance, error)
 	InstanceDelete(id string) error

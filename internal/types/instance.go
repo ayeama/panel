@@ -8,12 +8,12 @@ const (
 )
 
 type Instance struct {
-	ID     string `json:"id"`
-	Name   string `json:"name"`
-	Image  string `json:"image"`
-	Status string `json:"status"`
-
-	Ports map[string]string `json:"ports"`
+	ID        string            `json:"id"`
+	Name      string            `json:"name"`
+	Image     string            `json:"image"`
+	Status    string            `json:"status"`
+	Ports     map[string]string `json:"ports"`
+	Resources InstanceResources `json:"resources"`
 
 	Webhook string `json:"webhook"`
 }
@@ -24,4 +24,10 @@ type InstanceStat struct {
 	DiskPercent    float64 `json:"disk_percent"`
 	NetworkTxBytes uint64  `json:"network_tx_bytes"`
 	NetworkRxBytes uint64  `json:"network_rx_bytes"`
+}
+
+type InstanceResources struct {
+	Cpu    float64 `json:"cpu"`
+	Memory float64 `json:"memory"`
+	Disk   float64 `json:"disk"`
 }

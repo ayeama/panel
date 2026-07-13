@@ -117,9 +117,37 @@ function running(status) {
           readonly
         />
 
+        <label for="instanceCpu" class="form-label">CPU</label>
+        <input
+          id="instanceCpu"
+          class="form-control"
+          type="text"
+          :value="instance.resources.cpu"
+          readonly
+        />
+
+        <label for="instanceMemory" class="form-label">Memory</label>
+        <input
+          id="instanceMemory"
+          class="form-control"
+          type="text"
+          :value="instance.resources.memory"
+          readonly
+        />
+
+        <label for="instanceMemory" class="form-label">Disk</label>
+        <input
+          id="instanceDisk"
+          class="form-control"
+          type="text"
+          :value="instance.resources.disk"
+          readonly
+        />
+
+        <label for="instanceWebhook" class="form-label">Webhook</label>
         <input
           id="instanceWebhook"
-          class="form-control-plaintext"
+          class="form-control"
           type="text"
           :value="instance.webhook"
           readonly
