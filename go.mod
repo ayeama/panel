@@ -126,7 +126,7 @@ require (
 	github.com/moby/sys/user v0.4.0 // indirect
 	github.com/moby/sys/userns v0.1.0 // indirect
 	github.com/opencontainers/cgroups v0.0.6 // indirect
-	github.com/opencontainers/runtime-spec v1.3.0 // indirect
+	github.com/opencontainers/runtime-spec v1.3.0
 	github.com/opencontainers/selinux v1.15.1 // indirect
 	github.com/pkg/sftp v1.13.10 // indirect
 	github.com/sirupsen/logrus v1.9.4 // indirect

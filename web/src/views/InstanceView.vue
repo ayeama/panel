@@ -35,6 +35,7 @@ function running(status) {
 }
 </script>
 
+<!-- TODO add bootstrap placeholders for loading elements -->
 <template>
   <div v-if="instance" class="row g-2 py-2">
     <div class="col">
@@ -67,8 +68,8 @@ function running(status) {
             </button>
 
             <ul class="dropdown-menu">
-              <li><a class="dropdown-item">Backup</a></li>
-              <li><a class="dropdown-item">Restore</a></li>
+              <li><a class="dropdown-item" href="#todo">Backup</a></li>
+              <li><a class="dropdown-item" href="#todo">Restore</a></li>
               <li>
                 <a class="dropdown-item" :href="`${API_URL}/instances/${id}/logs`" download=""
                   >Logs</a
@@ -76,7 +77,7 @@ function running(status) {
               </li>
               <li><hr class="dropdown-divider" /></li>
               <li>
-                <a class="dropdown-item text-danger" v-on:click="instanceDeleteRedirect(id)"
+                <a class="dropdown-item text-danger" href="#todo" v-on:click="instanceDeleteRedirect(id)"
                   >Delete</a
                 >
               </li>
