@@ -16,8 +16,8 @@ const props = defineProps({
       <thead>
         <tr>
           <th scope="col">Name</th>
-          <th scope="col">Image</th>
           <th scope="col">Status</th>
+          <th scope="col">Image</th>
         </tr>
       </thead>
       <tbody>
@@ -27,8 +27,8 @@ const props = defineProps({
           v-on:click="router.push(`/instances/${item.id}`)"
         >
           <td>{{ item.name }}</td>
-          <td>{{ item.image }}</td>
           <td><InstanceStatusBadge :status="item.status" /></td>
+          <td>{{ item.image }}</td>
         </tr>
       </tbody>
     </table>

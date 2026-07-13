@@ -4,5 +4,5 @@ import "fmt"
 
 func main() {
 	fmt.Println("hello world")
-	// TODO configure firewall from webhooks
+	// TODO configure networks from webhooks
 }
