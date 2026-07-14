@@ -3,6 +3,7 @@ import { onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useInstance } from '@/composables/useInstance'
+import ImageBadge from '@/components/ImageBadge.vue'
 import InstanceStatistics from '@/components/InstanceStatistics.vue'
 import InstanceStatusBadge from '@/components/InstanceStatusBadge.vue'
 import InstanceTerminal from '@/components/InstanceTerminal.vue'
@@ -103,14 +104,20 @@ function running(status) {
           :value="instance.name"
           readonly
         />
-        <input
+        <!-- <input
           id="instanceImage"
           class="form-control-plaintext"
           type="text"
           :value="instance.image"
           readonly
-        />
-        <InstanceStatusBadge :status="instance.status" />
+        /> -->
+        <div>
+          <ImageBadge :image="instance.image" />
+        </div>
+
+        <div>
+          <InstanceStatusBadge :status="instance.status" />
+        </div>
 
         <input
           v-for="port in instance.ports"

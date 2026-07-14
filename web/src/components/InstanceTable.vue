@@ -1,6 +1,7 @@
 <script setup>
 import { useRouter } from 'vue-router'
 
+import ImageBadge from './ImageBadge.vue';
 import InstanceStatusBadge from './InstanceStatusBadge.vue'
 
 const router = useRouter()
@@ -28,7 +29,7 @@ const props = defineProps({
         >
           <td>{{ item.name }}</td>
           <td><InstanceStatusBadge :status="item.status" /></td>
-          <td>{{ item.image }}</td>
+          <td><ImageBadge :image="item.image" /></td>
         </tr>
       </tbody>
     </table>
