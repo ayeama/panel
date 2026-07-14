@@ -68,7 +68,7 @@ function running(status) {
             </button>
 
             <ul class="dropdown-menu">
-              <li><a class="dropdown-item" href="#todo">Backup</a></li>
+              <li><a class="dropdown-item" :href="`${API_URL}/instances/${id}/backup`">Backup</a></li>
               <li><a class="dropdown-item" href="#todo">Restore</a></li>
               <li>
                 <a class="dropdown-item" :href="`${API_URL}/instances/${id}/logs`" download=""

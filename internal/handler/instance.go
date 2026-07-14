@@ -39,11 +39,9 @@ func (h *InstanceHandler) RegisterHandlers(mux *http.ServeMux) {
 	mux.HandleFunc("POST /instances/{id}/stop", h.handleInstanceStop)
 	mux.HandleFunc("GET /instances/{id}/attach", h.handleInstanceAttach)
 	mux.HandleFunc("GET /instances/{id}/stats", h.handleInstanceStats)
+	mux.HandleFunc("GET /instances/{id}/backup", h.handleInstanceBackup)
+	mux.HandleFunc("POST /instances/{id}/restore", h.handleInstanceRestore)
 	mux.HandleFunc("GET /instances/{id}/logs", h.handleInstanceLogs)
-
-	// TODO
-	// mux.HandleFunc("GET /instances/{id}/backup", h.handleInstanceBackup)
-	// mux.HandleFunc("POST /instances/{id}/restore", h.handleInstanceRestore)
 }
 
 func (h *InstanceHandler) handleInstanceCreate(w http.ResponseWriter, r *http.Request) {
@@ -131,8 +129,6 @@ func (h *InstanceHandler) handleInstanceStop(w http.ResponseWriter, r *http.Requ
 	}
 }
 
-// TODO bug: write: broken pipe
-// TODO bug: ERRO[0066] Failed to write input to service: io: read/write on closed pipe
 func (h *InstanceHandler) handleInstanceAttach(w http.ResponseWriter, r *http.Request) {
 	c, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -153,11 +149,6 @@ func (h *InstanceHandler) handleInstanceAttach(w http.ResponseWriter, r *http.Re
 	ready := make(chan bool)
 
 	go func() {
-		// // TODO bug: WARN[0206] Failed to close STDIN for writing: close unix @->/run/user/1000/podman/podman.sock: use of closed network connection
-		// defer stdinReader.Close()
-		// defer stdoutWriter.Close()
-		// defer stderrWriter.Close()
-
 		if err := h.runtime.InstanceAttach(id, stdinReader, stdoutWriter, stderrWriter, ready); err != nil {
 			cancel()
 		}
@@ -272,6 +263,51 @@ func (h *InstanceHandler) handleInstanceStats(w http.ResponseWriter, r *http.Req
 	}
 }
 
+func (h *InstanceHandler) handleInstanceBackup(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+
+	instance, err := h.runtime.InstanceRead(id)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	w.Header().Set("Content-Type", "application/zip")
+	w.Header().Set(
+		"Content-Disposition",
+		fmt.Sprintf(
+			"attachment; filename=\"panel-%s-%s-backup.zip\"",
+			instance.Name,
+			time.Now().Format("20060102150405"),
+		),
+	)
+	w.WriteHeader(http.StatusOK)
+
+	zw := zip.NewWriter(w)
+	defer zw.Close()
+
+	manifest := types.InstanceBackupManifest{
+		Instance: instance,
+		Version:  "1",
+	}
+
+	if err = h.runtime.InstanceBackup(instance.ID, &manifest, zw); err != nil {
+		log.Fatal(err)
+	}
+
+	f, err := zw.Create("manifest.json")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if err = json.NewEncoder(f).Encode(manifest); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func (h *InstanceHandler) handleInstanceRestore(w http.ResponseWriter, r *http.Request) {
+	// id := r.PathValue("id")
+}
+
 func (h *InstanceHandler) handleInstanceLogs(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithCancel(r.Context())
 	defer cancel()
@@ -287,7 +323,7 @@ func (h *InstanceHandler) handleInstanceLogs(w http.ResponseWriter, r *http.Requ
 	w.Header().Set(
 		"Content-Disposition",
 		fmt.Sprintf(
-			"attachment; filename=\"panel-%s-%s.zip\"",
+			"attachment; filename=\"panel-%s-%s-logs.zip\"",
 			instance.Name,
 			time.Now().Format("20060102150405"),
 		),

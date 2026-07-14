@@ -18,6 +18,12 @@ type Instance struct {
 	Webhook string `json:"webhook"`
 }
 
+type InstanceResources struct {
+	Cpu    float64 `json:"cpu"`
+	Memory float64 `json:"memory"`
+	Disk   float64 `json:"disk"`
+}
+
 type InstanceStat struct {
 	CpuPercent     float64 `json:"cpu_percent"`
 	MemoryPercent  float64 `json:"memory_percent"`
@@ -26,8 +32,14 @@ type InstanceStat struct {
 	NetworkRxBytes uint64  `json:"network_rx_bytes"`
 }
 
-type InstanceResources struct {
-	Cpu    float64 `json:"cpu"`
-	Memory float64 `json:"memory"`
-	Disk   float64 `json:"disk"`
+type InstanceBackupManifest struct {
+	Instance // TODO don't need all members
+
+	Version string                        `json:"version"`
+	Mounts  []InstanceBackupManifestMount `json:"volumes"`
+}
+
+type InstanceBackupManifestMount struct {
+	ID          string `json:"id"`
+	Destination string `json:"destination"`
 }

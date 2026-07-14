@@ -1,8 +1,10 @@
 package runtime
 
 import (
+	"archive/zip"
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"log"
 	osruntime "runtime"
@@ -26,6 +28,8 @@ import (
 const (
 	container_cpu_us    = 1_00_000
 	container_memory_gb = 1_000_000_000
+
+	instanceVolumeLabelID string = "com.github.ayeama.panel.volume.id"
 )
 
 type PodmanRuntime struct {
@@ -108,7 +112,7 @@ func (r *PodmanRuntime) InstanceCreate(imageID string, resources types.InstanceR
 	spec.Volumes = make([]*specgen.NamedVolume, 0, len(image.Config.Volumes))
 	for k := range image.Config.Volumes {
 		volumeLabels := make(map[string]string)
-		volumeLabels["com.github.ayeama.panel.volume.id"] = uuid.NewString()
+		volumeLabels[instanceVolumeLabelID] = uuid.NewString()
 
 		volumeCreateOptions := entitiesTypes.VolumeCreateOptions{
 			Labels: volumeLabels,
@@ -393,7 +397,7 @@ func (r *PodmanRuntime) InstanceStats(id string, stats chan types.InstanceStat) 
 	containerStatsOptions := containers.StatsOptions{}
 	containerStatsOptions.WithInterval(1)
 
-	statsReport, err := containers.Stats(*r.ctx, []string{containerID}, &containerStatsOptions)
+	statsReport, err := containers.Stats(*r.ctx, []string{containerDeep.ID}, &containerStatsOptions)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -419,6 +423,48 @@ func (r *PodmanRuntime) InstanceStats(id string, stats chan types.InstanceStat) 
 		}
 	}
 
+	return nil
+}
+
+func (r *PodmanRuntime) InstanceBackup(id string, manifest *types.InstanceBackupManifest, zw *zip.Writer) error {
+	containerID, err := r.containerID(id)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	containerDeep, err := containers.Inspect(*r.ctx, containerID, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, mount := range containerDeep.Mounts {
+		volume, err := volumes.Inspect(*r.ctx, mount.Name, nil)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		id := volume.Labels[instanceVolumeLabelID]
+
+		w, err := zw.Create(fmt.Sprintf("volumes/%s", id))
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		err = volumes.Export(*r.ctx, volume.Name, w)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		manifest.Mounts = append(manifest.Mounts, types.InstanceBackupManifestMount{
+			ID:          id,
+			Destination: mount.Destination,
+		})
+	}
+
+	return nil
+}
+
+func (r *PodmanRuntime) InstanceRestore(id string) error {
 	return nil
 }
 
