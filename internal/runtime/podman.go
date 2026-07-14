@@ -358,6 +358,10 @@ func (r *PodmanRuntime) InstanceAttach(id string, stdin io.Reader, stdout io.Wri
 	containerAttachOptions := containers.AttachOptions{}
 	containerAttachOptions.WithDetachKeys("")
 	if err = containers.Attach(*r.ctx, containerID, stdin, stdout, stderr, ready, &containerAttachOptions); err != nil {
+		if errors.Is(err, io.ErrClosedPipe) {
+			return nil
+		}
+
 		log.Fatal(err)
 	}
 
