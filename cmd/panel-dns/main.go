@@ -17,11 +17,9 @@ import (
 )
 
 type Cloudflare struct {
-	client *cloudflare.Client
+	host   string
 	zoneID string
-
-	host    string
-	comment string
+	client *cloudflare.Client
 }
 
 func (cf *Cloudflare) subdomainName(name string) string {
@@ -138,11 +136,6 @@ func main() {
 		log.Fatal(errors.New("missing 'PANEL_DNS_HOST' environment variable"))
 	}
 
-	comment := os.Getenv("PANEL_DNS_COMMENT")
-	if comment == "" {
-		comment = "managed by panel"
-	}
-
 	zoneID := os.Getenv("PANEL_DNS_ZONE_ID")
 	if zoneID == "" {
 		log.Fatal(errors.New("missing 'PANEL_DNS_ZONE_ID' environment variable"))
@@ -151,10 +144,9 @@ func main() {
 	client := cloudflare.NewClient()
 
 	cf := Cloudflare{
-		client:  client,
-		zoneID:  zoneID,
-		host:    host,
-		comment: comment,
+		client: client,
+		zoneID: zoneID,
+		host:   host,
 	}
 
 	mux := http.NewServeMux()
