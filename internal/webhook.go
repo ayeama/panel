@@ -26,6 +26,7 @@ func webhook(runtime runtime.Runtime) {
 			}
 		}()
 
+		// TODO standardise webhooks, support comma seperated
 		for event := range events {
 			switch event.Type {
 			case types.EventTypeInstance:

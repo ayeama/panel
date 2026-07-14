@@ -195,7 +195,12 @@ func (h *InstanceHandler) handleInstanceAttach(w http.ResponseWriter, r *http.Re
 
 			msg := make([]byte, n)
 			copy(msg, buf[:n])
-			msgs <- msg
+
+			select {
+			case msgs <- msg:
+			case <-ctx.Done():
+				return
+			}
 		}
 	}()
 
@@ -212,11 +217,20 @@ func (h *InstanceHandler) handleInstanceAttach(w http.ResponseWriter, r *http.Re
 
 			msg := make([]byte, n)
 			copy(msg, buf[:n])
-			msgs <- msg
+
+			select {
+			case msgs <- msg:
+			case <-ctx.Done():
+				return
+			}
 		}
 	}()
 
-	<-ready
+	select {
+	case <-ready:
+	case <-ctx.Done():
+		return
+	}
 
 	for {
 		select {
