@@ -1,7 +1,7 @@
 <script setup>
 import { useRouter } from 'vue-router'
 
-import ImageBadge from './ImageBadge.vue';
+import ImageBadge from './ImageBadge.vue'
 import InstanceStatusBadge from './InstanceStatusBadge.vue'
 
 const router = useRouter()

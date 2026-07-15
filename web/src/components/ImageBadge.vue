@@ -7,7 +7,7 @@ const props = defineProps({
 
 const label = computed(() => {
   // TODO should be a useImages composable?
-  const parts = props.image.split("/")
+  const parts = props.image.split('/')
   return parts.at(-1)
 })
 

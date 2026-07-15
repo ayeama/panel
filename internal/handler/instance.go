@@ -119,6 +119,8 @@ func (h *InstanceHandler) handleInstanceStart(w http.ResponseWriter, r *http.Req
 	if err := h.runtime.InstanceStart(id); err != nil {
 		log.Fatal(err)
 	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (h *InstanceHandler) handleInstanceStop(w http.ResponseWriter, r *http.Request) {
@@ -127,6 +129,8 @@ func (h *InstanceHandler) handleInstanceStop(w http.ResponseWriter, r *http.Requ
 	if err := h.runtime.InstanceStop(id); err != nil {
 		log.Fatal(err)
 	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (h *InstanceHandler) handleInstanceAttach(w http.ResponseWriter, r *http.Request) {
@@ -252,12 +256,14 @@ func (h *InstanceHandler) handleInstanceStats(w http.ResponseWriter, r *http.Req
 	// TODO handle lifecycle
 	go func() {
 		if err = h.runtime.InstanceStats(id, stats); err != nil {
+			log.Println("about to fail in stats instanestats")
 			log.Fatal(err)
 		}
 	}()
 
 	for stat := range stats {
 		if err = c.WriteJSON(stat); err != nil {
+			log.Println("about to fail in stats writejson")
 			log.Fatal(err)
 		}
 	}

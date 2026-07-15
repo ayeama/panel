@@ -69,7 +69,9 @@ function running(status) {
             </button>
 
             <ul class="dropdown-menu">
-              <li><a class="dropdown-item" :href="`${API_URL}/instances/${id}/backup`">Backup</a></li>
+              <li>
+                <a class="dropdown-item" :href="`${API_URL}/instances/${id}/backup`">Backup</a>
+              </li>
               <li><a class="dropdown-item" href="#todo">Restore</a></li>
               <li>
                 <a class="dropdown-item" :href="`${API_URL}/instances/${id}/logs`" download=""
@@ -92,7 +94,7 @@ function running(status) {
     </div>
 
     <div class="col col-12">
-      <InstanceTerminal v-if="instance" :id="instance.id" />
+      <InstanceTerminal v-if="instance" :instance="instance" />
     </div>
 
     <div class="col">

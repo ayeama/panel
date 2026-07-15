@@ -366,6 +366,7 @@ func (r *PodmanRuntime) InstanceAttach(id string, stdin io.Reader, stdout io.Wri
 			return nil
 		}
 
+		fmt.Println("about to error here:", err, err.Error())
 		log.Fatal(err)
 	}
 
@@ -399,6 +400,8 @@ func (r *PodmanRuntime) InstanceStats(id string, stats chan types.InstanceStat) 
 
 	statsReport, err := containers.Stats(*r.ctx, []string{containerDeep.ID}, &containerStatsOptions)
 	if err != nil {
+		// TODO bug: 2026/07/15 09:14:57 write tcp [::1]:8000->[::1]:51528: write: broken pipe
+		log.Println("about to fail in runtime stats stats")
 		log.Fatal(err)
 	}
 
