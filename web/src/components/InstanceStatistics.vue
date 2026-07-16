@@ -60,7 +60,7 @@ function network_mb(v) {
 </script>
 
 <template>
-  <div class="row">
+  <div class="row g-2">
     <div class="col col-12">
       <span id="cpuProgressbar" class="form-text">CPU</span>
 

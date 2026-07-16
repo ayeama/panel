@@ -150,18 +150,5 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div>
-    <!-- <span v-if="connected" class="badge text-success border border-success">connected</span>
-    <span v-else class="badge text-secondary border border-secondary">disconnected</span>
-
-    <button v-if="connected" class="btn btn-secondary" v-on:click="disconnect()">
-      Disconnect
-    </button>
-    <button v-else class="btn btn-secondary" v-on:click="connect()">Connect</button> -->
-
-    <span class="badge border" :class="status_color">{{ status }}</span>
-    <button class="btn btn-sm btn-secondary" v-on:click="reconnect()">Reconnect</button>
-  </div>
-
   <div ref="terminal_element"></div>
 </template>

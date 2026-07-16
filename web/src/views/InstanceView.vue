@@ -42,7 +42,16 @@ function running(status) {
     <div class="col">
       <div class="row">
         <div class="col d-flex">
-          <h1 class="mb-0">{{ instance.name }}</h1>
+          <div class="row row-cols-1">
+            <div class="col">
+              <h1 class="h4 mb-0">{{ instance.name }}</h1>
+            </div>
+
+            <div class="col">
+              <InstanceStatusBadge :status="instance.status" />
+            </div>
+          </div>
+
         </div>
 
         <div class="col col-auto d-flex align-items-end">
@@ -72,7 +81,7 @@ function running(status) {
               <li>
                 <a class="dropdown-item" :href="`${API_URL}/instances/${id}/backup`">Backup</a>
               </li>
-              <li><a class="dropdown-item" href="#todo">Restore</a></li>
+              <li><a class="dropdown-item disabled" aria-disabled="true" href="#todo">Restore</a></li>
               <li>
                 <a class="dropdown-item" :href="`${API_URL}/instances/${id}/logs`" download=""
                   >Logs</a
@@ -93,83 +102,72 @@ function running(status) {
       </div>
     </div>
 
-    <div class="col col-12">
-      <InstanceTerminal v-if="instance" :instance="instance" />
-    </div>
-
-    <div class="col">
-      <div v-if="instance">
-        <input
-          id="instanceName"
-          class="form-control-plaintext"
-          type="text"
-          :value="instance.name"
-          readonly
-        />
-        <!-- <input
-          id="instanceImage"
-          class="form-control-plaintext"
-          type="text"
-          :value="instance.image"
-          readonly
-        /> -->
-        <div>
-          <ImageBadge :image="instance.image" />
+    <div class="col-12">
+      <div class="card overflow-hidden">
+        <div class="card-body p-0">
+          <InstanceTerminal v-if="instance" :instance="instance" />
         </div>
-
-        <div>
-          <InstanceStatusBadge :status="instance.status" />
-        </div>
-
-        <input
-          v-for="port in instance.ports"
-          id="instancePort"
-          class="form-control-plaintext"
-          type="text"
-          :value="port"
-          readonly
-        />
-
-        <label for="instanceCpu" class="form-label">CPU</label>
-        <input
-          id="instanceCpu"
-          class="form-control"
-          type="text"
-          :value="instance.resources.cpu"
-          readonly
-        />
-
-        <label for="instanceMemory" class="form-label">Memory</label>
-        <input
-          id="instanceMemory"
-          class="form-control"
-          type="text"
-          :value="instance.resources.memory"
-          readonly
-        />
-
-        <label for="instanceMemory" class="form-label">Disk</label>
-        <input
-          id="instanceDisk"
-          class="form-control"
-          type="text"
-          :value="instance.resources.disk"
-          readonly
-        />
-
-        <label for="instanceWebhook" class="form-label">Webhook</label>
-        <input
-          id="instanceWebhook"
-          class="form-control"
-          type="text"
-          :value="instance.webhook"
-          readonly
-        />
       </div>
     </div>
 
-    <div class="col">
-      <InstanceStatistics v-if="instance" :id="instance.id" />
+    <div class="col-md-12 col-lg-8">
+      <div v-if="instance" class="card">
+        <div class="card-body">
+          <h5 class="card-title">Details</h5>
+
+          <div class="row g-2">
+            <div class="col-12">
+              <label for="instanceID" class="form-label">ID</label>
+              <input id="instanceID" class="form-control" type="text" :value="instance.id" readonly />
+            </div>
+
+            <div class="col-12">
+              <label for="instanceImage" class="form-label">Image</label>
+              <input id="instanceImage" class="form-control" type="text" :value="instance.image" readonly />
+            </div>
+          
+            <div class="col-12">
+              <label for="instanceDisk" class="form-label">Ports</label>
+
+              <div class="d-flex flex-column gap-2">
+                <input v-for="(port, _) in instance.ports" :key="port" id="instanceDisk" class="form-control" type="number" :value="port" readonly />
+              </div>
+            </div>
+
+            <div class="row mt-0 g-2">
+              <div class="col-4">
+                <label for="instanceCPU" class="form-label">CPU</label>
+                <input id="instanceCPU" class="form-control" type="number" min="0" step="0.1" :value="instance.resources.cpu" readonly />
+              </div>
+  
+              <div class="col-4">
+                <label for="instanceMemory" class="form-label">Memory</label>
+                <input id="instanceMemory" class="form-control" type="number" min="0" step="0.1" :value="instance.resources.memory" readonly />
+              </div>
+  
+              <div class="col-4">
+                <label for="instanceDisk" class="form-label">Disk</label>
+                <input id="instanceDisk" class="form-control" type="number" min="0" step="0.1" :value="instance.resources.disk" readonly />
+              </div>
+            </div>
+          
+            <div class="col-12">
+              <label for="instanceWebhook" class="form-label">Webhook</label>
+              <input id="instanceWebhook" class="form-control" type="text" :value="instance.webhook" readonly />
+            </div>          
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-12 col-lg-4">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">Stats</h5>
+
+          <InstanceStatistics v-if="instance" :id="instance.id" />
+        </div>
+      </div>
     </div>
   </div>
 </template>
