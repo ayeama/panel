@@ -91,7 +91,7 @@ function running(status) {
               <li>
                 <a
                   class="dropdown-item text-danger"
-                  href="#todo"
+                  href="#"
                   v-on:click="instanceDeleteRedirect(id)"
                   >Delete</a
                 >
