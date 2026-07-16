@@ -1,18 +1,10 @@
-.vscode/
+**
 
-tmp/
-web/
+!/cmd/
+!/cmd/**
 
-.dockerignore.*
+!/internal/
+!/internal/**
 
-.gitignore
-
-Dockerfile.*
-
-Makefile
-
-*.db
-*.db-shm
-*.db-wal
-
-README.md
+!go.mod
+!go.sum
