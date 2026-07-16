@@ -263,8 +263,7 @@ func (h *InstanceHandler) handleInstanceStats(w http.ResponseWriter, r *http.Req
 
 	for stat := range stats {
 		if err = c.WriteJSON(stat); err != nil {
-			log.Println("about to fail in stats writejson")
-			log.Fatal(err)
+			return
 		}
 	}
 }
