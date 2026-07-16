@@ -136,9 +136,9 @@ func main() {
 		log.Fatal(errors.New("missing 'PANEL_DNS_HOST' environment variable"))
 	}
 
-	zoneID := os.Getenv("PANEL_DNS_ZONE_ID")
+	zoneID := os.Getenv("CLOUDFLARE_ZONE_ID")
 	if zoneID == "" {
-		log.Fatal(errors.New("missing 'PANEL_DNS_ZONE_ID' environment variable"))
+		log.Fatal(errors.New("missing 'CLOUDFLARE_ZONE_ID' environment variable"))
 	}
 
 	client := cloudflare.NewClient()
