@@ -57,6 +57,15 @@ RUN --mount=type=cache,target=/go/pkg/mod \
         -o panel-dns \
         cmd/panel-dns/main.go
 
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    CGO_ENABLED=1 go build \
+        -trimpath \
+        -ldflags="-s -w" \
+        -tags=remote \
+        -o panel-notify \
+        cmd/panel-notify/main.go
+
 FROM docker.io/library/debian:trixie-slim AS backend
 
 WORKDIR /app
@@ -82,3 +91,19 @@ COPY --from=builder-backend /app/panel-dns /usr/bin/panel-dns
 EXPOSE 8001
 
 CMD ["panel-dns"]
+
+FROM docker.io/library/debian:trixie-slim AS backend-notify
+
+WORKDIR /app
+
+RUN apt-get update && \
+    apt-get install --no-install-recommends -y \
+        ca-certificates && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder-backend /app/panel-notify /usr/bin/panel-notify
+
+EXPOSE 8003
+
+CMD ["panel-notify"]
