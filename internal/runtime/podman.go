@@ -489,6 +489,7 @@ func (r *PodmanRuntime) InstanceLogs(id string, logs chan string) error {
 func (r *PodmanRuntime) Events(events chan types.Event, cancel chan bool) error {
 	podmanEvents := make(chan entitiesTypes.Event)
 	if err := system.Events(*r.ctx, podmanEvents, cancel, nil); err != nil {
+		log.Println("about to fail in runtime events")
 		log.Fatal(err)
 	}
 

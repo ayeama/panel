@@ -79,7 +79,7 @@ func webhook(runtime runtime.Runtime) {
 						log.Println("WARNING", err.Error())
 						break
 					}
-					defer resp.Body.Close()
+					resp.Body.Close()
 
 					log.Println("sent webhook")
 				case types.EventActionDelete:
@@ -120,14 +120,12 @@ func webhook(runtime runtime.Runtime) {
 						log.Println("WARNING", err.Error())
 						break
 					}
-					defer resp.Body.Close()
+					resp.Body.Close()
 
 					log.Println("sent webhook")
 				default:
 					break
 				}
-			default:
-				break
 			}
 		}
 	}
