@@ -95,6 +95,7 @@ async function instanceCreateRedirect() {
             min="0"
             step="0.1"
             v-model.number="formDisk"
+            readonly
             disabled
           />
         </div>

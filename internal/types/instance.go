@@ -3,8 +3,8 @@ package types
 type InstanceLabel string
 
 const (
-	InstanceLabelID      string = "com.github.ayeama.panel.instance.id"
-	InstanceLabelWebhook string = "com.github.ayeama.panel.instance.webhook"
+	InstanceLabelID       string = "com.github.ayeama.panel.instance.id"
+	InstanceLabelWebhooks string = "com.github.ayeama.panel.instance.webhooks"
 )
 
 type Instance struct {
@@ -15,7 +15,7 @@ type Instance struct {
 	Ports     map[string]string `json:"ports"`
 	Resources InstanceResources `json:"resources"`
 
-	Webhook string `json:"webhook"`
+	Webhooks []string `json:"webhooks"`
 }
 
 type InstanceResources struct {

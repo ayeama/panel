@@ -147,13 +147,16 @@ function running(status) {
   
               <div class="col-4">
                 <label for="instanceDisk" class="form-label">Disk</label>
-                <input id="instanceDisk" class="form-control" type="number" min="0" step="0.1" :value="instance.resources.disk" readonly />
+                <input id="instanceDisk" class="form-control" type="number" min="0" step="0.1" :value="instance.resources.disk" readonly disabled />
               </div>
             </div>
           
             <div class="col-12">
-              <label for="instanceWebhook" class="form-label">Webhook</label>
-              <input id="instanceWebhook" class="form-control" type="text" :value="instance.webhook" readonly />
+              <label for="instanceWebhook" class="form-label">Webhooks</label>
+              
+              <div class="d-flex flex-column gap-2">
+                <input v-for="(webhook, _) in instance.webhooks" :key="webhook" id="instanceWebhook" class="form-control" type="text" :value="webhook" readonly />
+              </div>
             </div>          
           </div>
         </div>

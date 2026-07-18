@@ -9,6 +9,7 @@ import (
 	"log"
 	osruntime "runtime"
 	"strconv"
+	"strings"
 
 	"github.com/ayeama/panel/internal/types"
 	"github.com/google/uuid"
@@ -164,7 +165,7 @@ func (r *PodmanRuntime) InstanceCreate(imageID string, resources types.InstanceR
 
 	id := uuid.NewString()
 	spec.Labels[types.InstanceLabelID] = id
-	spec.Labels[types.InstanceLabelWebhook] = "http://localhost:8001/webhook" // TODO
+	spec.Labels[types.InstanceLabelWebhooks] = "http://localhost:8001/webhook,http://localhost:8002/webhook,http://localhost:8003/webhook" // TODO
 
 	container, err := containers.CreateWithSpec(*r.ctx, spec, nil)
 	if err != nil {
@@ -214,6 +215,8 @@ func (r *PodmanRuntime) InstanceRead(id string) (types.Instance, error) {
 				memory = float64(containerDeep.HostConfig.Memory) / container_memory_gb
 			}
 
+			webhooks := strings.Split(container.Labels[types.InstanceLabelWebhooks], ",")
+
 			instance := types.Instance{
 				ID:     instanceID,
 				Name:   container.Names[0],
@@ -225,7 +228,7 @@ func (r *PodmanRuntime) InstanceRead(id string) (types.Instance, error) {
 					Memory: memory,
 					Disk:   disk,
 				},
-				Webhook: container.Labels[types.InstanceLabelWebhook],
+				Webhooks: webhooks,
 			}
 			return instance, nil
 		}
@@ -269,6 +272,8 @@ func (r *PodmanRuntime) InstanceReadMany() ([]types.Instance, error) {
 			memory = float64(containerDeep.HostConfig.Memory) / container_memory_gb
 		}
 
+		webhooks := strings.Split(container.Labels[types.InstanceLabelWebhooks], ",")
+
 		instances = append(instances, types.Instance{
 			ID:     instanceID,
 			Name:   container.Names[0],
@@ -280,7 +285,7 @@ func (r *PodmanRuntime) InstanceReadMany() ([]types.Instance, error) {
 				Memory: memory,
 				Disk:   disk,
 			},
-			Webhook: container.Labels[types.InstanceLabelWebhook],
+			Webhooks: webhooks,
 		})
 	}
 

@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/ayeama/panel/internal/runtime"
 	"github.com/ayeama/panel/internal/types"
@@ -42,53 +43,54 @@ func webhook(runtime runtime.Runtime) {
 						log.Fatal(err)
 					}
 
-					// TODO move validation?
-					_, err = url.ParseRequestURI(instance.Webhook)
-					if err != nil {
-						log.Println(err)
-						continue
+					for _, webhook := range instance.Webhooks {
+						// TODO move validation?
+						_, err = url.ParseRequestURI(webhook)
+						if err != nil {
+							log.Println(err)
+							continue
+						}
+
+						webhookData, err := json.Marshal(types.WebhookEventDataInstanceCreated{
+							Instance: instance,
+						})
+						if err != nil {
+							log.Fatal(err)
+						}
+
+						webhookRequest := types.WebhookEvent{
+							ID:   uuid.NewString(),
+							Type: types.WebhookEventInstanceCreated,
+							Data: webhookData,
+						}
+
+						body, err := json.Marshal(webhookRequest)
+						if err != nil {
+							log.Fatal(err)
+						}
+
+						req, err := http.NewRequest(http.MethodPost, webhook, bytes.NewReader(body))
+						if err != nil {
+							log.Fatal(err)
+						}
+
+						req.Header.Set("Content-Type", "application/json")
+
+						resp, err := http.DefaultClient.Do(req)
+						if err != nil {
+							log.Println("WARNING", err.Error())
+							continue
+						}
+						resp.Body.Close()
+
+						log.Println("sent webhook")
 					}
 
-					webhookData, err := json.Marshal(types.WebhookEventDataInstanceCreated{
-						Instance: instance,
-					})
-					if err != nil {
-						log.Fatal(err)
-					}
-
-					webhookRequest := types.WebhookEvent{
-						ID:   uuid.NewString(),
-						Type: types.WebhookEventInstanceCreated,
-						Data: webhookData,
-					}
-
-					body, err := json.Marshal(webhookRequest)
-					if err != nil {
-						log.Fatal(err)
-					}
-
-					req, err := http.NewRequest(http.MethodPost, instance.Webhook, bytes.NewReader(body))
-					if err != nil {
-						log.Fatal(err)
-					}
-
-					req.Header.Set("Content-Type", "application/json")
-
-					resp, err := http.DefaultClient.Do(req)
-					if err != nil {
-						log.Println("WARNING", err.Error())
-						break
-					}
-					resp.Body.Close()
-
-					log.Println("sent webhook")
 				case types.EventActionDelete:
 					id := event.Actor.Attributes[types.InstanceLabelID]
 					if id == "" {
 						continue
 					}
-
-					webhook := event.Actor.Attributes[types.InstanceLabelWebhook]
 
 					webhookData, err := json.Marshal(types.WebhookEventDataInstanceDeleted{
 						ID: id,
@@ -108,23 +110,25 @@ func webhook(runtime runtime.Runtime) {
 						log.Fatal(err)
 					}
 
-					req, err := http.NewRequest(http.MethodPost, webhook, bytes.NewReader(body))
-					if err != nil {
-						log.Fatal(err)
+					webhooks := strings.Split(event.Actor.Attributes[types.InstanceLabelWebhooks], ",")
+
+					for _, webhook := range webhooks {
+						req, err := http.NewRequest(http.MethodPost, webhook, bytes.NewReader(body))
+						if err != nil {
+							log.Fatal(err)
+						}
+
+						req.Header.Set("Content-Type", "application/json")
+
+						resp, err := http.DefaultClient.Do(req)
+						if err != nil {
+							log.Println("WARNING", err.Error())
+							break
+						}
+						resp.Body.Close()
+
+						log.Println("sent webhook")
 					}
-
-					req.Header.Set("Content-Type", "application/json")
-
-					resp, err := http.DefaultClient.Do(req)
-					if err != nil {
-						log.Println("WARNING", err.Error())
-						break
-					}
-					resp.Body.Close()
-
-					log.Println("sent webhook")
-				default:
-					break
 				}
 			}
 		}
