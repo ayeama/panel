@@ -15,9 +15,9 @@ onMounted(() => {
 <template>
   <div class="row row-cols-1 py-2">
     <div class="col">
-      <div class="row pb-2">
+      <div class="row">
         <div class="col">
-          <h1 class="mb-0">Instances</h1>
+          <h1 class="h4 mb-0">Instances</h1>
         </div>
 
         <div class="col col-auto d-flex align-items-end">

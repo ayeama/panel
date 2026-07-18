@@ -43,7 +43,7 @@ async function instanceCreateRedirect() {
 <template>
   <div class="row row-cols-1 g-2 pt-2">
     <div class="col">
-      <h1>Instance Create</h1>
+      <h1 class="h4 mb-0">Instance create</h1>
     </div>
 
     <div class="col">

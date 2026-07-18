@@ -127,10 +127,12 @@ function running(status) {
             </div>
           
             <div class="col-12">
-              <label for="instanceDisk" class="form-label">Ports</label>
+              <label for="instanceDisk" class="form-label mb-0">Ports</label>
 
-              <div class="d-flex flex-column gap-2">
-                <input v-for="(port, _) in instance.ports" :key="port" id="instanceDisk" class="form-control" type="number" :value="port" readonly />
+              <div class="row mt-0 g-2">
+                <div v-for="(port, _) in instance.ports" :key="port" class="col-4">
+                  <input id="instanceDisk" class="form-control" type="number" :value="port" readonly />
+                </div>
               </div>
             </div>
 
