@@ -51,7 +51,6 @@ function running(status) {
               <InstanceStatusBadge :status="instance.status" />
             </div>
           </div>
-
         </div>
 
         <div class="col col-auto d-flex align-items-end">
@@ -81,7 +80,9 @@ function running(status) {
               <li>
                 <a class="dropdown-item" :href="`${API_URL}/instances/${id}/backup`">Backup</a>
               </li>
-              <li><a class="dropdown-item disabled" aria-disabled="true" href="#todo">Restore</a></li>
+              <li>
+                <a class="dropdown-item disabled" aria-disabled="true" href="#todo">Restore</a>
+              </li>
               <li>
                 <a class="dropdown-item" :href="`${API_URL}/instances/${id}/logs`" download=""
                   >Logs</a
@@ -118,20 +119,38 @@ function running(status) {
           <div class="row g-2">
             <div class="col-12">
               <label for="instanceID" class="form-label">ID</label>
-              <input id="instanceID" class="form-control" type="text" :value="instance.id" readonly />
+              <input
+                id="instanceID"
+                class="form-control"
+                type="text"
+                :value="instance.id"
+                readonly
+              />
             </div>
 
             <div class="col-12">
               <label for="instanceImage" class="form-label">Image</label>
-              <input id="instanceImage" class="form-control" type="text" :value="instance.image" readonly />
+              <input
+                id="instanceImage"
+                class="form-control"
+                type="text"
+                :value="instance.image"
+                readonly
+              />
             </div>
-          
+
             <div class="col-12">
               <label for="instanceDisk" class="form-label mb-0">Ports</label>
 
               <div class="row mt-0 g-2">
                 <div v-for="(port, _) in instance.ports" :key="port" class="col-4">
-                  <input id="instanceDisk" class="form-control" type="number" :value="port" readonly />
+                  <input
+                    id="instanceDisk"
+                    class="form-control"
+                    type="number"
+                    :value="port"
+                    readonly
+                  />
                 </div>
               </div>
             </div>
@@ -139,27 +158,60 @@ function running(status) {
             <div class="row mt-0 g-2">
               <div class="col-4">
                 <label for="instanceCPU" class="form-label">CPU</label>
-                <input id="instanceCPU" class="form-control" type="number" min="0" step="0.1" :value="instance.resources.cpu" readonly />
+                <input
+                  id="instanceCPU"
+                  class="form-control"
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  :value="instance.resources.cpu"
+                  readonly
+                />
               </div>
-  
+
               <div class="col-4">
                 <label for="instanceMemory" class="form-label">Memory</label>
-                <input id="instanceMemory" class="form-control" type="number" min="0" step="0.1" :value="instance.resources.memory" readonly />
+                <input
+                  id="instanceMemory"
+                  class="form-control"
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  :value="instance.resources.memory"
+                  readonly
+                />
               </div>
-  
+
               <div class="col-4">
                 <label for="instanceDisk" class="form-label">Disk</label>
-                <input id="instanceDisk" class="form-control" type="number" min="0" step="0.1" :value="instance.resources.disk" readonly disabled />
+                <input
+                  id="instanceDisk"
+                  class="form-control"
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  :value="instance.resources.disk"
+                  readonly
+                  disabled
+                />
               </div>
             </div>
-          
+
             <div class="col-12">
               <label for="instanceWebhook" class="form-label">Webhooks</label>
-              
+
               <div class="d-flex flex-column gap-2">
-                <input v-for="(webhook, _) in instance.webhooks" :key="webhook" id="instanceWebhook" class="form-control" type="text" :value="webhook" readonly />
+                <input
+                  v-for="(webhook, _) in instance.webhooks"
+                  :key="webhook"
+                  id="instanceWebhook"
+                  class="form-control"
+                  type="text"
+                  :value="webhook"
+                  readonly
+                />
               </div>
-            </div>          
+            </div>
           </div>
         </div>
       </div>
