@@ -48,6 +48,7 @@ func (h *InstanceHandler) handleInstanceCreate(w http.ResponseWriter, r *http.Re
 	type instanceCreateRequest struct {
 		ImageID   string                  `json:"image_id"`
 		Resources types.InstanceResources `json:"resources"`
+		Webhooks  []string                `json:"webhooks"`
 	}
 	var req instanceCreateRequest
 
@@ -55,7 +56,7 @@ func (h *InstanceHandler) handleInstanceCreate(w http.ResponseWriter, r *http.Re
 		log.Fatal(err)
 	}
 
-	instance, err := h.runtime.InstanceCreate(req.ImageID, req.Resources)
+	instance, err := h.runtime.InstanceCreate(req.ImageID, req.Resources, req.Webhooks)
 	if err != nil {
 		log.Fatal(err)
 	}

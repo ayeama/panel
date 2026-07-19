@@ -95,9 +95,7 @@ func (r *PodmanRuntime) ImageReadMany() ([]types.Image, error) {
 }
 
 // TODO pass resources limits into containers as environment variables for scripts?
-func (r *PodmanRuntime) InstanceCreate(imageID string, resources types.InstanceResources) (types.Instance, error) {
-	// TODO replace imageName with actual image id not panel id
-
+func (r *PodmanRuntime) InstanceCreate(imageID string, resources types.InstanceResources, webhooks []string) (types.Instance, error) {
 	rimageID, err := r.imageID(imageID)
 	if err != nil {
 		log.Fatal(err)
@@ -165,7 +163,7 @@ func (r *PodmanRuntime) InstanceCreate(imageID string, resources types.InstanceR
 
 	id := uuid.NewString()
 	spec.Labels[types.InstanceLabelID] = id
-	spec.Labels[types.InstanceLabelWebhooks] = "http://localhost:8001/webhook,http://localhost:8002/webhook,http://localhost:8003/webhook" // TODO
+	spec.Labels[types.InstanceLabelWebhooks] = strings.Join(webhooks, ",")
 
 	container, err := containers.CreateWithSpec(*r.ctx, spec, nil)
 	if err != nil {
