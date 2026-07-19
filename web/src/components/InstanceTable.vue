@@ -21,8 +21,14 @@ const props = defineProps({
           <th scope="col">Image</th>
         </tr>
       </thead>
+
       <tbody>
+        <tr v-if="props.instances.length === 0">
+          <td colspan="3" class="text-center text-muted">No instances</td>
+        </tr>
+
         <tr
+          v-else
           v-for="item in props.instances"
           :key="item.id"
           v-on:click="router.push(`/instances/${item.id}`)"

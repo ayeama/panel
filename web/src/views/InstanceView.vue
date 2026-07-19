@@ -139,9 +139,10 @@ function running(status) {
             </div>
 
             <div class="col-12">
-              <label for="instanceDisk" class="form-label mb-0">Ports</label>
+              <label for="instanceDisk" class="form-label">Ports</label>
+              <div v-if="Object.keys(instance.ports).length === 0" class="text-muted small">No ports</div>
 
-              <div class="row mt-0 g-2">
+              <div v-else class="d-flex flex-column gap-2">
                 <div v-for="(port, _) in instance.ports" :key="port" class="col-4">
                   <input
                     id="instanceDisk"

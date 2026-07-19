@@ -250,7 +250,7 @@ func (r *PodmanRuntime) InstanceReadMany() ([]types.Instance, error) {
 		log.Fatal(err)
 	}
 
-	var instances []types.Instance
+	instances := make([]types.Instance, 0)
 	for _, container := range containerList {
 		instanceID := container.Labels[types.InstanceLabelID]
 
@@ -571,7 +571,8 @@ func (r *PodmanRuntime) containerID(id string) (string, error) {
 }
 
 func transformPorts(ports []netTypes.PortMapping) map[string]string {
-	transPorts := map[string]string{}
+	transPorts := make(map[string]string, 0)
+
 	for _, port := range ports {
 		containerPort := strconv.FormatUint(uint64(port.ContainerPort), 10)
 		hostPort := strconv.FormatUint(uint64(port.HostPort), 10)
