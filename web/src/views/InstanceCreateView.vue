@@ -20,7 +20,7 @@ const formDisk = ref(0.0)
 const formWebhooks = ref([])
 
 function addWebhook(webhook) {
-  formWebhooks.value.push({url: webhook})
+  formWebhooks.value.push({ url: webhook })
 }
 
 function removeWebhook(index) {
@@ -36,19 +36,23 @@ async function instanceCreateRedirect() {
     return
   }
 
-  const webhooks = [...new Set(
-    formWebhooks.value.filter((webhook) => {
-      if (!webhook.url) {
-        return false
-      }
-      try {
-        new URL(webhook.url)
-      } catch {
-        return false
-      }
-      return true
-    }).map((webhook) => webhook.url)
-  )]
+  const webhooks = [
+    ...new Set(
+      formWebhooks.value
+        .filter((webhook) => {
+          if (!webhook.url) {
+            return false
+          }
+          try {
+            new URL(webhook.url)
+          } catch {
+            return false
+          }
+          return true
+        })
+        .map((webhook) => webhook.url),
+    ),
+  ]
 
   const data = {
     image_id: selectedFormImage.value.id,
@@ -57,7 +61,7 @@ async function instanceCreateRedirect() {
       memory: formMemory.value,
       disk: formDisk.value,
     },
-    webhooks: webhooks
+    webhooks: webhooks,
   }
 
   await instanceCreate(data)
@@ -136,11 +140,23 @@ async function instanceCreateRedirect() {
       <div v-if="formWebhooks.length === 0" class="text-muted small">No webhooks</div>
       <div v-else class="d-flex flex-column gap-2">
         <div v-for="(webhook, i) in formWebhooks" :key="webhook[i]" class="input-group">
-          <input class="form-control" type="url" v-model="webhook.url" :id="`webhook${i}`" :aria-describedby="`webhook${i}-remove`" />
-          <button class="btn btn-outline-danger" type="button" id="`webhook${i}-remove`" v-on:click="removeWebhook(i)">Remove</button>
+          <input
+            class="form-control"
+            type="url"
+            v-model="webhook.url"
+            :id="`webhook${i}`"
+            :aria-describedby="`webhook${i}-remove`"
+          />
+          <button
+            class="btn btn-outline-danger"
+            type="button"
+            id="`webhook${i}-remove`"
+            v-on:click="removeWebhook(i)"
+          >
+            Remove
+          </button>
         </div>
       </div>
-
     </div>
 
     <div class="col-12">
