@@ -23,6 +23,7 @@ func webhook(runtime runtime.Runtime) {
 		// TODO missing cleanup?
 		go func() {
 			if err := runtime.Events(events, cancel); err != nil {
+				log.Println("about to fail in webhook events")
 				log.Fatal(err)
 			}
 		}()
@@ -55,7 +56,8 @@ func webhook(runtime runtime.Runtime) {
 							Instance: instance,
 						})
 						if err != nil {
-							log.Fatal(err)
+							log.Println("WARNING:", err)
+							continue
 						}
 
 						webhookRequest := types.WebhookEvent{
@@ -66,12 +68,14 @@ func webhook(runtime runtime.Runtime) {
 
 						body, err := json.Marshal(webhookRequest)
 						if err != nil {
-							log.Fatal(err)
+							log.Println("WARNING:", err)
+							continue
 						}
 
 						req, err := http.NewRequest(http.MethodPost, webhook, bytes.NewReader(body))
 						if err != nil {
-							log.Fatal(err)
+							log.Println("WARNING:", err)
+							continue
 						}
 
 						req.Header.Set("Content-Type", "application/json")
@@ -115,7 +119,8 @@ func webhook(runtime runtime.Runtime) {
 					for _, webhook := range webhooks {
 						req, err := http.NewRequest(http.MethodPost, webhook, bytes.NewReader(body))
 						if err != nil {
-							log.Fatal(err)
+							log.Println("WARNING:", err)
+							continue
 						}
 
 						req.Header.Set("Content-Type", "application/json")
@@ -123,7 +128,7 @@ func webhook(runtime runtime.Runtime) {
 						resp, err := http.DefaultClient.Do(req)
 						if err != nil {
 							log.Println("WARNING", err.Error())
-							break
+							continue
 						}
 						resp.Body.Close()
 

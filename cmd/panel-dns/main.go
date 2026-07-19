@@ -126,7 +126,7 @@ func (h *WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 			log.Println("deleted", record.Type, record.Name)
 		}
 	default:
-		log.Fatal("unknown webhook event type")
+		log.Println("WARNING unknown webhook event type")
 	}
 }
 
