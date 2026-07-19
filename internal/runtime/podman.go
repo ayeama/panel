@@ -213,7 +213,12 @@ func (r *PodmanRuntime) InstanceRead(id string) (types.Instance, error) {
 				memory = float64(containerDeep.HostConfig.Memory) / container_memory_gb
 			}
 
-			webhooks := strings.Split(container.Labels[types.InstanceLabelWebhooks], ",")
+			var webhooks []string
+			if container.Labels[types.InstanceLabelWebhooks] != "" {
+				webhooks = strings.Split(container.Labels[types.InstanceLabelWebhooks], ",")
+			} else {
+				webhooks = make([]string, 0)
+			}
 
 			instance := types.Instance{
 				ID:     instanceID,

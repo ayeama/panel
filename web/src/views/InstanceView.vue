@@ -199,8 +199,9 @@ function running(status) {
 
             <div class="col-12">
               <label for="instanceWebhook" class="form-label">Webhooks</label>
+              <div v-if="instance.webhooks.length === 0" class="text-muted small">No webhooks</div>
 
-              <div class="d-flex flex-column gap-2">
+              <div v-else class="d-flex flex-column gap-2">
                 <input
                   v-for="(webhook, _) in instance.webhooks"
                   :key="webhook"
