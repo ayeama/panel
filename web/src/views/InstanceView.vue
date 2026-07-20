@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useInstance } from '@/composables/useInstance'
@@ -14,7 +14,10 @@ const router = useRouter()
 
 const id = route.params.id
 
-const { instance, instanceRead, instanceDelete, instanceStart, instanceStop } = useInstance()
+const { instance, instanceRead, instanceDelete, instanceStart, instanceStop, instanceRestore } =
+  useInstance()
+
+const restoreFileInput = ref(null)
 
 onMounted(() => {
   instanceRead(id)
@@ -32,6 +35,24 @@ function running(status) {
     default:
       return false
   }
+}
+
+function restore() {
+  restoreFileInput.value.click()
+}
+
+async function restoreFileSelected(event) {
+  const file = event.target.files[0]
+  if (!file) {
+    return
+  }
+
+  const data = new FormData()
+  data.append('backup', file)
+
+  await instanceRestore(id, data)
+
+  event.target.value = ''
 }
 </script>
 
@@ -80,7 +101,14 @@ function running(status) {
                 <a class="dropdown-item" :href="`${API_URL}/instances/${id}/backup`">Backup</a>
               </li>
               <li>
-                <a class="dropdown-item disabled" aria-disabled="true" href="#todo">Restore</a>
+                <a class="dropdown-item" href="#" v-on:click="restore">Restore</a>
+                <input
+                  class="d-none"
+                  ref="restoreFileInput"
+                  type="file"
+                  accept=".zip"
+                  v-on:change="restoreFileSelected"
+                />
               </li>
               <li>
                 <a class="dropdown-item" :href="`${API_URL}/instances/${id}/logs`" download=""
@@ -140,7 +168,9 @@ function running(status) {
 
             <div class="col-12">
               <label for="instanceDisk" class="form-label">Ports</label>
-              <div v-if="Object.keys(instance.ports).length === 0" class="text-muted small">No ports</div>
+              <div v-if="Object.keys(instance.ports).length === 0" class="text-muted small">
+                No ports
+              </div>
 
               <div v-else class="d-flex flex-column gap-2">
                 <div v-for="(port, _) in instance.ports" :key="port" class="col-4">

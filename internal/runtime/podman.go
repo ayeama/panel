@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"path"
 	osruntime "runtime"
 	"strconv"
 	"strings"
@@ -30,6 +31,7 @@ const (
 	container_cpu_us    = 1_00_000
 	container_memory_gb = 1_000_000_000
 
+	// TODO: better place?
 	instanceVolumeLabelID string = "com.github.ayeama.panel.volume.id"
 )
 
@@ -475,7 +477,46 @@ func (r *PodmanRuntime) InstanceBackup(id string, manifest *types.InstanceBackup
 	return nil
 }
 
-func (r *PodmanRuntime) InstanceRestore(id string) error {
+func (r *PodmanRuntime) InstanceRestore(id string, manifest *types.InstanceBackupManifest, zr *zip.Reader) error {
+	// containerID, err := r.containerID(id)
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+
+	// containerDeep, err := containers.Inspect(*r.ctx, containerID, nil)
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+
+	// TODO don't rely on manifest? user could malform it as an attack
+
+	for _, manifestMount := range manifest.Mounts {
+		volumeName, err := r.volumeName(manifestMount.ID)
+		if err != nil {
+			log.Println("about to fail runtime instance restore volume name")
+			log.Fatal(err)
+		}
+
+		for _, filePath := range zr.File {
+			if path.Base(filePath.Name) == manifestMount.ID {
+				fmt.Println("found a match:", volumeName, filePath.Name, manifestMount.ID)
+				f, err := zr.Open(filePath.Name)
+				if err != nil {
+					log.Fatal(err)
+				}
+				defer f.Close()
+
+				err = volumes.Import(*r.ctx, volumeName, f)
+				if err != nil {
+					log.Fatal(err)
+				}
+				break
+			}
+			fmt.Println("did not find a match:", volumeName, filePath.Name, manifestMount.ID)
+		}
+
+	}
+
 	return nil
 }
 
@@ -568,6 +609,26 @@ func (r *PodmanRuntime) containerID(id string) (string, error) {
 	}
 
 	return "", errors.New("instance not found")
+}
+
+func (r *PodmanRuntime) volumeName(id string) (string, error) {
+	filters := map[string][]string{"label": {instanceVolumeLabelID + "=" + id}}
+	volumeListOptions := volumes.ListOptions{}
+	volumeListOptions.WithFilters(filters)
+
+	volumeList, err := volumes.List(*r.ctx, &volumeListOptions)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, volume := range volumeList {
+		volumeName := volume.Labels[instanceVolumeLabelID]
+		if volumeName == id {
+			return volume.Name, nil
+		}
+	}
+
+	return "", errors.New("volume not found")
 }
 
 func transformPorts(ports []netTypes.PortMapping) map[string]string {

@@ -21,7 +21,7 @@ type Runtime interface {
 	InstanceStats(id string, stats chan types.InstanceStat) error
 	InstanceLogs(id string, logs chan string) error
 	InstanceBackup(id string, manifest *types.InstanceBackupManifest, zw *zip.Writer) error
-	InstanceRestore(id string) error
+	InstanceRestore(id string, manifest *types.InstanceBackupManifest, zr *zip.Reader) error
 
 	Events(events chan types.Event, cancel chan bool) error
 }

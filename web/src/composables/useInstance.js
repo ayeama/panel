@@ -73,6 +73,17 @@ export function useInstance() {
     await instanceRead(id)
   }
 
+  async function instanceRestore(id, data) {
+    try {
+      const response = await fetch(`${API_URL}/instances/${id}/restore`, {
+        method: 'POST',
+        body: data,
+      })
+    } catch (error) {
+      console.error(error)
+    }
+  }
+
   return {
     instance,
     instances,
@@ -83,5 +94,6 @@ export function useInstance() {
     instanceDelete,
     instanceStart,
     instanceStop,
+    instanceRestore,
   }
 }

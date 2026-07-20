@@ -16,7 +16,12 @@ const props = defineProps({
     <div class="card-body p-0">
       <div class="table-responsive">
         <table class="table table-hover mb-0 clickable">
-          <caption class="ps-2">{{ instances.length }} instances </caption>
+          <caption class="ps-2">
+            {{
+              instances.length
+            }}
+            instances
+          </caption>
 
           <thead>
             <tr>
@@ -25,7 +30,7 @@ const props = defineProps({
               <th scope="col">Image</th>
             </tr>
           </thead>
-    
+
           <tbody>
             <tr
               v-if="props.instances.length > 0"

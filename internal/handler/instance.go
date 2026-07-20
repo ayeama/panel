@@ -6,8 +6,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/fs"
 	"log"
 	"net/http"
+	"os"
+	"path"
 	"time"
 
 	"github.com/ayeama/panel/internal/runtime"
@@ -311,7 +314,87 @@ func (h *InstanceHandler) handleInstanceBackup(w http.ResponseWriter, r *http.Re
 }
 
 func (h *InstanceHandler) handleInstanceRestore(w http.ResponseWriter, r *http.Request) {
-	// id := r.PathValue("id")
+	id := r.PathValue("id")
+
+	instance, err := h.runtime.InstanceRead(id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+
+	file, _, err := r.FormFile("backup")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	defer file.Close()
+
+	tmp, err := os.CreateTemp("", "panel-backup-*.zip")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer os.Remove(tmp.Name())
+	defer tmp.Close()
+
+	_, err = io.Copy(tmp, file)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	stat, err := tmp.Stat()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	zr, err := zip.NewReader(tmp, stat.Size())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// TODO trip the zip filename prefix showhow :(
+	var manifestFile fs.File
+	found := false
+	for _, f := range zr.File {
+		if path.Base(f.Name) == "manifest.json" {
+			manifestFile, err = zr.Open(f.Name)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			found = true
+			break
+		}
+	}
+	if !found {
+		http.Error(w, "manifest.json not found", http.StatusBadRequest)
+		return
+	}
+	defer manifestFile.Close()
+
+	var manifest types.InstanceBackupManifest
+	err = json.NewDecoder(manifestFile).Decode(&manifest)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if manifest.ID != instance.ID {
+		http.Error(w, "backup manifest ID does not match instance ID", http.StatusBadRequest)
+		return
+	}
+
+	err = h.runtime.InstanceRestore(instance.ID, &manifest, zr)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError) // TODO
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (h *InstanceHandler) handleInstanceLogs(w http.ResponseWriter, r *http.Request) {
