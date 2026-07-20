@@ -13,7 +13,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="row row-cols-1 py-2">
+  <div class="row row-cols-1 g-2 py-2">
     <div class="col">
       <div class="row">
         <div class="col">

@@ -72,7 +72,17 @@ async function instanceCreateRedirect() {
 <template>
   <div class="row g-2 pt-2">
     <div class="col">
-      <h1 class="h4 mb-0">Instance create</h1>
+      <div class="row">
+        <div class="col">
+          <h1 class="h4 mb-0">Instance create</h1>
+        </div>
+
+        <div class="col col-auto d-flex align-items-end">
+          <button type="button" class="btn btn-primary" v-on:click="instanceCreateRedirect()">
+            Create
+          </button>
+        </div>
+      </div>
     </div>
 
     <div class="col-12">
@@ -157,12 +167,6 @@ async function instanceCreateRedirect() {
           </button>
         </div>
       </div>
-    </div>
-
-    <div class="col-12">
-      <button type="button" class="btn btn-primary float-end" v-on:click="instanceCreateRedirect()">
-        Create
-      </button>
     </div>
   </div>
 </template>
