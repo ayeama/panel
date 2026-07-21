@@ -20,7 +20,9 @@ const props = defineProps({
             {{
               instances.length
             }}
-            instances
+            {{
+              instances.length === 1 ? 'instance' : 'instances'
+            }}
           </caption>
 
           <thead>

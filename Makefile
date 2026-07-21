@@ -1,4 +1,4 @@
-.PHONY: cert run build deploy clean
+.PHONY: run build deploy clean
 
 run:
 	go run cmd/panel/main.go

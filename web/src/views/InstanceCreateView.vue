@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, nextTick, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { useImage } from '@/composables/useImage'
@@ -19,8 +19,12 @@ const formDisk = ref(0.0)
 
 const formWebhooks = ref([])
 
-function addWebhook(webhook) {
+async function addWebhook(webhook) {
   formWebhooks.value.push({ url: webhook })
+
+  const i = formWebhooks.value.length - 1
+  await nextTick()
+  document.getElementById(`webhook${i}`)?.focus()
 }
 
 function removeWebhook(index) {
@@ -149,7 +153,7 @@ async function instanceCreateRedirect() {
 
       <div v-if="formWebhooks.length === 0" class="text-muted small">No webhooks</div>
       <div v-else class="d-flex flex-column gap-2">
-        <div v-for="(webhook, i) in formWebhooks" :key="webhook[i]" class="input-group">
+        <div v-for="(webhook, i) in formWebhooks" :key="`${webhook[i]}`" class="input-group">
           <input
             class="form-control"
             type="url"
@@ -160,7 +164,7 @@ async function instanceCreateRedirect() {
           <button
             class="btn btn-outline-danger"
             type="button"
-            id="`webhook${i}-remove`"
+            :id="`webhook${i}-remove`"
             v-on:click="removeWebhook(i)"
           >
             Remove

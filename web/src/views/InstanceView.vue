@@ -8,6 +8,7 @@ import InstanceStatusBadge from '@/components/InstanceStatusBadge.vue'
 import InstanceTerminal from '@/components/InstanceTerminal.vue'
 
 import { API_URL } from '@/api'
+import { imageLabel } from '@/image'
 
 const route = useRoute()
 const router = useRouter()
@@ -161,69 +162,69 @@ async function restoreFileSelected(event) {
                 id="instanceImage"
                 class="form-control"
                 type="text"
-                :value="instance.image"
+                :value="imageLabel(instance.image)"
                 readonly
               />
             </div>
 
             <div class="col-12">
-              <label for="instanceDisk" class="form-label">Ports</label>
-              <div v-if="Object.keys(instance.ports).length === 0" class="text-muted small">
+              <label for="instancePorts" class="form-label">Ports</label>
+              <div
+                v-if="Object.keys(instance.ports).length === 0"
+                class="text-muted small"
+                id="instancePorts"
+              >
                 No ports
               </div>
 
-              <div v-else class="d-flex flex-column gap-2">
+              <div v-else class="row g-2" id="instancePorts">
                 <div v-for="(port, _) in instance.ports" :key="port" class="col-4">
-                  <input
-                    id="instanceDisk"
-                    class="form-control"
-                    type="number"
-                    :value="port"
-                    readonly
-                  />
+                  <input class="form-control" type="number" :value="port" readonly />
                 </div>
               </div>
             </div>
 
-            <div class="row mt-0 g-2">
-              <div class="col-4">
-                <label for="instanceCPU" class="form-label">CPU</label>
-                <input
-                  id="instanceCPU"
-                  class="form-control"
-                  type="number"
-                  min="0"
-                  step="0.1"
-                  :value="instance.resources.cpu"
-                  readonly
-                />
-              </div>
+            <div class="col-12 mt-0">
+              <div class="row mt-0 g-2">
+                <div class="col-4">
+                  <label for="instanceCPU" class="form-label">CPU</label>
+                  <input
+                    id="instanceCPU"
+                    class="form-control"
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    :value="instance.resources.cpu"
+                    readonly
+                  />
+                </div>
 
-              <div class="col-4">
-                <label for="instanceMemory" class="form-label">Memory</label>
-                <input
-                  id="instanceMemory"
-                  class="form-control"
-                  type="number"
-                  min="0"
-                  step="0.1"
-                  :value="instance.resources.memory"
-                  readonly
-                />
-              </div>
+                <div class="col-4">
+                  <label for="instanceMemory" class="form-label">Memory</label>
+                  <input
+                    id="instanceMemory"
+                    class="form-control"
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    :value="instance.resources.memory"
+                    readonly
+                  />
+                </div>
 
-              <div class="col-4">
-                <label for="instanceDisk" class="form-label">Disk</label>
-                <input
-                  id="instanceDisk"
-                  class="form-control"
-                  type="number"
-                  min="0"
-                  step="0.1"
-                  :value="instance.resources.disk"
-                  readonly
-                  disabled
-                />
+                <div class="col-4">
+                  <label for="instanceDisk" class="form-label">Disk</label>
+                  <input
+                    id="instanceDisk"
+                    class="form-control"
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    :value="instance.resources.disk"
+                    readonly
+                    disabled
+                  />
+                </div>
               </div>
             </div>
 

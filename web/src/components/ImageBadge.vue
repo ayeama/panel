@@ -1,19 +1,14 @@
 <script setup>
 import { computed } from 'vue'
 
+import { imageLabel } from '@/image'
+
 const props = defineProps({
   image: String,
 })
 
-const label = computed(() => {
-  // TODO should be a useImages composable?
-  const parts = props.image.split('/')
-  return parts.at(-1)
-})
-
-const color = computed(() => {
-  return 'text-bg-secondary'
-})
+const label = computed(() => imageLabel(props.image))
+const color = computed(() => 'text-bg-secondary')
 </script>
 
 <template>
