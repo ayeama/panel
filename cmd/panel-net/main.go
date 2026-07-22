@@ -26,7 +26,7 @@ func NewWebhookHandler(unify *Unify) WebhookHandler {
 }
 
 func (h *WebhookHandler) RegisterHandlers(mux *http.ServeMux) {
-	mux.HandleFunc("/webhook", h.handleWebhook)
+	mux.HandleFunc("POST /", h.handleWebhook)
 }
 
 func (h *WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
