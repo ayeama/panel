@@ -1,4 +1,4 @@
-package runtime
+package podman
 
 import (
 	"archive/zip"
@@ -15,6 +15,7 @@ import (
 	"github.com/ayeama/panel/internal/types"
 	"github.com/google/uuid"
 	"github.com/opencontainers/runtime-spec/specs-go"
+	"go.podman.io/podman/v6/pkg/bindings"
 	"go.podman.io/podman/v6/pkg/bindings/containers"
 	"go.podman.io/podman/v6/pkg/bindings/images"
 	"go.podman.io/podman/v6/pkg/bindings/system"
@@ -35,15 +36,24 @@ const (
 	instanceVolumeLabelID string = "com.github.ayeama.panel.volume.id"
 )
 
-type PodmanRuntime struct {
+type Runtime struct {
 	ctx *context.Context
 }
 
-func NewPodmanRuntime(ctx *context.Context) PodmanRuntime {
-	return PodmanRuntime{ctx}
+type Config struct {
+	URI string
 }
 
-func (r *PodmanRuntime) ImageRead(id string) (types.Image, error) {
+// TODO: pass in context?
+func New(config *Config) (*Runtime, error) {
+	c, err := bindings.NewConnection(context.Background(), config.URI)
+	if err != nil {
+		return nil, err
+	}
+	return &Runtime{&c}, nil
+}
+
+func (r *Runtime) ImageRead(id string) (types.Image, error) {
 	filters := map[string][]string{"label": {types.ImageLabelID + "=" + id}}
 	imageListOptions := &images.ListOptions{}
 	imageListOptions.WithAll(false).WithFilters(filters)
@@ -66,7 +76,7 @@ func (r *PodmanRuntime) ImageRead(id string) (types.Image, error) {
 	return types.Image{}, errors.New("image not found")
 }
 
-func (r *PodmanRuntime) ImageReadMany() ([]types.Image, error) {
+func (r *Runtime) ImageReadMany() ([]types.Image, error) {
 	filters := map[string][]string{"label": {types.ImageLabelID}}
 	imageListOptions := &images.ListOptions{}
 	imageListOptions.WithAll(false).WithFilters(filters)
@@ -97,7 +107,7 @@ func (r *PodmanRuntime) ImageReadMany() ([]types.Image, error) {
 }
 
 // TODO pass resources limits into containers as environment variables for scripts?
-func (r *PodmanRuntime) InstanceCreate(imageID string, resources types.InstanceResources, webhooks []string) (types.Instance, error) {
+func (r *Runtime) InstanceCreate(imageID string, resources types.InstanceResources, webhooks []string) (types.Instance, error) {
 	rimageID, err := r.imageID(imageID)
 	if err != nil {
 		log.Fatal(err)
@@ -185,7 +195,7 @@ func (r *PodmanRuntime) InstanceCreate(imageID string, resources types.InstanceR
 	return instance, nil
 }
 
-func (r *PodmanRuntime) InstanceRead(id string) (types.Instance, error) {
+func (r *Runtime) InstanceRead(id string) (types.Instance, error) {
 	filters := map[string][]string{"label": {types.InstanceLabelID + "=" + id}}
 	containerListOptions := containers.ListOptions{}
 	containerListOptions.WithAll(true).WithFilters(filters)
@@ -242,7 +252,7 @@ func (r *PodmanRuntime) InstanceRead(id string) (types.Instance, error) {
 	return types.Instance{}, errors.New("instance not found")
 }
 
-func (r *PodmanRuntime) InstanceReadMany() ([]types.Instance, error) {
+func (r *Runtime) InstanceReadMany() ([]types.Instance, error) {
 	filters := map[string][]string{"label": {types.InstanceLabelID}}
 	containerListOptions := containers.ListOptions{}
 	containerListOptions.WithAll(true).WithFilters(filters)
@@ -297,7 +307,7 @@ func (r *PodmanRuntime) InstanceReadMany() ([]types.Instance, error) {
 	return instances, nil
 }
 
-func (r *PodmanRuntime) InstanceDelete(id string) error {
+func (r *Runtime) InstanceDelete(id string) error {
 	containerID, err := r.containerID(id)
 	if err != nil {
 		log.Fatal(err)
@@ -314,7 +324,7 @@ func (r *PodmanRuntime) InstanceDelete(id string) error {
 	return nil
 }
 
-func (r *PodmanRuntime) InstanceStart(id string) error {
+func (r *Runtime) InstanceStart(id string) error {
 	containerID, err := r.containerID(id)
 	if err != nil {
 		log.Fatal(err)
@@ -327,7 +337,7 @@ func (r *PodmanRuntime) InstanceStart(id string) error {
 	return nil
 }
 
-func (r *PodmanRuntime) InstanceStop(id string) error {
+func (r *Runtime) InstanceStop(id string) error {
 	containerID, err := r.containerID(id)
 	if err != nil {
 		log.Fatal(err)
@@ -345,7 +355,7 @@ func (r *PodmanRuntime) InstanceStop(id string) error {
 	return nil
 }
 
-func (r *PodmanRuntime) InstanceAttach(id string, stdin io.Reader, stdout io.Writer, stderr io.Writer, ready chan bool) error {
+func (r *Runtime) InstanceAttach(id string, stdin io.Reader, stdout io.Writer, stderr io.Writer, ready chan bool) error {
 	containerID, err := r.containerID(id)
 	if err != nil {
 		log.Fatal(err)
@@ -384,7 +394,7 @@ func (r *PodmanRuntime) InstanceAttach(id string, stdin io.Reader, stdout io.Wri
 }
 
 // TODO not working
-func (r *PodmanRuntime) InstanceStats(id string, stats chan types.InstanceStat) error {
+func (r *Runtime) InstanceStats(id string, stats chan types.InstanceStat) error {
 	containerID, err := r.containerID(id)
 	if err != nil {
 		log.Fatal(err)
@@ -439,7 +449,7 @@ func (r *PodmanRuntime) InstanceStats(id string, stats chan types.InstanceStat) 
 	return nil
 }
 
-func (r *PodmanRuntime) InstanceBackup(id string, manifest *types.InstanceBackupManifest, zw *zip.Writer) error {
+func (r *Runtime) InstanceBackup(id string, manifest *types.InstanceBackupManifest, zw *zip.Writer) error {
 	containerID, err := r.containerID(id)
 	if err != nil {
 		log.Fatal(err)
@@ -477,7 +487,7 @@ func (r *PodmanRuntime) InstanceBackup(id string, manifest *types.InstanceBackup
 	return nil
 }
 
-func (r *PodmanRuntime) InstanceRestore(id string, manifest *types.InstanceBackupManifest, zr *zip.Reader) error {
+func (r *Runtime) InstanceRestore(id string, manifest *types.InstanceBackupManifest, zr *zip.Reader) error {
 	// containerID, err := r.containerID(id)
 	// if err != nil {
 	// 	log.Fatal(err)
@@ -520,7 +530,7 @@ func (r *PodmanRuntime) InstanceRestore(id string, manifest *types.InstanceBacku
 	return nil
 }
 
-func (r *PodmanRuntime) InstanceLogs(id string, logs chan string) error {
+func (r *Runtime) InstanceLogs(id string, logs chan string) error {
 	containerID, err := r.containerID(id)
 	if err != nil {
 		log.Fatal(err)
@@ -535,7 +545,7 @@ func (r *PodmanRuntime) InstanceLogs(id string, logs chan string) error {
 	return nil
 }
 
-func (r *PodmanRuntime) Events(events chan types.Event, cancel chan bool) error {
+func (r *Runtime) Events(events chan types.Event, cancel chan bool) error {
 	podmanEvents := make(chan entitiesTypes.Event)
 	if err := system.Events(*r.ctx, podmanEvents, cancel, nil); err != nil {
 		log.Println("about to fail in runtime events")
@@ -571,7 +581,7 @@ func (r *PodmanRuntime) Events(events chan types.Event, cancel chan bool) error 
 	return nil
 }
 
-func (r *PodmanRuntime) imageID(id string) (string, error) {
+func (r *Runtime) imageID(id string) (string, error) {
 	filters := map[string][]string{"label": {types.ImageLabelID + "=" + id}}
 	imageListOptions := &images.ListOptions{}
 	imageListOptions.WithAll(false).WithFilters(filters)
@@ -591,7 +601,7 @@ func (r *PodmanRuntime) imageID(id string) (string, error) {
 	return "", errors.New("image not found")
 }
 
-func (r *PodmanRuntime) containerID(id string) (string, error) {
+func (r *Runtime) containerID(id string) (string, error) {
 	filters := map[string][]string{"label": {types.InstanceLabelID + "=" + id}}
 	containerListOptions := containers.ListOptions{}
 	containerListOptions.WithAll(true).WithFilters(filters)
@@ -611,7 +621,7 @@ func (r *PodmanRuntime) containerID(id string) (string, error) {
 	return "", errors.New("instance not found")
 }
 
-func (r *PodmanRuntime) volumeName(id string) (string, error) {
+func (r *Runtime) volumeName(id string) (string, error) {
 	filters := map[string][]string{"label": {instanceVolumeLabelID + "=" + id}}
 	volumeListOptions := volumes.ListOptions{}
 	volumeListOptions.WithFilters(filters)
