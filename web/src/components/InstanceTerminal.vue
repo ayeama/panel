@@ -118,13 +118,16 @@ function destroy() {
   disconnect()
 
   if (terminal.value != null) {
-    // TODO bug: Uncaught (in promise) Error: Could not dispose an addon that has not been loaded
     try {
       terminal.value.dispose()
     } catch (error) {
-      console.warn(error)
+      if (error.message === "Could not dispose an addon that has not been loaded") {
+        return
+      }
+      console.error(error)
+    } finally {
+      terminal.value = null
     }
-    terminal.value = null
   }
 }
 
