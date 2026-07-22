@@ -329,35 +329,34 @@ func (h *InstanceHandler) handleInstanceRestore(w http.ResponseWriter, r *http.R
 	}
 	defer file.Close()
 
-	tmp, err := os.CreateTemp("", "panel-backup-*.zip")
+	tmpFile, err := os.CreateTemp("", "panel-backup-*.zip")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	defer os.Remove(tmp.Name())
-	defer tmp.Close()
+	defer os.Remove(tmpFile.Name())
+	defer tmpFile.Close()
 
-	_, err = io.Copy(tmp, file)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	stat, err := tmp.Stat()
+	_, err = io.Copy(tmpFile, file)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	zr, err := zip.NewReader(tmp, stat.Size())
+	stat, err := tmpFile.Stat()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	// TODO trip the zip filename prefix showhow :(
+	zr, err := zip.NewReader(tmpFile, stat.Size())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// TODO trim the zip filename prefix showhow?
 	var manifestFile fs.File
-	found := false
 	for _, f := range zr.File {
 		if path.Base(f.Name) == "manifest.json" {
 			manifestFile, err = zr.Open(f.Name)
@@ -366,11 +365,10 @@ func (h *InstanceHandler) handleInstanceRestore(w http.ResponseWriter, r *http.R
 				return
 			}
 
-			found = true
 			break
 		}
 	}
-	if !found {
+	if manifestFile == nil {
 		http.Error(w, "manifest.json not found", http.StatusBadRequest)
 		return
 	}
