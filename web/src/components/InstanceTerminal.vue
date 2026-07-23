@@ -14,7 +14,7 @@ const terminal_element = useTemplateRef('terminal_element')
 const terminal = ref(null)
 const terminal_fit = ref(null)
 
-const socket = ref(null)
+let socket = null
 
 const reconnectPending = ref(false)
 const status = ref('disconnected')
@@ -38,7 +38,7 @@ const status_color = computed(() => {
 // })
 
 function connect() {
-  if (socket.value != null) {
+  if (socket != null) {
     return
   }
 
@@ -50,14 +50,14 @@ function connect() {
 
   status.value = 'connecting'
 
-  socket.value = new WebSocket(`${API_WS}/instances/${props.instance.id}/attach`)
+  socket = new WebSocket(`${API_WS}/instances/${props.instance.id}/attach`)
 
-  socket.value.onopen = () => {
+  socket.onopen = () => {
     status.value = 'connected'
   }
 
-  socket.value.onclose = () => {
-    socket.value = null
+  socket.onclose = () => {
+    socket = null
     status.value = 'disconnected'
 
     if (reconnectPending.value) {
@@ -66,23 +66,23 @@ function connect() {
     }
   }
 
-  socket.value.onmessage = (e) => {
+  socket.onmessage = (e) => {
     terminal.value.write(e.data)
   }
 
-  socket.value.onerror = () => {}
+  socket.onerror = () => {}
 }
 
 function disconnect() {
-  if (socket.value != null) {
+  if (socket != null) {
     status.value = 'disconnecting'
-    socket.value.close()
+    socket.close()
   }
 }
 
 function reconnect() {
-  if (socket.value != null) {
-    socket.value.close()
+  if (socket != null) {
+    socket.close()
   }
 
   reconnectPending.value = true
@@ -100,8 +100,8 @@ function create() {
 
     // TODO ignore signals (CTL-C etc)?
     terminal.value.onData((data) => {
-      if (socket.value != null) {
-        socket.value.send(data)
+      if (socket != null) {
+        socket.send(data)
       }
     })
 

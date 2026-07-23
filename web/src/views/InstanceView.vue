@@ -102,7 +102,7 @@ async function restoreFileSelected(event) {
                 <a class="dropdown-item" :href="`${API_URL}/instances/${id}/backup`">Backup</a>
               </li>
               <li>
-                <a class="dropdown-item" href="#" v-on:click="restore">Restore</a>
+                <a class="dropdown-item" href="#" v-on:click.prevent="restore">Restore</a>
                 <input
                   class="d-none"
                   ref="restoreFileInput"
@@ -121,7 +121,7 @@ async function restoreFileSelected(event) {
                 <a
                   class="dropdown-item text-danger"
                   href="#"
-                  v-on:click="instanceDeleteRedirect(id)"
+                  v-on:click.prevent="instanceDeleteRedirect(id)"
                   >Delete</a
                 >
               </li>
