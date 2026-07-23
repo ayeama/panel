@@ -121,7 +121,7 @@ function destroy() {
     try {
       terminal.value.dispose()
     } catch (error) {
-      if (error.message === "Could not dispose an addon that has not been loaded") {
+      if (error.message === 'Could not dispose an addon that has not been loaded') {
         return
       }
       console.error(error)

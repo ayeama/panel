@@ -16,7 +16,6 @@ import (
 func webhook(runtime runtime.Runtime) {
 	// TODO better lifecycle management
 	for {
-		// TODO use podman events or our own
 		events := make(chan types.Event)
 		cancel := make(chan bool)
 

@@ -6,9 +6,10 @@ import (
 )
 
 var (
-	ErrInvalid  = errors.New("invalid")
-	ErrNotFound = errors.New("not found")
-	ErrExists   = errors.New("Exists")
+	ErrBadRequest = errors.New("bad request")
+	ErrNotFound   = errors.New("not found")
+	ErrExists     = errors.New("exists")
+	ErrInternal   = errors.New("internal")
 )
 
 type Error struct {
@@ -18,9 +19,9 @@ type Error struct {
 	Err      error
 }
 
-func (e Error) Error() string {
+func (e *Error) Error() string {
 	return fmt.Sprintf(
-		"%s %s %s: %v",
+		"%s %s '%s': %v",
 		e.Op,
 		e.Resource,
 		e.ID,
@@ -28,6 +29,6 @@ func (e Error) Error() string {
 	)
 }
 
-func (e Error) Unwrap() error {
+func (e *Error) Unwrap() error {
 	return e.Err
 }

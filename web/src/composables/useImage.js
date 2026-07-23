@@ -7,21 +7,13 @@ export function useImage() {
   const images = ref([])
 
   async function imageRead(id) {
-    try {
-      const response = await fetch(`${API_URL}/images/${id}`)
-      image.value = await response.json()
-    } catch (error) {
-      console.error(error)
-    }
+    const response = await fetch(`${API_URL}/images/${id}`)
+    image.value = await response.json()
   }
 
   async function imageReadMany() {
-    try {
-      const response = await fetch(`${API_URL}/images`)
-      images.value = await response.json()
-    } catch (error) {
-      console.error(error)
-    }
+    const response = await fetch(`${API_URL}/images`)
+    images.value = await response.json()
   }
 
   return {

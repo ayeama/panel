@@ -1,87 +1,62 @@
 import { ref } from 'vue'
 
-import { API_URL } from '@/api'
+import { API_ERROR_NOT_FOUND, API_URL } from '@/api'
 
 export function useInstance() {
   const instance = ref(null)
   const instances = ref([])
 
   async function instanceCreate(data) {
-    try {
-      const response = await fetch(`${API_URL}/instances`, {
-        method: 'POST',
-        body: JSON.stringify(data),
-      })
-      const response_data = await response.json()
-      await instanceRead(response_data.instance_id)
-    } catch (error) {
-      console.error(error)
-    }
+    const response = await fetch(`${API_URL}/instances`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+    const response_data = await response.json()
+    await instanceRead(response_data.instance_id)
   }
 
   async function instanceRead(id) {
-    try {
-      const response = await fetch(`${API_URL}/instances/${id}`)
-      instance.value = await response.json()
-    } catch (error) {
-      console.error(error)
+    const response = await fetch(`${API_URL}/instances/${id}`)
+
+    if (response.status === 404) {
+      throw new Error(API_ERROR_NOT_FOUND)
     }
+
+    instance.value = await response.json()
   }
 
   async function instanceReadMany() {
-    try {
-      const response = await fetch(`${API_URL}/instances`)
-      instances.value = await response.json()
-    } catch (error) {
-      console.error(error)
-    }
+    const response = await fetch(`${API_URL}/instances`)
+    instances.value = await response.json()
   }
 
   async function instanceUpdate(id) {}
 
   async function instanceDelete(id) {
-    try {
-      const response = await fetch(`${API_URL}/instances/${id}`, {
-        method: 'DELETE',
-      })
-    } catch (error) {
-      console.error(error)
-    }
+    const response = await fetch(`${API_URL}/instances/${id}`, {
+      method: 'DELETE',
+    })
   }
 
   async function instanceStart(id) {
-    try {
-      const response = await fetch(`${API_URL}/instances/${id}/start`, {
-        method: 'POST',
-      })
-    } catch (error) {
-      console.error(error)
-    }
-
+    const response = await fetch(`${API_URL}/instances/${id}/start`, {
+      method: 'POST',
+    })
     await instanceRead(id)
   }
 
   async function instanceStop(id) {
-    try {
-      const response = await fetch(`${API_URL}/instances/${id}/stop`, {
-        method: 'POST',
-      })
-    } catch (error) {
-      console.error(error)
-    }
-
+    const response = await fetch(`${API_URL}/instances/${id}/stop`, {
+      method: 'POST',
+    })
     await instanceRead(id)
   }
 
   async function instanceRestore(id, data) {
-    try {
-      const response = await fetch(`${API_URL}/instances/${id}/restore`, {
-        method: 'POST',
-        body: data,
-      })
-    } catch (error) {
-      console.error(error)
-    }
+    const response = await fetch(`${API_URL}/instances/${id}/restore`, {
+      method: 'POST',
+      body: data,
+    })
   }
 
   return {

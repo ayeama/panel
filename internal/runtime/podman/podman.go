@@ -6,12 +6,12 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"path"
 	osruntime "runtime"
 	"strconv"
 	"strings"
 
+	"github.com/ayeama/panel/internal/runtime"
 	"github.com/ayeama/panel/internal/types"
 	"github.com/google/uuid"
 	"github.com/opencontainers/runtime-spec/specs-go"
@@ -60,7 +60,7 @@ func (r *Runtime) ImageRead(id string) (types.Image, error) {
 
 	imageList, err := images.List(*r.ctx, imageListOptions)
 	if err != nil {
-		log.Fatal(err)
+		return types.Image{}, &runtime.Error{Op: "read", Resource: "image", ID: id, Err: fmt.Errorf("%w: %w", runtime.ErrBadRequest, err)}
 	}
 
 	for _, image := range imageList {
@@ -73,7 +73,7 @@ func (r *Runtime) ImageRead(id string) (types.Image, error) {
 		}
 	}
 
-	return types.Image{}, errors.New("image not found")
+	return types.Image{}, &runtime.Error{Op: "read", Resource: "image", ID: id, Err: runtime.ErrNotFound}
 }
 
 func (r *Runtime) ImageReadMany() ([]types.Image, error) {
@@ -83,7 +83,7 @@ func (r *Runtime) ImageReadMany() ([]types.Image, error) {
 
 	imageList, err := images.List(*r.ctx, imageListOptions)
 	if err != nil {
-		log.Fatal(err)
+		return []types.Image{}, &runtime.Error{Op: "read", Resource: "image", ID: "", Err: fmt.Errorf("%w: %w", runtime.ErrInternal, err)}
 	}
 
 	images := make([]types.Image, 0)
@@ -110,12 +110,12 @@ func (r *Runtime) ImageReadMany() ([]types.Image, error) {
 func (r *Runtime) InstanceCreate(imageID string, resources types.InstanceResources, webhooks []string) (types.Instance, error) {
 	rimageID, err := r.imageID(imageID)
 	if err != nil {
-		log.Fatal(err)
+		return types.Instance{}, &runtime.Error{Op: "read", Resource: "image", ID: "", Err: fmt.Errorf("%w: %w", runtime.ErrInternal, err)}
 	}
 
 	image, err := images.GetImage(*r.ctx, rimageID, nil)
 	if err != nil {
-		log.Fatal(err)
+		return types.Instance{}, &runtime.Error{Op: "read", Resource: "image", ID: "", Err: fmt.Errorf("%w: %w", runtime.ErrInternal, err)}
 	}
 
 	spec := specgen.NewSpecGenerator(image.ID, false)
@@ -131,7 +131,7 @@ func (r *Runtime) InstanceCreate(imageID string, resources types.InstanceResourc
 
 		volume, err := volumes.Create(*r.ctx, volumeCreateOptions, &volumes.CreateOptions{})
 		if err != nil {
-			log.Fatal(err)
+			return types.Instance{}, &runtime.Error{Op: "create", Resource: "instance", ID: "", Err: fmt.Errorf("%w: %w", runtime.ErrInternal, err)}
 		}
 
 		spec.Volumes = append(spec.Volumes, &specgen.NamedVolume{
@@ -179,17 +179,17 @@ func (r *Runtime) InstanceCreate(imageID string, resources types.InstanceResourc
 
 	container, err := containers.CreateWithSpec(*r.ctx, spec, nil)
 	if err != nil {
-		log.Fatal(err)
+		return types.Instance{}, &runtime.Error{Op: "create", Resource: "instance", ID: "", Err: fmt.Errorf("%w: %w", runtime.ErrInternal, err)}
 	}
 
 	err = containers.ContainerInit(*r.ctx, container.ID, nil)
 	if err != nil {
-		log.Fatal(err)
+		return types.Instance{}, &runtime.Error{Op: "create", Resource: "instance", ID: "", Err: fmt.Errorf("%w: %w", runtime.ErrInternal, err)}
 	}
 
 	instance, err := r.InstanceRead(id)
 	if err != nil {
-		log.Fatal(err)
+		return types.Instance{}, err
 	}
 
 	return instance, nil
@@ -202,7 +202,7 @@ func (r *Runtime) InstanceRead(id string) (types.Instance, error) {
 
 	containerList, err := containers.List(*r.ctx, &containerListOptions)
 	if err != nil {
-		log.Fatal(err)
+		return types.Instance{}, &runtime.Error{Op: "read", Resource: "instance", ID: id, Err: fmt.Errorf("%w: %w", runtime.ErrInternal, err)}
 	}
 
 	for _, container := range containerList {
@@ -210,7 +210,7 @@ func (r *Runtime) InstanceRead(id string) (types.Instance, error) {
 		if instanceID == id {
 			containerDeep, err := containers.Inspect(*r.ctx, container.ID, nil)
 			if err != nil {
-				log.Fatal(err)
+				return types.Instance{}, &runtime.Error{Op: "read", Resource: "instance", ID: id, Err: fmt.Errorf("%w: %w", runtime.ErrInternal, err)}
 			}
 
 			cpus := 0.0
@@ -249,7 +249,7 @@ func (r *Runtime) InstanceRead(id string) (types.Instance, error) {
 		}
 	}
 
-	return types.Instance{}, errors.New("instance not found")
+	return types.Instance{}, &runtime.Error{Op: "read", Resource: "instance", ID: id, Err: fmt.Errorf("%w: %w", runtime.ErrNotFound, err)}
 }
 
 func (r *Runtime) InstanceReadMany() ([]types.Instance, error) {
@@ -259,7 +259,7 @@ func (r *Runtime) InstanceReadMany() ([]types.Instance, error) {
 
 	containerList, err := containers.List(*r.ctx, &containerListOptions)
 	if err != nil {
-		log.Fatal(err)
+		return []types.Instance{}, &runtime.Error{Op: "read", Resource: "instance", ID: "", Err: fmt.Errorf("%w: %w", runtime.ErrInternal, err)}
 	}
 
 	instances := make([]types.Instance, 0)
@@ -272,7 +272,7 @@ func (r *Runtime) InstanceReadMany() ([]types.Instance, error) {
 
 		containerDeep, err := containers.Inspect(*r.ctx, container.ID, nil)
 		if err != nil {
-			log.Fatal(err)
+			return []types.Instance{}, &runtime.Error{Op: "read", Resource: "instance", ID: "", Err: fmt.Errorf("%w: %w", runtime.ErrInternal, err)}
 		}
 
 		cpus := 0.0
@@ -287,6 +287,7 @@ func (r *Runtime) InstanceReadMany() ([]types.Instance, error) {
 			memory = float64(containerDeep.HostConfig.Memory) / container_memory_gb
 		}
 
+		// TODO handle empty webhook string ""?
 		webhooks := strings.Split(container.Labels[types.InstanceLabelWebhooks], ",")
 
 		instances = append(instances, types.Instance{
@@ -310,7 +311,7 @@ func (r *Runtime) InstanceReadMany() ([]types.Instance, error) {
 func (r *Runtime) InstanceDelete(id string) error {
 	containerID, err := r.containerID(id)
 	if err != nil {
-		log.Fatal(err)
+		return &runtime.Error{Op: "read", Resource: "instance", ID: id, Err: fmt.Errorf("%w: %w", runtime.ErrInternal, err)}
 	}
 
 	containerRemoveOptions := containers.RemoveOptions{}
@@ -318,7 +319,7 @@ func (r *Runtime) InstanceDelete(id string) error {
 
 	_, err = containers.Remove(*r.ctx, containerID, &containerRemoveOptions)
 	if err != nil {
-		log.Fatal(err)
+		return &runtime.Error{Op: "delete", Resource: "instance", ID: id, Err: fmt.Errorf("%w: %w", runtime.ErrInternal, err)}
 	}
 
 	return nil
@@ -327,11 +328,11 @@ func (r *Runtime) InstanceDelete(id string) error {
 func (r *Runtime) InstanceStart(id string) error {
 	containerID, err := r.containerID(id)
 	if err != nil {
-		log.Fatal(err)
+		return &runtime.Error{Op: "read", Resource: "instance", ID: id, Err: fmt.Errorf("%w: %w", runtime.ErrInternal, err)}
 	}
 
 	if err = containers.Start(*r.ctx, containerID, nil); err != nil {
-		log.Fatal(err)
+		return &runtime.Error{Op: "start", Resource: "instance", ID: id, Err: fmt.Errorf("%w: %w", runtime.ErrInternal, err)}
 	}
 
 	return nil
@@ -340,7 +341,7 @@ func (r *Runtime) InstanceStart(id string) error {
 func (r *Runtime) InstanceStop(id string) error {
 	containerID, err := r.containerID(id)
 	if err != nil {
-		log.Fatal(err)
+		return &runtime.Error{Op: "stop", Resource: "instance", ID: id, Err: fmt.Errorf("%w: %w", runtime.ErrInternal, err)}
 	}
 
 	timeout := uint(1)
@@ -349,7 +350,7 @@ func (r *Runtime) InstanceStop(id string) error {
 	}
 
 	if err = containers.Stop(*r.ctx, containerID, &containerStopOptions); err != nil {
-		log.Fatal(err)
+		return &runtime.Error{Op: "stop", Resource: "instance", ID: id, Err: fmt.Errorf("%w: %w", runtime.ErrInternal, err)}
 	}
 
 	return nil
@@ -358,26 +359,8 @@ func (r *Runtime) InstanceStop(id string) error {
 func (r *Runtime) InstanceAttach(id string, stdin io.Reader, stdout io.Writer, stderr io.Writer, ready chan bool) error {
 	containerID, err := r.containerID(id)
 	if err != nil {
-		log.Fatal(err)
+		return &runtime.Error{Op: "attach", Resource: "instance", ID: id, Err: fmt.Errorf("%w: %w", runtime.ErrInternal, err)}
 	}
-
-	// msgs := make(chan string, 55)
-
-	// go func() {
-	// 	defer close(msgs)
-
-	// 	containerLogOptions := containers.LogOptions{}
-	// 	containerLogOptions.WithStderr(true).WithStdout(true).WithTail("50").WithFollow(false)
-	// 	if err := containers.Logs(*r.ctx, containerID, &containerLogOptions, msgs, msgs); err != nil {
-	// 		log.Fatal(err)
-	// 	}
-	// }()
-
-	// for msg := range msgs {
-	// 	if _, err = stdout.Write([]byte(msg)); err != nil {
-	// 		log.Fatal(err)
-	// 	}
-	// }
 
 	containerAttachOptions := containers.AttachOptions{}
 	containerAttachOptions.WithDetachKeys("")
@@ -385,9 +368,7 @@ func (r *Runtime) InstanceAttach(id string, stdin io.Reader, stdout io.Writer, s
 		if errors.Is(err, io.ErrClosedPipe) {
 			return nil
 		}
-
-		fmt.Println("about to error here:", err, err.Error())
-		log.Fatal(err)
+		return &runtime.Error{Op: "attach", Resource: "instance", ID: id, Err: fmt.Errorf("%w: %w", runtime.ErrInternal, err)}
 	}
 
 	return nil
@@ -397,12 +378,12 @@ func (r *Runtime) InstanceAttach(id string, stdin io.Reader, stdout io.Writer, s
 func (r *Runtime) InstanceStats(id string, stats chan types.InstanceStat) error {
 	containerID, err := r.containerID(id)
 	if err != nil {
-		log.Fatal(err)
+		return &runtime.Error{Op: "stats", Resource: "instance", ID: id, Err: fmt.Errorf("%w: %w", runtime.ErrInternal, err)}
 	}
 
 	containerDeep, err := containers.Inspect(*r.ctx, containerID, nil)
 	if err != nil {
-		log.Fatal(err)
+		return &runtime.Error{Op: "stats", Resource: "instance", ID: id, Err: fmt.Errorf("%w: %w", runtime.ErrInternal, err)}
 	}
 
 	cpus := 0.0
@@ -420,9 +401,7 @@ func (r *Runtime) InstanceStats(id string, stats chan types.InstanceStat) error 
 
 	statsReport, err := containers.Stats(*r.ctx, []string{containerDeep.ID}, &containerStatsOptions)
 	if err != nil {
-		// TODO bug: 2026/07/15 09:14:57 write tcp [::1]:8000->[::1]:51528: write: broken pipe
-		log.Println("about to fail in runtime stats stats")
-		log.Fatal(err)
+		return &runtime.Error{Op: "stats", Resource: "instance", ID: id, Err: fmt.Errorf("%w: %w", runtime.ErrInternal, err)}
 	}
 
 	for statReports := range statsReport {
@@ -452,30 +431,30 @@ func (r *Runtime) InstanceStats(id string, stats chan types.InstanceStat) error 
 func (r *Runtime) InstanceBackup(id string, manifest *types.InstanceBackupManifest, zw *zip.Writer) error {
 	containerID, err := r.containerID(id)
 	if err != nil {
-		log.Fatal(err)
+		return &runtime.Error{Op: "backup", Resource: "instance", ID: id, Err: fmt.Errorf("%w: %w", runtime.ErrInternal, err)}
 	}
 
 	containerDeep, err := containers.Inspect(*r.ctx, containerID, nil)
 	if err != nil {
-		log.Fatal(err)
+		return &runtime.Error{Op: "backup", Resource: "instance", ID: id, Err: fmt.Errorf("%w: %w", runtime.ErrInternal, err)}
 	}
 
 	for _, mount := range containerDeep.Mounts {
 		volume, err := volumes.Inspect(*r.ctx, mount.Name, nil)
 		if err != nil {
-			log.Fatal(err)
+			return &runtime.Error{Op: "backup", Resource: "instance", ID: id, Err: fmt.Errorf("%w: %w", runtime.ErrInternal, err)}
 		}
 
 		id := volume.Labels[instanceVolumeLabelID]
 
 		w, err := zw.Create(fmt.Sprintf("volumes/%s", id))
 		if err != nil {
-			log.Fatal(err)
+			return &runtime.Error{Op: "backup", Resource: "instance", ID: id, Err: fmt.Errorf("%w: %w", runtime.ErrInternal, err)}
 		}
 
 		err = volumes.Export(*r.ctx, volume.Name, w)
 		if err != nil {
-			log.Fatal(err)
+			return &runtime.Error{Op: "backup", Resource: "instance", ID: id, Err: fmt.Errorf("%w: %w", runtime.ErrInternal, err)}
 		}
 
 		manifest.Mounts = append(manifest.Mounts, types.InstanceBackupManifestMount{
@@ -488,23 +467,11 @@ func (r *Runtime) InstanceBackup(id string, manifest *types.InstanceBackupManife
 }
 
 func (r *Runtime) InstanceRestore(id string, manifest *types.InstanceBackupManifest, zr *zip.Reader) error {
-	// containerID, err := r.containerID(id)
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-
-	// containerDeep, err := containers.Inspect(*r.ctx, containerID, nil)
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-
 	// TODO don't rely on manifest? user could malform it as an attack
-
 	for _, manifestMount := range manifest.Mounts {
 		volumeName, err := r.volumeName(manifestMount.ID)
 		if err != nil {
-			log.Println("about to fail runtime instance restore volume name")
-			log.Fatal(err)
+			return &runtime.Error{Op: "restore", Resource: "instance", ID: id, Err: fmt.Errorf("%w: %w", runtime.ErrInternal, err)}
 		}
 
 		for _, filePath := range zr.File {
@@ -512,13 +479,13 @@ func (r *Runtime) InstanceRestore(id string, manifest *types.InstanceBackupManif
 				fmt.Println("found a match:", volumeName, filePath.Name, manifestMount.ID)
 				f, err := zr.Open(filePath.Name)
 				if err != nil {
-					log.Fatal(err)
+					return &runtime.Error{Op: "restore", Resource: "instance", ID: id, Err: fmt.Errorf("%w: %w", runtime.ErrInternal, err)}
 				}
 				defer f.Close()
 
 				err = volumes.Import(*r.ctx, volumeName, f)
 				if err != nil {
-					log.Fatal(err)
+					return &runtime.Error{Op: "restore", Resource: "instance", ID: id, Err: fmt.Errorf("%w: %w", runtime.ErrInternal, err)}
 				}
 				break
 			}
@@ -533,13 +500,13 @@ func (r *Runtime) InstanceRestore(id string, manifest *types.InstanceBackupManif
 func (r *Runtime) InstanceLogs(id string, logs chan string) error {
 	containerID, err := r.containerID(id)
 	if err != nil {
-		log.Fatal(err)
+		return &runtime.Error{Op: "logs", Resource: "instance", ID: id, Err: fmt.Errorf("%w: %w", runtime.ErrInternal, err)}
 	}
 
 	containerLogOptions := containers.LogOptions{}
 	containerLogOptions.WithStderr(true).WithStdout(true).WithTimestamps(true)
 	if err = containers.Logs(*r.ctx, containerID, &containerLogOptions, logs, logs); err != nil {
-		log.Fatal(err)
+		return &runtime.Error{Op: "logs", Resource: "instance", ID: id, Err: fmt.Errorf("%w: %w", runtime.ErrInternal, err)}
 	}
 
 	return nil
@@ -548,8 +515,7 @@ func (r *Runtime) InstanceLogs(id string, logs chan string) error {
 func (r *Runtime) Events(events chan types.Event, cancel chan bool) error {
 	podmanEvents := make(chan entitiesTypes.Event)
 	if err := system.Events(*r.ctx, podmanEvents, cancel, nil); err != nil {
-		log.Println("about to fail in runtime events")
-		log.Fatal(err)
+		return &runtime.Error{Op: "read", Resource: "events", ID: "", Err: fmt.Errorf("%w: %w", runtime.ErrInternal, err)}
 	}
 
 	for podmanEvent := range podmanEvents {
@@ -588,7 +554,7 @@ func (r *Runtime) imageID(id string) (string, error) {
 
 	imageList, err := images.List(*r.ctx, imageListOptions)
 	if err != nil {
-		log.Fatal(err)
+		return "", err
 	}
 
 	for _, image := range imageList {
@@ -608,7 +574,7 @@ func (r *Runtime) containerID(id string) (string, error) {
 
 	containerList, err := containers.List(*r.ctx, &containerListOptions)
 	if err != nil {
-		log.Fatal(err)
+		return "", err
 	}
 
 	for _, container := range containerList {
@@ -618,7 +584,7 @@ func (r *Runtime) containerID(id string) (string, error) {
 		}
 	}
 
-	return "", errors.New("instance not found")
+	return "", errors.New("container not found")
 }
 
 func (r *Runtime) volumeName(id string) (string, error) {
@@ -628,7 +594,7 @@ func (r *Runtime) volumeName(id string) (string, error) {
 
 	volumeList, err := volumes.List(*r.ctx, &volumeListOptions)
 	if err != nil {
-		log.Fatal(err)
+		return "", err
 	}
 
 	for _, volume := range volumeList {

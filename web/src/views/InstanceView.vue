@@ -7,7 +7,7 @@ import InstanceStatistics from '@/components/InstanceStatistics.vue'
 import InstanceStatusBadge from '@/components/InstanceStatusBadge.vue'
 import InstanceTerminal from '@/components/InstanceTerminal.vue'
 
-import { API_URL } from '@/api'
+import { API_ERROR_NOT_FOUND, API_URL } from '@/api'
 import { imageLabel } from '@/image'
 
 const route = useRoute()
@@ -20,8 +20,14 @@ const { instance, instanceRead, instanceDelete, instanceStart, instanceStop, ins
 
 const restoreFileInput = ref(null)
 
-onMounted(() => {
-  instanceRead(id)
+onMounted(async () => {
+  try {
+    await instanceRead(id)
+  } catch (error) {
+    if (error.message === API_ERROR_NOT_FOUND) {
+      router.push('/')
+    }
+  }
 })
 
 async function instanceDeleteRedirect(id) {

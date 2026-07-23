@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"log"
 	"net/http"
 	"os"
 	"path"
@@ -56,12 +55,14 @@ func (h *InstanceHandler) handleInstanceCreate(w http.ResponseWriter, r *http.Re
 	var req instanceCreateRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		log.Fatal(err)
+		handleError(w, err)
+		return
 	}
 
 	instance, err := h.runtime.InstanceCreate(req.ImageID, req.Resources, req.Webhooks)
 	if err != nil {
-		log.Fatal(err)
+		handleError(w, err)
+		return
 	}
 
 	type instanceCreateResponse struct {
@@ -75,20 +76,23 @@ func (h *InstanceHandler) handleInstanceCreate(w http.ResponseWriter, r *http.Re
 	w.Header().Add("Content-Type", "application/json")
 
 	if err := json.NewEncoder(w).Encode(containerResponse); err != nil {
-		log.Fatal(err)
+		handleError(w, err)
+		return
 	}
 }
 
 func (h *InstanceHandler) handleInstanceReadMany(w http.ResponseWriter, r *http.Request) {
 	instances, err := h.runtime.InstanceReadMany()
 	if err != nil {
-		log.Fatal(err)
+		handleError(w, err)
+		return
 	}
 
 	w.Header().Add("Content-Type", "application/json")
 
 	if err := json.NewEncoder(w).Encode(instances); err != nil {
-		log.Fatal(err)
+		handleError(w, err)
+		return
 	}
 }
 
@@ -97,13 +101,15 @@ func (h *InstanceHandler) handleInstanceRead(w http.ResponseWriter, r *http.Requ
 
 	instance, err := h.runtime.InstanceRead(id)
 	if err != nil {
-		log.Fatal(err)
+		handleError(w, err)
+		return
 	}
 
 	w.Header().Add("Content-Type", "application/json")
 
 	if err := json.NewEncoder(w).Encode(instance); err != nil {
-		log.Fatal(err)
+		handleError(w, err)
+		return
 	}
 }
 
@@ -113,7 +119,8 @@ func (h *InstanceHandler) handleInstanceDelete(w http.ResponseWriter, r *http.Re
 	id := r.PathValue("id")
 
 	if err := h.runtime.InstanceDelete(id); err != nil {
-		log.Fatal(err)
+		handleError(w, err)
+		return
 	}
 }
 
@@ -121,7 +128,8 @@ func (h *InstanceHandler) handleInstanceStart(w http.ResponseWriter, r *http.Req
 	id := r.PathValue("id")
 
 	if err := h.runtime.InstanceStart(id); err != nil {
-		log.Fatal(err)
+		handleError(w, err)
+		return
 	}
 
 	w.WriteHeader(http.StatusNoContent)
@@ -131,7 +139,8 @@ func (h *InstanceHandler) handleInstanceStop(w http.ResponseWriter, r *http.Requ
 	id := r.PathValue("id")
 
 	if err := h.runtime.InstanceStop(id); err != nil {
-		log.Fatal(err)
+		handleError(w, err)
+		return
 	}
 
 	w.WriteHeader(http.StatusNoContent)
@@ -140,7 +149,7 @@ func (h *InstanceHandler) handleInstanceStop(w http.ResponseWriter, r *http.Requ
 func (h *InstanceHandler) handleInstanceAttach(w http.ResponseWriter, r *http.Request) {
 	c, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		log.Println("upgrade:", err)
+		handleError(w, err)
 		return
 	}
 	defer c.Close()
@@ -246,7 +255,7 @@ func (h *InstanceHandler) handleInstanceAttach(w http.ResponseWriter, r *http.Re
 func (h *InstanceHandler) handleInstanceStats(w http.ResponseWriter, r *http.Request) {
 	c, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		log.Println("upgrade:", err)
+		handleError(w, err)
 		return
 	}
 	defer c.Close()
@@ -259,8 +268,8 @@ func (h *InstanceHandler) handleInstanceStats(w http.ResponseWriter, r *http.Req
 
 	go func() {
 		if err := h.runtime.InstanceStats(id, stats); err != nil {
-			log.Println("about to fail in stats instanestats")
-			log.Fatal(err)
+			handleError(w, err)
+			return
 		}
 	}()
 
@@ -276,7 +285,8 @@ func (h *InstanceHandler) handleInstanceBackup(w http.ResponseWriter, r *http.Re
 
 	instance, err := h.runtime.InstanceRead(id)
 	if err != nil {
-		log.Fatal(err)
+		handleError(w, err)
+		return
 	}
 
 	w.Header().Set("Content-Type", "application/zip")
@@ -299,16 +309,19 @@ func (h *InstanceHandler) handleInstanceBackup(w http.ResponseWriter, r *http.Re
 	}
 
 	if err = h.runtime.InstanceBackup(instance.ID, &manifest, zw); err != nil {
-		log.Fatal(err)
+		handleError(w, err)
+		return
 	}
 
 	f, err := zw.Create("manifest.json")
 	if err != nil {
-		log.Fatal(err)
+		handleError(w, err)
+		return
 	}
 
 	if err = json.NewEncoder(f).Encode(manifest); err != nil {
-		log.Fatal(err)
+		handleError(w, err)
+		return
 	}
 }
 
@@ -317,20 +330,20 @@ func (h *InstanceHandler) handleInstanceRestore(w http.ResponseWriter, r *http.R
 
 	instance, err := h.runtime.InstanceRead(id)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
+		handleError(w, err)
 		return
 	}
 
 	file, _, err := r.FormFile("backup")
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		handleError(w, err)
 		return
 	}
 	defer file.Close()
 
 	tmpFile, err := os.CreateTemp("", "panel-backup-*.zip")
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		handleError(w, err)
 		return
 	}
 	defer os.Remove(tmpFile.Name())
@@ -338,19 +351,19 @@ func (h *InstanceHandler) handleInstanceRestore(w http.ResponseWriter, r *http.R
 
 	_, err = io.Copy(tmpFile, file)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		handleError(w, err)
 		return
 	}
 
 	stat, err := tmpFile.Stat()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		handleError(w, err)
 		return
 	}
 
 	zr, err := zip.NewReader(tmpFile, stat.Size())
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		handleError(w, err)
 		return
 	}
 
@@ -360,7 +373,7 @@ func (h *InstanceHandler) handleInstanceRestore(w http.ResponseWriter, r *http.R
 		if path.Base(f.Name) == "manifest.json" {
 			manifestFile, err = zr.Open(f.Name)
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
+				handleError(w, err)
 				return
 			}
 
@@ -368,7 +381,7 @@ func (h *InstanceHandler) handleInstanceRestore(w http.ResponseWriter, r *http.R
 		}
 	}
 	if manifestFile == nil {
-		http.Error(w, "manifest.json not found", http.StatusBadRequest)
+		handleError(w, err)
 		return
 	}
 	defer manifestFile.Close()
@@ -376,18 +389,18 @@ func (h *InstanceHandler) handleInstanceRestore(w http.ResponseWriter, r *http.R
 	var manifest types.InstanceBackupManifest
 	err = json.NewDecoder(manifestFile).Decode(&manifest)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		handleError(w, err)
 		return
 	}
 
 	if manifest.ID != instance.ID {
-		http.Error(w, "backup manifest ID does not match instance ID", http.StatusBadRequest)
+		handleError(w, err)
 		return
 	}
 
 	err = h.runtime.InstanceRestore(instance.ID, &manifest, zr)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError) // TODO
+		handleError(w, err)
 		return
 	}
 
@@ -402,7 +415,8 @@ func (h *InstanceHandler) handleInstanceLogs(w http.ResponseWriter, r *http.Requ
 
 	instance, err := h.runtime.InstanceRead(id)
 	if err != nil {
-		log.Fatal(err)
+		handleError(w, err)
+		return
 	}
 
 	w.Header().Set("Content-Type", "application/zip")
@@ -431,7 +445,8 @@ func (h *InstanceHandler) handleInstanceLogs(w http.ResponseWriter, r *http.Requ
 
 	f, err := zw.Create("logs.txt")
 	if err != nil {
-		log.Fatal(err)
+		handleError(w, err)
+		return
 	}
 
 	for {
