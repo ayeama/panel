@@ -257,16 +257,15 @@ func (h *InstanceHandler) handleInstanceStats(w http.ResponseWriter, r *http.Req
 
 	stats := make(chan types.InstanceStat)
 
-	// TODO handle lifecycle
 	go func() {
-		if err = h.runtime.InstanceStats(id, stats); err != nil {
+		if err := h.runtime.InstanceStats(id, stats); err != nil {
 			log.Println("about to fail in stats instanestats")
 			log.Fatal(err)
 		}
 	}()
 
 	for stat := range stats {
-		if err = c.WriteJSON(stat); err != nil {
+		if err := c.WriteJSON(stat); err != nil {
 			return
 		}
 	}
