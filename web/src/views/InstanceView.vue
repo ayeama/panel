@@ -69,9 +69,9 @@ async function restoreFileSelected(event) {
     <div class="col">
       <div class="row">
         <div class="col d-flex">
-          <div class="row row-cols-1">
+          <div class="row gx-2 align-items-end">
             <div class="col">
-              <h1 class="h4 mb-0">{{ instance.name }}</h1>
+              <h1 class="h3 mb-0">{{ instance.name }}</h1>
             </div>
 
             <div class="col">
