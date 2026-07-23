@@ -1,3 +1,3 @@
-package pkg
+package webhook
 
 // TODO implement webhook SDK

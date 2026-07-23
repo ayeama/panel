@@ -114,7 +114,12 @@ func webhook(runtime runtime.Runtime) {
 						log.Fatal(err)
 					}
 
-					webhooks := strings.Split(event.Actor.Attributes[types.InstanceLabelWebhooks], ",")
+					var webhooks []string
+					if event.Actor.Attributes[types.InstanceLabelWebhooks] != "" {
+						webhooks = strings.Split(event.Actor.Attributes[types.InstanceLabelWebhooks], ",")
+					} else {
+						webhooks = make([]string, 0)
+					}
 
 					for _, webhook := range webhooks {
 						req, err := http.NewRequest(http.MethodPost, webhook, bytes.NewReader(body))

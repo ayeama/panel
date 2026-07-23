@@ -29,7 +29,7 @@ import (
 )
 
 const (
-	container_cpu_us    = 1_00_000
+	container_cpu_us    = 1_000_000
 	container_memory_gb = 1_000_000_000
 
 	// TODO: better place?
