@@ -95,8 +95,11 @@ func webhook(runtime runtime.Runtime) {
 						continue
 					}
 
+					name := event.Actor.Attributes["name"]
+
 					webhookData, err := json.Marshal(types.WebhookEventDataInstanceDeleted{
-						ID: id,
+						ID:   id,
+						Name: name,
 					})
 					if err != nil {
 						log.Fatal(err)
