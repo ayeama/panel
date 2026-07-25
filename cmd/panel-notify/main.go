@@ -43,7 +43,7 @@ func (h *WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 			log.Fatal(err)
 		}
 
-		msg := "instance created"
+		msg := fmt.Sprintf("instance %s created", eventData.Name)
 		url := fmt.Sprintf("%s/%s", h.ntfy.host, h.ntfy.topic)
 		req, _ := http.NewRequest("POST", url, strings.NewReader(msg))
 		req.Header.Set("Authorization", "Bearer "+h.ntfy.token)
@@ -62,7 +62,7 @@ func (h *WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 			log.Fatal(err)
 		}
 
-		msg := "instance deleted"
+		msg := fmt.Sprintf("instance %s deleted", eventData.Name)
 		url := fmt.Sprintf("%s/%s", h.ntfy.host, h.ntfy.topic)
 		req, _ := http.NewRequest("POST", url, strings.NewReader(msg))
 		req.Header.Set("Authorization", "Bearer "+h.ntfy.token)
