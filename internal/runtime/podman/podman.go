@@ -53,29 +53,6 @@ func New(config *Config) (*Runtime, error) {
 	return &Runtime{&c}, nil
 }
 
-func (r *Runtime) ImageRead(id string) (types.Image, error) {
-	filters := map[string][]string{"label": {types.ImageLabelID + "=" + id}}
-	imageListOptions := &images.ListOptions{}
-	imageListOptions.WithAll(false).WithFilters(filters)
-
-	imageList, err := images.List(*r.ctx, imageListOptions)
-	if err != nil {
-		return types.Image{}, &runtime.Error{Op: "read", Resource: "image", ID: id, Err: fmt.Errorf("%w: %w", runtime.ErrBadRequest, err)}
-	}
-
-	for _, image := range imageList {
-		imageID := image.Labels[types.ImageLabelID]
-		if imageID == id {
-			return types.Image{
-				ID:   imageID,
-				Name: image.Names[0],
-			}, nil
-		}
-	}
-
-	return types.Image{}, &runtime.Error{Op: "read", Resource: "image", ID: id, Err: runtime.ErrNotFound}
-}
-
 func (r *Runtime) ImageReadMany() ([]types.Image, error) {
 	filters := map[string][]string{"label": {types.ImageLabelID}}
 	imageListOptions := &images.ListOptions{}
@@ -249,7 +226,7 @@ func (r *Runtime) InstanceRead(id string) (types.Instance, error) {
 		}
 	}
 
-	return types.Instance{}, &runtime.Error{Op: "read", Resource: "instance", ID: id, Err: fmt.Errorf("%w: %w", runtime.ErrNotFound, err)}
+	return types.Instance{}, &runtime.Error{Op: "read", Resource: "instance", ID: id, Err: runtime.ErrNotFound}
 }
 
 func (r *Runtime) InstanceReadMany() ([]types.Instance, error) {

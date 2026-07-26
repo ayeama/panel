@@ -8,7 +8,6 @@ import (
 )
 
 type Runtime interface {
-	ImageRead(id string) (types.Image, error)
 	ImageReadMany() ([]types.Image, error)
 
 	InstanceCreate(imageID string, resources types.InstanceResources, webhooks []string) (types.Instance, error)

@@ -2,6 +2,7 @@ package handler
 
 import (
 	"errors"
+	"log"
 	"net/http"
 
 	"github.com/ayeama/panel/internal/runtime"
@@ -16,8 +17,10 @@ func handleError(w http.ResponseWriter, err error) {
 	case errors.Is(err, runtime.ErrExists):
 		http.Error(w, err.Error(), http.StatusConflict)
 	case errors.Is(err, runtime.ErrInternal):
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Println("error", err.Error())
+		http.Error(w, "internal server error", http.StatusInternalServerError)
 	default:
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Println("error", err.Error())
+		http.Error(w, "internal server error", http.StatusInternalServerError)
 	}
 }
