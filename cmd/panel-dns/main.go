@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/ayeama/panel/internal/types"
+	"github.com/ayeama/panel/pkg/api"
 	"github.com/cloudflare/cloudflare-go/v7"
 	"github.com/cloudflare/cloudflare-go/v7/dns"
 )
@@ -41,21 +41,20 @@ func (h *WebhookHandler) RegisterHandlers(mux *http.ServeMux) {
 func (h *WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 	ctx := context.Background()
 
-	var event types.WebhookEvent
+	var event api.WebhookEvent
 	if err := json.NewDecoder(r.Body).Decode(&event); err != nil {
 		log.Fatal(err)
 	}
 
 	switch event.Type {
-	case types.WebhookEventInstanceCreated:
-		var eventData types.WebhookEventDataInstanceCreated
+	case api.WebhookEventInstanceCreated:
+		var eventData api.WebhookEventDataInstanceCreated
 		if err := json.Unmarshal(event.Data, &eventData); err != nil {
 			log.Fatal(err)
 		}
 
 		comment := strings.ReplaceAll(eventData.ID, "-", "")
 
-		// TODO make async
 		name := h.cf.subdomainName(eventData.Name)
 		ipaddresses, err := net.LookupIP(h.cf.host)
 		if err != nil {
@@ -102,15 +101,14 @@ func (h *WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 			log.Fatal(err)
 		}
 		log.Println("created", dns.SRVRecordTypeSRV, "_minecraft._tcp."+name)
-	case types.WebhookEventInstanceDeleted:
-		var eventData types.WebhookEventDataInstanceDeleted
+	case api.WebhookEventInstanceDeleted:
+		var eventData api.WebhookEventDataInstanceDeleted
 		if err := json.Unmarshal(event.Data, &eventData); err != nil {
 			log.Fatal(err)
 		}
 
 		comment := strings.ReplaceAll(eventData.ID, "-", "")
 
-		// TODO make async
 		records, err := (*h.cf.client).DNS.Records.List(ctx, dns.RecordListParams{
 			ZoneID:  cloudflare.F(h.cf.zoneID),
 			Comment: cloudflare.F(dns.RecordListParamsComment{Exact: cloudflare.F(comment)}),

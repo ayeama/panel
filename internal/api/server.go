@@ -1,11 +1,11 @@
-package internal
+package api
 
 import (
 	"log"
 	"net/http"
 
-	"github.com/ayeama/panel/internal/handler"
-	"github.com/ayeama/panel/internal/middleware"
+	"github.com/ayeama/panel/internal/api/handler"
+	"github.com/ayeama/panel/internal/api/middleware"
 	"github.com/ayeama/panel/internal/runtime/podman"
 )
 

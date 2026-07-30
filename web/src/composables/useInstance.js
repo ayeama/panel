@@ -12,7 +12,7 @@ export function useInstance() {
       body: JSON.stringify(data),
     })
     const response_data = await response.json()
-    await instanceRead(response_data.instance_id)
+    await instanceRead(response_data.id)
   }
 
   async function instanceRead(id) {

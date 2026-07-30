@@ -14,6 +14,7 @@ import (
 
 	"github.com/ayeama/panel/internal/runtime"
 	"github.com/ayeama/panel/internal/types"
+	"github.com/ayeama/panel/pkg/api"
 	"github.com/gorilla/websocket"
 )
 
@@ -47,35 +48,44 @@ func (h *InstanceHandler) RegisterHandlers(mux *http.ServeMux) {
 }
 
 func (h *InstanceHandler) handleInstanceCreate(w http.ResponseWriter, r *http.Request) {
-	type instanceCreateRequest struct {
-		ImageID   string                  `json:"image_id"`
-		Resources types.InstanceResources `json:"resources"`
-		Webhooks  []string                `json:"webhooks"`
-	}
-	var req instanceCreateRequest
+	var req api.InstanceCreateRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		handleError(w, err)
 		return
 	}
 
-	instance, err := h.runtime.InstanceCreate(req.ImageID, req.Resources, req.Webhooks)
+	instance, err := h.runtime.InstanceCreate(types.InstanceCreate{
+		Image: req.Image,
+		Resources: types.InstanceResources{
+			CPU:    req.Resources.CPU,
+			Memory: req.Resources.Memory,
+			Disk:   req.Resources.Disk,
+		},
+		Webhooks: req.Webhooks,
+	})
 	if err != nil {
 		handleError(w, err)
 		return
 	}
 
-	type instanceCreateResponse struct {
-		InstanceID string `json:"instance_id"`
-	}
-
-	containerResponse := instanceCreateResponse{
-		InstanceID: instance.ID,
-	}
-
 	w.Header().Add("Content-Type", "application/json")
 
-	if err := json.NewEncoder(w).Encode(containerResponse); err != nil {
+	resp := api.Instance{
+		ID:     instance.ID,
+		Name:   instance.Name,
+		Image:  instance.Image,
+		Status: instance.Status,
+		Ports:  instance.Ports,
+		Resources: api.InstanceResources{
+			CPU:    instance.Resources.CPU,
+			Memory: instance.Resources.Memory,
+			Disk:   instance.Resources.Disk,
+		},
+		Webhooks: instance.Webhooks,
+	}
+
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
 		handleError(w, err)
 		return
 	}
@@ -90,7 +100,24 @@ func (h *InstanceHandler) handleInstanceReadMany(w http.ResponseWriter, r *http.
 
 	w.Header().Add("Content-Type", "application/json")
 
-	if err := json.NewEncoder(w).Encode(instances); err != nil {
+	resp := make([]api.Instance, 0, len(instances))
+	for _, instance := range instances {
+		resp = append(resp, api.Instance{
+			ID:     instance.ID,
+			Name:   instance.Name,
+			Image:  instance.Image,
+			Status: instance.Status,
+			Ports:  instance.Ports,
+			Resources: api.InstanceResources{
+				CPU:    instance.Resources.CPU,
+				Memory: instance.Resources.Memory,
+				Disk:   instance.Resources.Disk,
+			},
+			Webhooks: instance.Webhooks,
+		})
+	}
+
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
 		handleError(w, err)
 		return
 	}
@@ -107,7 +134,21 @@ func (h *InstanceHandler) handleInstanceRead(w http.ResponseWriter, r *http.Requ
 
 	w.Header().Add("Content-Type", "application/json")
 
-	if err := json.NewEncoder(w).Encode(instance); err != nil {
+	resp := api.Instance{
+		ID:     instance.ID,
+		Name:   instance.Name,
+		Image:  instance.Image,
+		Status: instance.Status,
+		Ports:  instance.Ports,
+		Resources: api.InstanceResources{
+			CPU:    instance.Resources.CPU,
+			Memory: instance.Resources.Memory,
+			Disk:   instance.Resources.Disk,
+		},
+		Webhooks: instance.Webhooks,
+	}
+
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
 		handleError(w, err)
 		return
 	}
@@ -274,7 +315,14 @@ func (h *InstanceHandler) handleInstanceStats(w http.ResponseWriter, r *http.Req
 	}()
 
 	for stat := range stats {
-		if err := c.WriteJSON(stat); err != nil {
+		resp := api.InstanceStat{
+			CPUPercent:     stat.CPUPercent,
+			MemoryPercent:  stat.MemoryPercent,
+			DiskPercent:    stat.DiskPercent,
+			NetworkTXBytes: stat.NetworkTXBytes,
+			NetworkRXBytes: stat.NetworkRXBytes,
+		}
+		if err := c.WriteJSON(resp); err != nil {
 			return
 		}
 	}

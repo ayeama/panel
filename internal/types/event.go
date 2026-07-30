@@ -1,25 +1,24 @@
 package types
 
-type Type string
+// TODO should this just be in internal/types?
+type EventType string
 
 const (
-	EventTypeInstance Type = "instance"
+	EventTypeInstanceCreated EventType = "instance.created"
+	EventTypeInstanceDeleted EventType = "instance.deleted"
 )
-
-type Action string
-
-const (
-	EventActionCreate Action = "create"
-	EventActionDelete Action = "delete"
-)
-
-type Actor struct {
-	ID         string
-	Attributes map[string]string
-}
 
 type Event struct {
-	Type   Type
-	Action Action
-	Actor  Actor
+	Type EventType
+	Data any
+}
+
+type EventInstanceCreated struct {
+	ID string
+}
+
+type EventInstanceDeleted struct {
+	ID       string
+	Name     string
+	Webhooks []string
 }

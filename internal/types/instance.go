@@ -1,45 +1,43 @@
 package types
 
-type InstanceLabel string
-
-const (
-	InstanceLabelID       string = "com.github.ayeama.panel.instance.id"
-	InstanceLabelWebhooks string = "com.github.ayeama.panel.instance.webhooks"
-)
-
 type Instance struct {
-	ID        string            `json:"id"`
-	Name      string            `json:"name"`
-	Image     string            `json:"image"`
-	Status    string            `json:"status"`
-	Ports     map[string]string `json:"ports"`
-	Resources InstanceResources `json:"resources"`
+	ID        string
+	Name      string
+	Image     string
+	Status    string
+	Ports     map[string]string
+	Resources InstanceResources
+	Webhooks  []string
+}
 
-	Webhooks []string `json:"webhooks"`
+type InstanceCreate struct {
+	Image     string
+	Resources InstanceResources
+	Webhooks  []string
 }
 
 type InstanceResources struct {
-	Cpu    float64 `json:"cpu"`
-	Memory float64 `json:"memory"`
-	Disk   float64 `json:"disk"`
+	CPU    float64
+	Memory float64
+	Disk   float64
 }
 
 type InstanceStat struct {
-	CpuPercent     float64 `json:"cpu_percent"`
-	MemoryPercent  float64 `json:"memory_percent"`
-	DiskPercent    float64 `json:"disk_percent"`
-	NetworkTxBytes uint64  `json:"network_tx_bytes"`
-	NetworkRxBytes uint64  `json:"network_rx_bytes"`
+	CPUPercent     float64
+	MemoryPercent  float64
+	DiskPercent    float64
+	NetworkTXBytes uint64
+	NetworkRXBytes uint64
 }
 
 type InstanceBackupManifest struct {
-	Instance // TODO don't need all members
+	Instance
 
-	Version string                        `json:"version"`
-	Mounts  []InstanceBackupManifestMount `json:"volumes"`
+	Version string
+	Mounts  []InstanceBackupManifestMount
 }
 
 type InstanceBackupManifestMount struct {
-	ID          string `json:"id"`
-	Destination string `json:"destination"`
+	ID          string
+	Destination string
 }

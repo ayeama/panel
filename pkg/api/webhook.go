@@ -1,6 +1,8 @@
-package types
+package api
 
-import "encoding/json"
+import (
+	"encoding/json"
+)
 
 type WebhookEventType string
 
@@ -9,6 +11,7 @@ const (
 	WebhookEventInstanceDeleted WebhookEventType = "instance.deleted"
 )
 
+// TODO update api json structure
 type WebhookEvent struct {
 	ID   string           `json:"uuid"`
 	Type WebhookEventType `json:"type"`

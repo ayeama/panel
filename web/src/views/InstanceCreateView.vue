@@ -59,7 +59,7 @@ async function instanceCreateRedirect() {
   ]
 
   const data = {
-    image_id: selectedFormImage.value.id,
+    image: selectedFormImage.value.name,
     resources: {
       cpu: formCpu.value,
       memory: formMemory.value,

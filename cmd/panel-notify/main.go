@@ -9,7 +9,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/ayeama/panel/internal/types"
+	"github.com/ayeama/panel/pkg/api"
 )
 
 type Ntfy struct {
@@ -31,14 +31,14 @@ func (h *WebhookHandler) RegisterHandlers(mux *http.ServeMux) {
 }
 
 func (h *WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
-	var event types.WebhookEvent
+	var event api.WebhookEvent
 	if err := json.NewDecoder(r.Body).Decode(&event); err != nil {
 		log.Fatal(err)
 	}
 
 	switch event.Type {
-	case types.WebhookEventInstanceCreated:
-		var eventData types.WebhookEventDataInstanceCreated
+	case api.WebhookEventInstanceCreated:
+		var eventData api.WebhookEventDataInstanceCreated
 		if err := json.Unmarshal(event.Data, &eventData); err != nil {
 			log.Fatal(err)
 		}
@@ -56,8 +56,8 @@ func (h *WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 		defer resp.Body.Close()
 
 		log.Println("handled notification")
-	case types.WebhookEventInstanceDeleted:
-		var eventData types.WebhookEventDataInstanceDeleted
+	case api.WebhookEventInstanceDeleted:
+		var eventData api.WebhookEventDataInstanceDeleted
 		if err := json.Unmarshal(event.Data, &eventData); err != nil {
 			log.Fatal(err)
 		}

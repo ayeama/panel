@@ -1,8 +1,8 @@
 package main
 
-import "github.com/ayeama/panel/internal"
+import "github.com/ayeama/panel/internal/api"
 
 func main() {
-	server := internal.NewServer()
+	server := api.NewServer()
 	server.Run()
 }
