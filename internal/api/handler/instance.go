@@ -100,9 +100,9 @@ func (h *InstanceHandler) handleInstanceReadMany(w http.ResponseWriter, r *http.
 
 	w.Header().Add("Content-Type", "application/json")
 
-	resp := make([]api.Instance, 0, len(instances))
-	for _, instance := range instances {
-		resp = append(resp, api.Instance{
+	resp := make([]api.Instance, len(instances))
+	for i, instance := range instances {
+		resp[i] = api.Instance{
 			ID:     instance.ID,
 			Name:   instance.Name,
 			Image:  instance.Image,
@@ -114,7 +114,7 @@ func (h *InstanceHandler) handleInstanceReadMany(w http.ResponseWriter, r *http.
 				Disk:   instance.Resources.Disk,
 			},
 			Webhooks: instance.Webhooks,
-		})
+		}
 	}
 
 	if err := json.NewEncoder(w).Encode(resp); err != nil {

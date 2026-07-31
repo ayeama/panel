@@ -29,12 +29,12 @@ func (h *ImageHandler) handleImageReadMany(w http.ResponseWriter, r *http.Reques
 
 	w.Header().Add("Content-Type", "application/json")
 
-	resp := make([]api.Image, 0, len(images))
-	for _, image := range images {
-		resp = append(resp, api.Image{
+	resp := make([]api.Image, len(images))
+	for i, image := range images {
+		resp[i] = api.Image{
 			ID:   image.ID,
 			Name: image.Name,
-		})
+		}
 	}
 
 	if err := json.NewEncoder(w).Encode(resp); err != nil {

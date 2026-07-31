@@ -34,7 +34,7 @@ func (r *Runtime) InstanceCreate(options types.InstanceCreate) (types.Instance, 
 
 	spec := specgen.NewSpecGenerator(image.ID, false)
 
-	spec.Volumes = make([]*specgen.NamedVolume, 0, len(image.Config.Volumes))
+	spec.Volumes = make([]*specgen.NamedVolume, 0)
 	for k := range image.Config.Volumes {
 		volumeLabels := make(map[string]string)
 		volumeLabels[instanceVolumeLabelID] = uuid.NewString()
