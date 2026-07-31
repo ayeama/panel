@@ -19,6 +19,8 @@ const formDisk = ref(0.0)
 
 const formWebhooks = ref([])
 
+const spinnerCreating = ref(false)
+
 async function addWebhook(webhook) {
   formWebhooks.value.push({ url: webhook })
 
@@ -68,7 +70,13 @@ async function instanceCreateRedirect() {
     webhooks: webhooks,
   }
 
-  await instanceCreate(data)
+  spinnerCreating.value = true
+  try {
+    await instanceCreate(data)
+  } finally {
+    spinnerCreating.value = false
+  }
+
   router.push(`/instances/${instance.value.id}`)
 }
 </script>
@@ -83,8 +91,13 @@ async function instanceCreateRedirect() {
 
         <div class="col col-auto d-flex">
           <!-- TODO add spinner in the button -->
-          <button type="button" class="btn btn-primary" v-on:click="instanceCreateRedirect()">
+          <button v-if="!spinnerCreating" type="button" class="btn btn-primary" v-on:click="instanceCreateRedirect()">
             Create
+          </button>
+
+          <button v-else class="btn btn-primary" type="button" disabled>
+            <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+            <span role="status"> Creating</span>
           </button>
         </div>
       </div>

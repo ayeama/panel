@@ -11,8 +11,8 @@ export function useInstance() {
       method: 'POST',
       body: JSON.stringify(data),
     })
-    const response_data = await response.json()
-    await instanceRead(response_data.id)
+
+    instance.value = await response.json()
   }
 
   async function instanceRead(id) {
