@@ -11,14 +11,14 @@ import (
 )
 
 type Instance struct {
-	ID        string            `json:"id"`
-	Name      string            `json:"name"`
-	Image     string            `json:"image"`
-	Status    string            `json:"status"`
-	Ports     map[string]string `json:"ports"`
-	Resources InstanceResources `json:"resources"`
+	ID        string
+	Name      string
+	Image     string
+	Status    string
+	Ports     map[string]string
+	Resources InstanceResources
 
-	Webhooks []string `json:"webhooks"`
+	Webhooks []string
 }
 
 type InstanceCreate struct {
@@ -28,29 +28,17 @@ type InstanceCreate struct {
 }
 
 type InstanceResources struct {
-	CPU    float64 `json:"cpu"`
-	Memory float64 `json:"memory"`
-	Disk   float64 `json:"disk"`
+	CPU    float64
+	Memory float64
+	Disk   float64
 }
 
 type InstanceStat struct {
-	CPUPercent     float64 `json:"cpu_percent"`
-	MemoryPercent  float64 `json:"memory_percent"`
-	DiskPercent    float64 `json:"disk_percent"`
-	NetworkTxBytes uint64  `json:"network_tx_bytes"`
-	NetworkRxBytes uint64  `json:"network_rx_bytes"`
-}
-
-type InstanceBackupManifest struct {
-	Instance // TODO don't need all members
-
-	Version string                        `json:"version"`
-	Mounts  []InstanceBackupManifestMount `json:"volumes"`
-}
-
-type InstanceBackupManifestMount struct {
-	ID          string `json:"id"`
-	Destination string `json:"destination"`
+	CPUPercent     float64
+	MemoryPercent  float64
+	DiskPercent    float64
+	NetworkTxBytes uint64
+	NetworkRxBytes uint64
 }
 
 type InstanceService service
@@ -179,4 +167,49 @@ func (s *InstanceService) ReadOne(ctx context.Context, id string) (Instance, err
 	}
 
 	return instance, nil
+}
+
+func (s *InstanceService) Delete(ctx context.Context, id string) error {
+	url := fmt.Sprintf("/instances/%s", id)
+	req, err := s.client.newRequestWithContext(ctx, http.MethodDelete, url, nil)
+	if err != nil {
+		return err
+	}
+
+	_, err = s.client.http.Do(req)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *InstanceService) Start(ctx context.Context, id string) error {
+	url := fmt.Sprintf("/instances/%s/start", id)
+	req, err := s.client.newRequestWithContext(ctx, http.MethodPost, url, nil)
+	if err != nil {
+		return err
+	}
+
+	_, err = s.client.http.Do(req)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *InstanceService) Stop(ctx context.Context, id string) error {
+	url := fmt.Sprintf("/instances/%s/stop", id)
+	req, err := s.client.newRequestWithContext(ctx, http.MethodPost, url, nil)
+	if err != nil {
+		return err
+	}
+
+	_, err = s.client.http.Do(req)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
