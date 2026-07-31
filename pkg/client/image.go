@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+
+	"github.com/ayeama/panel/pkg/api"
 )
 
 type Image struct {
@@ -14,7 +16,7 @@ type Image struct {
 type ImageService service
 
 func (s *ImageService) Read(ctx context.Context) ([]Image, error) {
-	images := make([]Image, 0)
+	var images []Image
 
 	req, err := s.client.newRequestWithContext(ctx, http.MethodGet, "/images", nil)
 	if err != nil {
@@ -27,8 +29,17 @@ func (s *ImageService) Read(ctx context.Context) ([]Image, error) {
 	}
 	defer resp.Body.Close()
 
-	if err = json.NewDecoder(resp.Body).Decode(&images); err != nil {
+	var respImages []api.Image
+	if err = json.NewDecoder(resp.Body).Decode(&respImages); err != nil {
 		return images, err
+	}
+
+	images = make([]Image, len(respImages))
+	for i, respImage := range respImages {
+		images[i] = Image{
+			ID:   respImage.ID,
+			Name: respImage.Name,
+		}
 	}
 
 	return images, nil
