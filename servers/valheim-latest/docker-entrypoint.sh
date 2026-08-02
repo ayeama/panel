@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 NAME="My server"
-PASSWORD="ayeama78"
+PASSWORD="secret"
 WORLD="Dedicated"
 SAVEDIR="/app/Valheim"
 
