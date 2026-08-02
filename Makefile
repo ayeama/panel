@@ -1,4 +1,4 @@
-.PHONY: run build deploy clean
+.PHONY: run build deploy clean servers
 
 run:
 	go run cmd/panel/main.go
@@ -20,3 +20,11 @@ deploy:
 
 clean:
 	podman pod rm -f panel
+
+servers:
+	podman build -t panel/steamcmd:1 servers/steamcmd-latest
+	podman build -t panel/factorio:2.0.77 servers/factorio-2.0.77
+	podman build -t panel/minecraft-pumpkin:latest servers/minecraft-pumpkin-latest
+	podman build -t panel/minecraft:1.2.5 servers/minecraft-vanilla-1.2.5
+	podman build -t panel/minecraft:26.2 servers/minecraft-vanilla-2.26
+	podman build -t panel/valheim:latest servers/valheim-latest
