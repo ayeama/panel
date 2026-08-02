@@ -1,11 +1,8 @@
 package main
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"log"
-	"net/http"
 
 	panel "github.com/ayeama/panel/pkg/client"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
@@ -26,28 +23,51 @@ func newHandler() *Handler {
 	return handler
 }
 
+type Image struct {
+	ID   string `json:"id" jsonschema:"title=ID, description=The image ID"`
+	Name string `json:"name" jsonschema:"title=Name, description=The image name"`
+}
+
+type Instance struct {
+	ID        string            `json:"id" jsonschema:"title=ID, description=The instance ID"`
+	Name      string            `json:"name" jsonschema:"title=Name, description=The instance Name"`
+	Image     string            `json:"image" jsonschema:"title=Image, description=The instance image name"`
+	Status    string            `json:"status" jsonschema:"title=Status, description=The instance status"`
+	Ports     map[string]string `json:"ports" jsonschema:"title=Ports, description=The instance ports"`
+	Resources InstanceResources `json:"resources" jsonschema:"title=Resources, description=The instance resources"`
+	Webhooks  []string          `json:"webhooks" jsonschema:"title=Webhooks, description=The instance webhooks"`
+}
+
+type InstanceCreate struct {
+	Image     string            `json:"image" jsonschema:"title=Image, description=The instance image name, required=true"`
+	Resources InstanceResources `json:"resources" jsonschema:"title=Resources, description=The instance resources, required=true"`
+	Webhooks  []string          `json:"webhooks" jsonschema:"title=Webhooks, description=The instance webhooks, required=true, uniqueItems=true"`
+}
+
+type InstanceResources struct {
+	CPU    float64 `json:"cpu" jsonschema:"title=CPU, description=The instance resource CPU, required=true, default=1, minimum=0.1, maximum=12, multipleof=0.1"`
+	Memory float64 `json:"memory" jsonschema:"title=Memory description=The instance resource memory, required=true, default=1, minimum=0.1, maximum=32, multipleof=0.1"`
+	Disk   float64 `json:"disk" jsonschema:"title=Disk, description=The instance resource disk, required=true, default=0, minimum=0.1, maximum=120, multipleof=0.1"`
+}
+
 type ImageReadManyInput struct{}
 
 type ImageReadManyOutput struct {
-	Images []panel.Image `json:"images" jsonschema:"a list of images"`
+	Images []Image `json:"images" jsonschema:"a list of images"`
 }
 
 type InstanceCreateInput struct {
-	// TODO types
-	Image    string   `json:"image" jsonschema:"the image ID to to create the instance with"`
-	Webhooks []string `json:"webhooks" jsonschema:"the webhooks to create the instance with"`
-
-	panel.InstanceResources
+	InstanceCreate
 }
 
 type InstanceCreateOutput struct {
-	Instance panel.Instance `json:"instance" jsonschema:"the created instance"`
+	Instance Instance `json:"instance" jsonschema:"the created instance"`
 }
 
 type InstanceReadManyInput struct{}
 
 type InstanceReadManyOutput struct {
-	Instances []panel.Instance `json:"instances" jsonschema:"a list of instances"`
+	Instances []Instance `json:"instances" jsonschema:"a list of instances"`
 }
 
 type InstanceReadInput struct {
@@ -55,7 +75,7 @@ type InstanceReadInput struct {
 }
 
 type InstanceReadOutput struct {
-	Instance panel.Instance `json:"instance" jsonschema:"the instance"`
+	Instance Instance `json:"instance" jsonschema:"the instance"`
 }
 
 type InstanceDeleteInput struct {
@@ -81,12 +101,22 @@ func (h *Handler) ImageReadMany(ctx context.Context, req *mcp.CallToolRequest, i
 	ImageReadManyOutput,
 	error,
 ) {
-	images, err := h.client.Image.Read(ctx)
+	var images ImageReadManyOutput
+
+	respImages, err := h.client.Image.Read(ctx)
 	if err != nil {
-		return nil, ImageReadManyOutput{}, err
+		return nil, images, err
 	}
 
-	return nil, ImageReadManyOutput{Images: images}, nil
+	images = ImageReadManyOutput{Images: make([]Image, len(respImages))}
+	for i, respImage := range respImages {
+		images.Images[i] = Image{
+			ID:   respImage.ID,
+			Name: respImage.Name,
+		}
+	}
+
+	return nil, images, nil
 }
 
 func (h *Handler) InstanceCreate(ctx context.Context, req *mcp.CallToolRequest, input InstanceCreateInput) (
@@ -96,20 +126,32 @@ func (h *Handler) InstanceCreate(ctx context.Context, req *mcp.CallToolRequest, 
 ) {
 	var instance InstanceCreateOutput
 
-	body, err := json.Marshal(input)
+	respInstanceOptions := panel.InstanceCreate{
+		Image: input.Image,
+		Resources: panel.InstanceResources{
+			CPU:    input.Resources.CPU,
+			Memory: input.Resources.Memory,
+			Disk:   input.Resources.Disk,
+		},
+		Webhooks: input.Webhooks,
+	}
+	respInstance, err := h.client.Instance.Create(ctx, respInstanceOptions)
 	if err != nil {
 		return nil, instance, err
 	}
 
-	url := "http://localhost:8000/instances"
-	resp, err := http.Post(url, "application/json", bytes.NewReader(body))
-	if err != nil {
-		return nil, instance, err
-	}
-	defer resp.Body.Close()
-
-	if err = json.NewDecoder(resp.Body).Decode(&instance); err != nil {
-		return nil, instance, err
+	instance.Instance = Instance{
+		ID:     respInstance.ID,
+		Name:   respInstance.Name,
+		Image:  respInstance.Image,
+		Status: respInstance.Status,
+		Ports:  respInstance.Ports,
+		Resources: InstanceResources{
+			CPU:    respInstance.Resources.CPU,
+			Memory: respInstance.Resources.Memory,
+			Disk:   respInstance.Resources.Disk,
+		},
+		Webhooks: respInstance.Webhooks,
 	}
 
 	return nil, instance, nil
@@ -120,12 +162,31 @@ func (h *Handler) InstanceReadMany(ctx context.Context, req *mcp.CallToolRequest
 	InstanceReadManyOutput,
 	error,
 ) {
-	instances, err := h.client.Instance.Read(ctx)
+	var instances InstanceReadManyOutput
+
+	respInstances, err := h.client.Instance.Read(ctx)
 	if err != nil {
-		return nil, InstanceReadManyOutput{}, err
+		return nil, instances, err
 	}
 
-	return nil, InstanceReadManyOutput{Instances: instances}, nil
+	instances = InstanceReadManyOutput{Instances: make([]Instance, len(respInstances))}
+	for i, respInstance := range respInstances {
+		instances.Instances[i] = Instance{
+			ID:     respInstance.ID,
+			Name:   respInstance.Name,
+			Image:  respInstance.Image,
+			Status: respInstance.Status,
+			Ports:  respInstance.Ports,
+			Resources: InstanceResources{
+				CPU:    respInstance.Resources.CPU,
+				Memory: respInstance.Resources.Memory,
+				Disk:   respInstance.Resources.Disk,
+			},
+			Webhooks: respInstance.Webhooks,
+		}
+	}
+
+	return nil, instances, nil
 }
 
 func (h *Handler) InstanceRead(ctx context.Context, req *mcp.CallToolRequest, input InstanceReadInput) (
@@ -133,12 +194,30 @@ func (h *Handler) InstanceRead(ctx context.Context, req *mcp.CallToolRequest, in
 	InstanceReadOutput,
 	error,
 ) {
-	instance, err := h.client.Instance.ReadOne(ctx, input.ID)
+	var instance InstanceReadOutput
+
+	respInstance, err := h.client.Instance.ReadOne(ctx, input.ID)
 	if err != nil {
-		return nil, InstanceReadOutput{}, err
+		return nil, instance, err
 	}
 
-	return nil, InstanceReadOutput{Instance: instance}, nil
+	instance = InstanceReadOutput{
+		Instance: Instance{
+			ID:     respInstance.ID,
+			Name:   respInstance.Name,
+			Image:  respInstance.Image,
+			Status: respInstance.Status,
+			Ports:  respInstance.Ports,
+			Resources: InstanceResources{
+				CPU:    respInstance.Resources.CPU,
+				Memory: respInstance.Resources.Memory,
+				Disk:   respInstance.Resources.Disk,
+			},
+			Webhooks: respInstance.Webhooks,
+		},
+	}
+
+	return nil, instance, nil
 }
 
 func (h *Handler) InstanceDelete(ctx context.Context, req *mcp.CallToolRequest, input InstanceDeleteInput) (
@@ -147,7 +226,6 @@ func (h *Handler) InstanceDelete(ctx context.Context, req *mcp.CallToolRequest, 
 	error,
 ) {
 	if err := h.client.Instance.Delete(ctx, input.ID); err != nil {
-
 		return nil, InstanceDeleteOutput{}, err
 	}
 
@@ -159,8 +237,7 @@ func (h *Handler) InstanceStart(ctx context.Context, req *mcp.CallToolRequest, i
 	InstanceStartOutput,
 	error,
 ) {
-	err := h.client.Instance.Start(ctx, input.ID)
-	if err != nil {
+	if err := h.client.Instance.Start(ctx, input.ID); err != nil {
 		return nil, InstanceStartOutput{}, err
 	}
 
@@ -172,8 +249,7 @@ func (h *Handler) InstanceStop(ctx context.Context, req *mcp.CallToolRequest, in
 	InstanceStopOutput,
 	error,
 ) {
-	err := h.client.Instance.Stop(ctx, input.ID)
-	if err != nil {
+	if err := h.client.Instance.Stop(ctx, input.ID); err != nil {
 		return nil, InstanceStopOutput{}, err
 	}
 
