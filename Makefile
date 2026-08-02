@@ -27,4 +27,5 @@ servers:
 	podman build -t panel/minecraft-pumpkin:latest servers/minecraft-pumpkin-latest
 	podman build -t panel/minecraft:1.2.5 servers/minecraft-vanilla-1.2.5
 	podman build -t panel/minecraft:26.2 servers/minecraft-vanilla-2.26
+	podman build -t panel/terraira:1.4.5.6 servers/terraria-1.4.5.6
 	podman build -t panel/valheim:latest servers/valheim-latest
