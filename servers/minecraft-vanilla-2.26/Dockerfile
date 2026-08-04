@@ -9,9 +9,9 @@ LABEL com.github.ayeama.panel.image.description=""
 
 WORKDIR /app
 
-COPY docker-entrypoint.sh /docker-entrypoint.sh
-
 RUN wget https://piston-data.mojang.com/v1/objects/823e2250d24b3ddac457a60c92a6a941943fcd6a/server.jar
+
+COPY docker-entrypoint.sh /docker-entrypoint.sh
 
 ENTRYPOINT ["/docker-entrypoint.sh"]
 

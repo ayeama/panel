@@ -11,7 +11,6 @@ LABEL com.github.ayeama.panel.image.description=""
 
 WORKDIR /app
 
-# TODO bug: 
 RUN apt-get update && \
     apt-get install --no-install-recommends -y \
         libpulse-dev \

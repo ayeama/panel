@@ -11,17 +11,17 @@ LABEL com.github.ayeama.panel.image.description=""
 
 WORKDIR /app
 
-COPY docker-entrypoint.sh /docker-entrypoint.sh
-
 RUN apt-get update && \
     apt-get install -y \
         curl \
         xz-utils && \
-    apt-get clean
-
-RUN curl -L -o linux64 https://www.factorio.com/get-download/2.0.77/headless/linux64 && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* && \
+    curl -L -o linux64 https://www.factorio.com/get-download/2.0.77/headless/linux64 && \
     tar --strip-components=1 -xf linux64 && \
     rm -rf linux64
+
+COPY docker-entrypoint.sh /docker-entrypoint.sh
 
 ENTRYPOINT ["/docker-entrypoint.sh"]
 
