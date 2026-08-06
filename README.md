@@ -1,3 +1,1 @@
-# Panel
-
-An ayeama game panel.
+# panel

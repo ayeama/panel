@@ -1,0 +1,140 @@
+FROM docker.io/library/golang:1.25.6-trixie AS builder-backend
+
+WORKDIR /app
+
+RUN apt-get update && \
+    apt-get install --no-install-recommends -y \
+        btrfs-progs \
+        gcc \
+        git \
+        golang-go \
+        go-md2man \
+        iptables \
+        libassuan-dev \
+        libbtrfs-dev \
+        libc6-dev \
+        libdevmapper-dev \
+        libglib2.0-dev \
+        libgpgme-dev \
+        libgpg-error-dev \
+        libprotobuf-dev \
+        libprotobuf-c-dev \
+        libseccomp-dev \
+        libselinux1-dev \
+        libsystemd-dev \
+        make \
+        netavark \
+        passt \
+        pkg-config \
+        runc \
+        uidmap && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+COPY go.mod go.sum ./
+
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    go mod download
+
+COPY . .
+
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    CGO_ENABLED=1 go build \
+        -trimpath \
+        -ldflags="-s -w" \
+        -tags=remote \
+        -o panel \
+        cmd/panel/main.go
+
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    CGO_ENABLED=1 go build \
+        -trimpath \
+        -ldflags="-s -w" \
+        -tags=remote \
+        -o panel-dns \
+        cmd/panel-dns/main.go
+
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    CGO_ENABLED=1 go build \
+        -trimpath \
+        -ldflags="-s -w" \
+        -tags=remote \
+        -o panel-network \
+        cmd/panel-network/main.go
+
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    CGO_ENABLED=1 go build \
+        -trimpath \
+        -ldflags="-s -w" \
+        -tags=remote \
+        -o panel-notify \
+        cmd/panel-notify/main.go
+
+FROM docker.io/library/debian:trixie-slim AS backend
+
+WORKDIR /app
+
+RUN apt-get update && \
+    apt-get install --no-install-recommends -y \
+        libgpgme11 && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder-backend /app/panel /usr/bin/panel
+
+EXPOSE 8000
+
+CMD ["panel"]
+
+FROM docker.io/library/debian:trixie-slim AS backend-dns
+
+WORKDIR /app
+
+RUN apt-get update && \
+    apt-get install --no-install-recommends -y \
+        ca-certificates && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder-backend /app/panel-dns /usr/bin/panel-dns
+
+EXPOSE 8001
+
+CMD ["panel-dns"]
+
+FROM docker.io/library/debian:trixie-slim AS backend-network
+
+WORKDIR /app
+
+RUN apt-get update && \
+    apt-get install --no-install-recommends -y \
+        ca-certificates && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder-backend /app/panel-network /usr/bin/panel-network
+
+EXPOSE 8002
+
+CMD ["panel-network"]
+
+FROM docker.io/library/debian:trixie-slim AS backend-notify
+
+WORKDIR /app
+
+RUN apt-get update && \
+    apt-get install --no-install-recommends -y \
+        ca-certificates && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder-backend /app/panel-notify /usr/bin/panel-notify
+
+EXPOSE 8003
+
+CMD ["panel-notify"]
