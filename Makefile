@@ -31,3 +31,4 @@ servers:
 	podman build -t panel/terraira:1.4.5.6 servers/terraria-1.4.5.6
 	podman build -t panel/valheim:latest servers/valheim-latest
 	podman build -t panel/vintagestory:1.22.6 servers/vintagestory-1.22.6
+	podman build -t panel/zomboid:latest servers/zomboid-latest
