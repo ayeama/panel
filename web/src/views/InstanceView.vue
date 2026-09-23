@@ -103,7 +103,7 @@ async function restoreFileSelected(event) {
               <span class="visually-hidden">Toggle Dropdown</span>
             </button>
 
-            <ul class="dropdown-menu">
+            <ul class="dropdown-menu dropdown-menu-end">
               <li>
                 <a class="dropdown-item" :href="`${API_URL}/instances/${id}/backup`">Backup</a>
               </li>
