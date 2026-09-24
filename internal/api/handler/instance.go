@@ -281,12 +281,19 @@ func (h *InstanceHandler) handleInstanceAttach(w http.ResponseWriter, r *http.Re
 		return
 	}
 
+	ticker := time.NewTicker(30 * time.Second)
+	defer ticker.Stop()
+
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case msg := <-msgs:
 			if err := c.WriteMessage(websocket.TextMessage, msg); err != nil {
+				return
+			}
+		case <-ticker.C:
+			if err := c.WriteControl(websocket.PingMessage, nil, time.Now().Add(5*time.Second)); err != nil {
 				return
 			}
 		}
@@ -301,29 +308,47 @@ func (h *InstanceHandler) handleInstanceStats(w http.ResponseWriter, r *http.Req
 	}
 	defer c.Close()
 
-	// TODO add context with cancel?
+	ctx, cancel := context.WithCancel(r.Context())
+	defer cancel()
 
 	id := r.PathValue("id")
 
 	stats := make(chan types.InstanceStat)
 
 	go func() {
+		defer close(stats)
+
 		if err := h.runtime.InstanceStats(id, stats); err != nil {
-			handleError(w, err)
-			return
+			cancel()
 		}
 	}()
 
-	for stat := range stats {
-		resp := api.InstanceStat{
-			CPUPercent:     stat.CPUPercent,
-			MemoryPercent:  stat.MemoryPercent,
-			DiskPercent:    stat.DiskPercent,
-			NetworkTXBytes: stat.NetworkTXBytes,
-			NetworkRXBytes: stat.NetworkRXBytes,
-		}
-		if err := c.WriteJSON(resp); err != nil {
+	ticker := time.NewTicker(30 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
 			return
+		case stat, ok := <-stats:
+			if !ok {
+				return
+			}
+
+			resp := api.InstanceStat{
+				CPUPercent:     stat.CPUPercent,
+				MemoryPercent:  stat.MemoryPercent,
+				DiskPercent:    stat.DiskPercent,
+				NetworkTXBytes: stat.NetworkTXBytes,
+				NetworkRXBytes: stat.NetworkRXBytes,
+			}
+			if err := c.WriteJSON(resp); err != nil {
+				return
+			}
+		case <-ticker.C:
+			if err := c.WriteControl(websocket.PingMessage, nil, time.Now().Add(5*time.Second)); err != nil {
+				return
+			}
 		}
 	}
 }
