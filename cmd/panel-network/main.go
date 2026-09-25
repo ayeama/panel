@@ -14,6 +14,13 @@ import (
 	"github.com/ayeama/panel/pkg/api"
 )
 
+func handleError(w http.ResponseWriter, err error) {
+	switch {
+	default:
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+	}
+}
+
 type Unify struct {
 	// client *http.Client
 	host        string
@@ -37,7 +44,9 @@ func (h *WebhookHandler) RegisterHandlers(mux *http.ServeMux) {
 func (h *WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 	var event api.WebhookEvent
 	if err := json.NewDecoder(r.Body).Decode(&event); err != nil {
-		log.Fatal(err)
+		log.Println("WARNING failed to deserialise event envelope")
+		handleError(w, err)
+		return
 	}
 
 	tr := &http.Transport{
@@ -49,7 +58,9 @@ func (h *WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 	case api.WebhookEventInstanceCreated:
 		var eventData api.WebhookEventDataInstanceCreated
 		if err := json.Unmarshal(event.Data, &eventData); err != nil {
-			log.Fatal(err)
+			log.Println("WARNING failed to deserialise event data")
+			handleError(w, err)
+			return
 		}
 
 		type unifyRequestPortforward struct {
@@ -87,19 +98,25 @@ func (h *WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 				Log:                   false,
 			})
 			if err != nil {
-				log.Fatal(err)
+				log.Println("WARNING failed to serialise request data")
+				handleError(w, err)
+				return
 			}
 
 			req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(body))
 			if err != nil {
-				log.Fatal(err)
+				log.Println("WARNING failed to create request")
+				handleError(w, err)
+				return
 			}
 
 			req.Header.Set("X-API-KEY", h.unify.apiKey)
 
 			resp, err := client.Do(req)
 			if err != nil {
-				log.Fatal(err)
+				log.Println("WARNING failed to do request")
+				handleError(w, err)
+				return
 			}
 			defer resp.Body.Close()
 
@@ -109,7 +126,9 @@ func (h *WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 	case api.WebhookEventInstanceDeleted:
 		var eventData api.WebhookEventDataInstanceDeleted
 		if err := json.Unmarshal(event.Data, &eventData); err != nil {
-			log.Fatal(err)
+			log.Println("WARNING failed to deserialise event data")
+			handleError(w, err)
+			return
 		}
 
 		type unifyResponsePortforward struct {
@@ -141,20 +160,26 @@ func (h *WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 
 		req, err := http.NewRequest(http.MethodGet, url, nil)
 		if err != nil {
-			log.Fatal(err)
+			log.Println("WARNING failed to create request")
+			handleError(w, err)
+			return
 		}
 
 		req.Header.Set("X-API-KEY", h.unify.apiKey)
 
 		resp, err := client.Do(req)
 		if err != nil {
-			log.Fatal(err)
+			log.Println("WARNING failed to do request")
+			handleError(w, err)
+			return
 		}
 		defer resp.Body.Close()
 
 		var data unifyResponse
 		if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
-			log.Fatal(err)
+			log.Println("WARNING failed to deserialise response")
+			handleError(w, err)
+			return
 		}
 
 		for _, rule := range data.Data {
@@ -168,14 +193,18 @@ func (h *WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 
 				req, err := http.NewRequest(http.MethodDelete, url, nil)
 				if err != nil {
-					log.Fatal(err)
+					log.Println("WARNING failed to create request")
+					handleError(w, err)
+					return
 				}
 
 				req.Header.Set("X-API-KEY", h.unify.apiKey)
 
 				resp, err := client.Do(req)
 				if err != nil {
-					log.Fatal(err)
+					log.Println("WARNING failed to do request")
+					handleError(w, err)
+					return
 				}
 				defer resp.Body.Close()
 

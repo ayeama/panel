@@ -16,6 +16,13 @@ import (
 	"github.com/cloudflare/cloudflare-go/v7/dns"
 )
 
+func handleError(w http.ResponseWriter, err error) {
+	switch {
+	default:
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+	}
+}
+
 type Cloudflare struct {
 	host   string
 	zoneID string
@@ -43,14 +50,18 @@ func (h *WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 
 	var event api.WebhookEvent
 	if err := json.NewDecoder(r.Body).Decode(&event); err != nil {
-		log.Fatal(err)
+		log.Println("WARNING failed to deserialise event envelope")
+		handleError(w, err)
+		return
 	}
 
 	switch event.Type {
 	case api.WebhookEventInstanceCreated:
 		var eventData api.WebhookEventDataInstanceCreated
 		if err := json.Unmarshal(event.Data, &eventData); err != nil {
-			log.Fatal(err)
+			log.Println("WARNING failed to deserialise event data")
+			handleError(w, err)
+			return
 		}
 
 		comment := strings.ReplaceAll(eventData.ID, "-", "")
@@ -58,13 +69,17 @@ func (h *WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 		name := h.cf.subdomainName(eventData.Name)
 		ipaddresses, err := net.LookupIP(h.cf.host)
 		if err != nil {
-			log.Fatal(err)
+			log.Println("WARNING failed to lookup IP")
+			handleError(w, err)
+			return
 		}
-		content := ipaddresses[0].String()
+		content := ipaddresses[0].String() // TODO
 
 		port, err := strconv.ParseFloat(eventData.Ports["25565"], 10) // TODO hardcoded
 		if err != nil {
-			log.Fatal(err)
+			log.Println("WARNING failed to parse port")
+			handleError(w, err)
+			return
 		}
 
 		_, err = (*h.cf.client).DNS.Records.New(ctx, dns.RecordNewParams{
@@ -78,7 +93,9 @@ func (h *WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 			},
 		})
 		if err != nil {
-			log.Fatal(err)
+			log.Println("WARNING failed to create DNS A record")
+			handleError(w, err)
+			return
 		}
 		log.Println("created", dns.ARecordTypeA, name)
 
@@ -98,13 +115,17 @@ func (h *WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 			},
 		})
 		if err != nil {
-			log.Fatal(err)
+			log.Println("WARNING failed to create DNS SRV record")
+			handleError(w, err)
+			return
 		}
 		log.Println("created", dns.SRVRecordTypeSRV, "_minecraft._tcp."+name)
 	case api.WebhookEventInstanceDeleted:
 		var eventData api.WebhookEventDataInstanceDeleted
 		if err := json.Unmarshal(event.Data, &eventData); err != nil {
-			log.Fatal(err)
+			log.Println("WARNING failed to deserialise event data")
+			handleError(w, err)
+			return
 		}
 
 		comment := strings.ReplaceAll(eventData.ID, "-", "")
@@ -114,7 +135,9 @@ func (h *WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 			Comment: cloudflare.F(dns.RecordListParamsComment{Exact: cloudflare.F(comment)}),
 		})
 		if err != nil {
-			log.Fatal(err)
+			log.Println("WARNING failed to list DNS records")
+			handleError(w, err)
+			return
 		}
 
 		for _, record := range records.Result {
@@ -125,6 +148,8 @@ func (h *WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 		}
 	default:
 		log.Println("WARNING unknown webhook event type")
+		handleError(w, nil)
+		return
 	}
 }
 
