@@ -1,4 +1,4 @@
-FROM docker.io/library/golang:1.25.6-trixie AS builder-backend
+FROM docker.io/library/golang:1.26.8-trixie AS builder-backend
 
 WORKDIR /app
 

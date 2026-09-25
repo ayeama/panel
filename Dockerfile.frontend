@@ -1,4 +1,4 @@
-FROM docker.io/library/node:24.13.0-trixie AS builder-frontend
+FROM docker.io/library/node:24.18.0-trixie AS builder-frontend
 
 WORKDIR /app
 
