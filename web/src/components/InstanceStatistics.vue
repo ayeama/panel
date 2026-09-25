@@ -54,8 +54,22 @@ function progressbar_color(v) {
   return 'text-bg-primary'
 }
 
-function network_mb(v) {
-  return (v / 1000 / 1000).toFixed(2)
+const NETWORK_UNITS = ['byte', 'kilobyte', 'megabyte', 'gigabyte']
+
+function formatNetwork(bytes, locale = navigator.locale) {
+  let i = 0
+  while (bytes >= 1000 && i < NETWORK_UNITS.length - 1) {
+    bytes /= 1000
+    i++
+  }
+
+  // TODO creating this might be expensive
+  return new Intl.NumberFormat(locale, {
+    style: 'unit',
+    unit: NETWORK_UNITS[i],
+    unitDisplay: 'narrow',
+    maximumFractionDigits: 2,
+  }).format(bytes)
 }
 </script>
 
@@ -127,8 +141,10 @@ function network_mb(v) {
     <div class="col col-12">
       <span id="networkInput" class="form-text">Network</span>
 
-      <div class="input-group" aria-label="instance network" aria-describedby="networkInput">
-        {{ network_mb(netRx) }} / {{ network_mb(netTx) }}
+      <div aria-label="instance network" aria-describedby="networkInput">
+        <span v-tooltip="'network in'">{{ formatNetwork(netRx) }}</span>
+        /
+        <span v-tooltip="'network out'">{{ formatNetwork(netTx) }}</span>
       </div>
     </div>
   </div>
