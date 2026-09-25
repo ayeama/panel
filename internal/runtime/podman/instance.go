@@ -146,6 +146,14 @@ func (r *Runtime) InstanceRead(id string) (types.Instance, error) {
 				webhooks = make([]string, 0)
 			}
 
+			// TODO has duplicate information
+			filteredLabels := make(map[string]string)
+			for k, v := range container.Labels {
+				if strings.HasPrefix(k, labelPrefix) {
+					filteredLabels[k] = v
+				}
+			}
+
 			instance := types.Instance{
 				ID:     instanceID,
 				Name:   container.Names[0],
@@ -158,6 +166,7 @@ func (r *Runtime) InstanceRead(id string) (types.Instance, error) {
 					Disk:   disk,
 				},
 				Webhooks: webhooks,
+				Labels:   filteredLabels,
 			}
 			return instance, nil
 		}
@@ -204,6 +213,14 @@ func (r *Runtime) InstanceReadMany() ([]types.Instance, error) {
 		// TODO handle empty webhook string ""?
 		webhooks := strings.Split(container.Labels[instanceLabelWebhooks], ",")
 
+		// TODO has duplicate information
+		filteredLabels := make(map[string]string)
+		for k, v := range container.Labels {
+			if strings.HasPrefix(k, labelPrefix) {
+				filteredLabels[k] = v
+			}
+		}
+
 		instances = append(instances, types.Instance{
 			ID:     instanceID,
 			Name:   container.Names[0],
@@ -216,6 +233,7 @@ func (r *Runtime) InstanceReadMany() ([]types.Instance, error) {
 				Disk:   disk,
 			},
 			Webhooks: webhooks,
+			Labels:   filteredLabels,
 		})
 	}
 

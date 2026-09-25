@@ -8,6 +8,7 @@ type Instance struct {
 	Ports     map[string]string `json:"ports"`
 	Resources InstanceResources `json:"resources"`
 	Webhooks  []string          `json:"webhooks"`
+	Labels    map[string]string `json:"labels"`
 }
 
 type InstanceResources struct {

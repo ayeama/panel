@@ -7,6 +7,8 @@ LABEL com.github.ayeama.panel.image.variant="Vanilla"
 LABEL com.github.ayeama.panel.image.release="1.2.5"
 LABEL com.github.ayeama.panel.image.description=""
 
+LABEL com.github.ayeama.panel-dns.srv.name="minecraft"
+
 WORKDIR /app
 
 RUN wget https://launcher.mojang.com/v1/objects/d8321edc9470e56b8ad5c67bbd16beba25843336/server.jar

@@ -16,6 +16,11 @@ import (
 	"github.com/cloudflare/cloudflare-go/v7/dns"
 )
 
+const (
+	// TODO rename?
+	imageLabelDnsSrvName string = "com.github.ayeama.panel-dns.srv.name"
+)
+
 func handleError(w http.ResponseWriter, err error) {
 	switch {
 	default:
@@ -75,7 +80,13 @@ func (h *WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 		}
 		content := ipaddresses[0].String() // TODO
 
-		port, err := strconv.ParseFloat(eventData.Ports["25565"], 10) // TODO hardcoded
+		// TODO hardcoded
+		var firstPort string
+		for k := range eventData.Ports {
+			firstPort = k
+			break
+		}
+		port, err := strconv.ParseFloat(firstPort, 10)
 		if err != nil {
 			log.Println("WARNING failed to parse port")
 			handleError(w, err)
@@ -99,27 +110,30 @@ func (h *WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 		}
 		log.Println("created", dns.ARecordTypeA, name)
 
-		_, err = (*h.cf.client).DNS.Records.New(ctx, dns.RecordNewParams{
-			ZoneID: cloudflare.F(h.cf.zoneID),
-			Body: dns.SRVRecordParam{
-				Type: cloudflare.F(dns.SRVRecordTypeSRV),
-				Name: cloudflare.F("_minecraft._tcp." + name),
-				Data: cloudflare.F(dns.SRVRecordDataParam{
-					Priority: cloudflare.F(float64(0)),
-					Weight:   cloudflare.F(float64(5)),
-					Port:     cloudflare.F(port),
-					Target:   cloudflare.F(name),
-				}),
-				TTL:     cloudflare.F(dns.TTL(60)),
-				Comment: cloudflare.F(comment),
-			},
-		})
-		if err != nil {
-			log.Println("WARNING failed to create DNS SRV record")
-			handleError(w, err)
-			return
+		if eventData.Labels[imageLabelDnsSrvName] != "" {
+			srvName := "_" + eventData.Labels[imageLabelDnsSrvName] + "._tcp." + name // TODO tcp is still hardcoded
+			_, err = (*h.cf.client).DNS.Records.New(ctx, dns.RecordNewParams{
+				ZoneID: cloudflare.F(h.cf.zoneID),
+				Body: dns.SRVRecordParam{
+					Type: cloudflare.F(dns.SRVRecordTypeSRV),
+					Name: cloudflare.F(srvName),
+					Data: cloudflare.F(dns.SRVRecordDataParam{
+						Priority: cloudflare.F(float64(0)),
+						Weight:   cloudflare.F(float64(5)),
+						Port:     cloudflare.F(port),
+						Target:   cloudflare.F(name),
+					}),
+					TTL:     cloudflare.F(dns.TTL(60)),
+					Comment: cloudflare.F(comment),
+				},
+			})
+			if err != nil {
+				log.Println("WARNING failed to create DNS SRV record")
+				handleError(w, err)
+				return
+			}
+			log.Println("created", dns.SRVRecordTypeSRV, srvName)
 		}
-		log.Println("created", dns.SRVRecordTypeSRV, "_minecraft._tcp."+name)
 	case api.WebhookEventInstanceDeleted:
 		var eventData api.WebhookEventDataInstanceDeleted
 		if err := json.Unmarshal(event.Data, &eventData); err != nil {

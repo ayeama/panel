@@ -7,6 +7,8 @@ LABEL com.github.ayeama.panel.image.variant="All The Mods 10"
 LABEL com.github.ayeama.panel.image.release="8.1"
 LABEL com.github.ayeama.panel.image.description=""
 
+LABEL com.github.ayeama.panel-dns.srv.name="minecraft"
+
 WORKDIR /app
 
 RUN wget -O ServerFiles-8.1.zip https://www.curseforge.com/api/v1/mods/925200/files/8764245/download && \

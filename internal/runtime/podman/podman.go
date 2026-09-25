@@ -17,15 +17,17 @@ const (
 	container_cpu_us    = 1_000_000
 	container_memory_gb = 1_000_000_000
 
-	imageLabelID          string = "com.github.ayeama.panel.image.id"
-	imageLabelVersion     string = "com.github.ayeama.panel.image.version"
-	imageLabelName        string = "com.github.ayeama.panel.image.name"
-	imageLabelDescription string = "com.github.ayeama.panel.image.description"
+	labelPrefix string = "com.github.ayeama.panel"
 
-	instanceLabelID       string = "com.github.ayeama.panel.instance.id"
-	instanceLabelWebhooks string = "com.github.ayeama.panel.instance.webhooks"
+	imageLabelID          string = labelPrefix + ".image.id"
+	imageLabelVersion     string = labelPrefix + ".image.version"
+	imageLabelName        string = labelPrefix + ".image.name"
+	imageLabelDescription string = labelPrefix + ".image.description"
 
-	instanceVolumeLabelID string = "com.github.ayeama.panel.volume.id"
+	instanceLabelID       string = labelPrefix + ".instance.id"
+	instanceLabelWebhooks string = labelPrefix + ".instance.webhooks"
+
+	instanceVolumeLabelID string = labelPrefix + ".volume.id"
 )
 
 type Runtime struct {

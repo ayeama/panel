@@ -9,6 +9,8 @@ LABEL com.github.ayeama.panel.image.variant=""
 LABEL com.github.ayeama.panel.image.release="1.4.5.6"
 LABEL com.github.ayeama.panel.image.description=""
 
+LABEL com.github.ayeama.panel-dns.srv.name="terraria"
+
 WORKDIR /app
 
 RUN apt-get update && \

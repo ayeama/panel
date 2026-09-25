@@ -42,31 +42,32 @@ func webhook(runtime runtime.Runtime) {
 					log.Fatal(err)
 				}
 
+				webhookData, err := json.Marshal(api.WebhookEventDataInstanceCreated{
+					Instance: api.Instance{
+						ID:     instance.ID,
+						Name:   instance.Name,
+						Image:  instance.Image,
+						Status: instance.Status,
+						Ports:  instance.Ports,
+						Resources: api.InstanceResources{
+							CPU:    instance.Resources.CPU,
+							Memory: instance.Resources.Memory,
+							Disk:   instance.Resources.Disk,
+						},
+						Webhooks: instance.Webhooks,
+						Labels:   instance.Labels,
+					},
+				})
+				if err != nil {
+					log.Println("WARNING:", err)
+					continue
+				}
+
 				for _, webhook := range instance.Webhooks {
 					// TODO move validation?
 					_, err = url.ParseRequestURI(webhook)
 					if err != nil {
 						log.Println(err)
-						continue
-					}
-
-					webhookData, err := json.Marshal(api.WebhookEventDataInstanceCreated{
-						Instance: api.Instance{
-							ID:     instance.ID,
-							Name:   instance.Name,
-							Image:  instance.Image,
-							Status: instance.Status,
-							Ports:  instance.Ports,
-							Resources: api.InstanceResources{
-								CPU:    instance.Resources.CPU,
-								Memory: instance.Resources.Memory,
-								Disk:   instance.Resources.Disk,
-							},
-							Webhooks: instance.Webhooks,
-						},
-					})
-					if err != nil {
-						log.Println("WARNING:", err)
 						continue
 					}
 

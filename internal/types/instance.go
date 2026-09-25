@@ -8,6 +8,7 @@ type Instance struct {
 	Ports     map[string]string
 	Resources InstanceResources
 	Webhooks  []string
+	Labels    map[string]string
 }
 
 type InstanceCreate struct {

@@ -7,6 +7,8 @@ LABEL com.github.ayeama.panel.image.variant="Pumpkin"
 LABEL com.github.ayeama.panel.image.release="latest"
 LABEL com.github.ayeama.panel.image.description=""
 
+LABEL com.github.ayeama.panel-dns.srv.name="minecraft"
+
 WORKDIR /pumpkin
 
 EXPOSE 25565/tcp

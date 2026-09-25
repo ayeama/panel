@@ -10,6 +10,9 @@ LABEL com.github.ayeama.panel.image.variant=""
 LABEL com.github.ayeama.panel.image.release="1.22.6"
 LABEL com.github.ayeama.panel.image.description=""
 
+# TODO confirm SRV support
+LABEL com.github.ayeama.panel-dns.srv.name="vintagestory"
+
 WORKDIR /app
 
 RUN apt-get update && \
