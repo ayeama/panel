@@ -392,7 +392,9 @@ func (h *InstanceHandler) handleInstanceBackup(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	if err = json.NewEncoder(f).Encode(manifest); err != nil {
+	encoder := json.NewEncoder(f)
+	encoder.SetIndent("", "    ")
+	if err = encoder.Encode(manifest); err != nil {
 		handleError(w, err)
 		return
 	}
