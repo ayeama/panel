@@ -91,7 +91,12 @@ async function instanceCreateRedirect() {
 
         <div class="col col-auto d-flex">
           <!-- TODO add spinner in the button -->
-          <button v-if="!spinnerCreating" type="button" class="btn btn-primary" v-on:click="instanceCreateRedirect()">
+          <button
+            v-if="!spinnerCreating"
+            type="button"
+            class="btn btn-primary"
+            v-on:click="instanceCreateRedirect()"
+          >
             Create
           </button>
 
