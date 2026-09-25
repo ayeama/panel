@@ -12,6 +12,13 @@ import (
 	"github.com/ayeama/panel/pkg/api"
 )
 
+func handleError(w http.ResponseWriter, err error) {
+	switch {
+	default:
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+	}
+}
+
 type Ntfy struct {
 	host  string
 	topic string
@@ -33,14 +40,18 @@ func (h *WebhookHandler) RegisterHandlers(mux *http.ServeMux) {
 func (h *WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 	var event api.WebhookEvent
 	if err := json.NewDecoder(r.Body).Decode(&event); err != nil {
-		log.Fatal(err)
+		log.Println("WARNING failed to deserialise event envelope")
+		handleError(w, err)
+		return
 	}
 
 	switch event.Type {
 	case api.WebhookEventInstanceCreated:
 		var eventData api.WebhookEventDataInstanceCreated
 		if err := json.Unmarshal(event.Data, &eventData); err != nil {
-			log.Fatal(err)
+			log.Println("WARNING failed to deserialise event data")
+			handleError(w, err)
+			return
 		}
 
 		msg := fmt.Sprintf("instance %s created", eventData.Name)
@@ -50,7 +61,8 @@ func (h *WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 
 		resp, err := http.DefaultClient.Do(req)
 		if err != nil {
-			log.Println("WARNING:", err)
+			log.Println("WARNING failed to do request")
+			handleError(w, err)
 			return
 		}
 		defer resp.Body.Close()
@@ -59,7 +71,9 @@ func (h *WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 	case api.WebhookEventInstanceDeleted:
 		var eventData api.WebhookEventDataInstanceDeleted
 		if err := json.Unmarshal(event.Data, &eventData); err != nil {
-			log.Fatal(err)
+			log.Println("WARNING failed to deserialise event data")
+			handleError(w, err)
+			return
 		}
 
 		msg := fmt.Sprintf("instance %s deleted", eventData.Name)
@@ -69,14 +83,16 @@ func (h *WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 
 		resp, err := http.DefaultClient.Do(req)
 		if err != nil {
-			log.Println("WARNING:", err)
+			log.Println("WARNING failed to do request")
+			handleError(w, err)
 			return
 		}
 		defer resp.Body.Close()
 
 		log.Println("handled notification")
 	default:
-		log.Print("ERROR: unknown webhook event type")
+		log.Println("WARNING unknown webhook event type")
+		handleError(w, nil)
 		return
 	}
 }

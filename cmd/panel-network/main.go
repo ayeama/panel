@@ -214,6 +214,8 @@ func (h *WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 
 	default:
 		log.Println("WARNING unknown webhook event type")
+		handleError(w, nil)
+		return
 	}
 }
 
