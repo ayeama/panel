@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useInstance } from '@/composables/useInstance'
@@ -18,9 +18,12 @@ const id = route.params.id
 const { instance, instanceRead, instanceDelete, instanceStart, instanceStop, instanceRestore } =
   useInstance()
 
+const instanceRefreshTimeoutSeconds = 10
+let instanceRefreshTimeout
+
 const restoreFileInput = ref(null)
 
-onMounted(async () => {
+async function instanceRefresh() {
   try {
     await instanceRead(id)
   } catch (error) {
@@ -28,6 +31,16 @@ onMounted(async () => {
       router.push('/')
     }
   }
+
+  instanceRefreshTimeout = setTimeout(instanceRefresh, instanceRefreshTimeoutSeconds * 1000)
+}
+
+onMounted(async () => {
+  await instanceRefresh(id)
+})
+
+onUnmounted(async () => {
+  clearTimeout(instanceRefreshTimeout)
 })
 
 async function instanceDeleteRedirect(id) {
