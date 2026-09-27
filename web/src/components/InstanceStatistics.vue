@@ -142,9 +142,9 @@ function formatNetwork(bytes, locale = navigator.locale) {
       <span id="networkInput" class="form-text">Network</span>
 
       <div aria-label="instance network" aria-describedby="networkInput">
-        <span v-tooltip="'network in'">{{ formatNetwork(netRx) }}</span>
+        <span v-tooltip="'Network in'">{{ formatNetwork(netRx) }}</span>
         /
-        <span v-tooltip="'network out'">{{ formatNetwork(netTx) }}</span>
+        <span v-tooltip="'Network out'">{{ formatNetwork(netTx) }}</span>
       </div>
     </div>
   </div>
