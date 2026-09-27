@@ -53,10 +53,11 @@ deploy:
 		--pod panel \
 		--name panel \
 		--restart unless-stopped \
-		-d \
 		--security-opt label=disable \
+		-e "PANEL_VOLUME_PATH=/host" \
 		-v "/run/user/1000/podman/podman.sock:/run/user/1000/podman/podman.sock:Z" \
-		panel/backend:0.0.1
+		-v "$$(podman info --format '{{.Store.VolumePath}}'):/host" \
+		-d panel/backend:0.0.1
 
 	podman run \
 		--pod panel \

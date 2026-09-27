@@ -16,11 +16,17 @@ export default defineConfig({
     },
   },
   server: {
+    cors: false,
     proxy: {
       '/api': {
         target: "http://localhost:8000",
         rewrite: (path) => path.replace(/^\/api/, ""),
-        ws: true
+        ws: true,
+        configure: (proxy) => {
+          proxy.on('proxyReq', (proxyReq) => {
+            proxyReq.setHeader('X-Forwarded-Prefix', '/api')
+          })
+        }
       }
     }
   }

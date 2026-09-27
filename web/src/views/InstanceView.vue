@@ -7,7 +7,8 @@ import InstanceStatistics from '@/components/InstanceStatistics.vue'
 import InstanceStatusBadge from '@/components/InstanceStatusBadge.vue'
 import InstanceTerminal from '@/components/InstanceTerminal.vue'
 
-import { API_ERROR_NOT_FOUND, API_URL } from '@/api'
+import { API_DAV, API_ERROR_NOT_FOUND, API_URL } from '@/api'
+import IconCopy from '@/components/icons/IconCopy.vue'
 import { imageLabel } from '@/image'
 
 const route = useRoute()
@@ -21,8 +22,6 @@ const { instance, instanceRead, instanceDelete, instanceStart, instanceStop, ins
 const instanceRefreshTimeoutSeconds = 10
 let instanceRefreshTimeout
 
-const restoreFileInput = ref(null)
-
 async function instanceRefresh() {
   try {
     await instanceRead(id)
@@ -33,6 +32,14 @@ async function instanceRefresh() {
   }
 
   instanceRefreshTimeout = setTimeout(instanceRefresh, instanceRefreshTimeoutSeconds * 1000)
+}
+
+const restoreFileInput = ref(null)
+
+const instanceFiles = ref(`${API_DAV}/instances/${id}/files`)
+
+const instanceFilesCopy = async () => {
+  await navigator.clipboard.writeText(instanceFiles.value)
 }
 
 onMounted(async () => {
@@ -244,6 +251,26 @@ async function restoreFileSelected(event) {
                     disabled
                   />
                 </div>
+              </div>
+            </div>
+
+            <div class="col-12">
+              <label for="instanceFiles" class="form-label">Files</label>
+
+              <div class="input-group">
+                <input
+                  id="instanceFiles"
+                  class="form-control"
+                  type="text"
+                  :value="instanceFiles"
+                  readonly
+                />
+                <span
+                  v-tooltip="'Copy to clipboard'"
+                  class="input-group-text hover"
+                  @click="instanceFilesCopy"
+                  ><IconCopy
+                /></span>
               </div>
             </div>
 

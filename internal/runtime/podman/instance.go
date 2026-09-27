@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"path"
 	osRuntime "runtime"
 	"strings"
@@ -15,9 +16,11 @@ import (
 	"github.com/opencontainers/runtime-spec/specs-go"
 	"go.podman.io/podman/v6/pkg/bindings/containers"
 	"go.podman.io/podman/v6/pkg/bindings/images"
+	"go.podman.io/podman/v6/pkg/bindings/system"
 	"go.podman.io/podman/v6/pkg/bindings/volumes"
 	entitiesTypes "go.podman.io/podman/v6/pkg/domain/entities/types"
 	"go.podman.io/podman/v6/pkg/specgen"
+	"golang.org/x/net/webdav"
 )
 
 // TODO pass resources limits into containers as environment variables for scripts?
@@ -442,4 +445,43 @@ func (r *Runtime) InstanceLogs(id string, logs chan string) error {
 	}
 
 	return nil
+}
+
+// TODO error handling
+func (r *Runtime) InstanceFileSystem(id string) (runtime.FileSystem, error) {
+	containerID, err := r.containerID(id)
+	if err != nil {
+		return nil, &runtime.Error{Op: "filesystem", Resource: "instance", ID: id, Err: fmt.Errorf("%w: %w", runtime.ErrInternal, err)}
+	}
+
+	containerDeep, err := containers.Inspect(*r.ctx, containerID, nil)
+	if err != nil {
+		return nil, &runtime.Error{Op: "filesystem", Resource: "instance", ID: id, Err: fmt.Errorf("%w: %w", runtime.ErrInternal, err)}
+	}
+
+	// TODO get info once at startup?
+	info, err := system.Info(*r.ctx, nil)
+	if err != nil {
+		return nil, &runtime.Error{Op: "filesystem", Resource: "instance", ID: id, Err: fmt.Errorf("%w: %w", runtime.ErrInternal, err)}
+	}
+
+	for _, mount := range containerDeep.Mounts {
+		volume, err := volumes.Inspect(*r.ctx, mount.Name, nil)
+		if err != nil {
+			return nil, &runtime.Error{Op: "filesystem", Resource: "instance", ID: id, Err: fmt.Errorf("%w: %w", runtime.ErrInternal, err)}
+		}
+
+		if volume.Labels[instanceVolumeLabelID] == "" {
+			continue
+		}
+
+		dir := path.Join(info.Store.VolumePath, volume.Name, "_data")
+		if volumePath := os.Getenv("PANEL_VOLUME_PATH"); volumePath != "" {
+			dir = path.Join(volumePath, volume.Name, "_data")
+		}
+
+		return webdav.Dir(dir), nil
+	}
+
+	return nil, &runtime.Error{Op: "filesystem", Resource: "instance", ID: id, Err: fmt.Errorf("%w: %w", runtime.ErrInternal, err)}
 }

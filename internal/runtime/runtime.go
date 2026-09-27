@@ -5,6 +5,7 @@ import (
 	"io"
 
 	"github.com/ayeama/panel/internal/types"
+	"golang.org/x/net/webdav"
 )
 
 type Runtime interface {
@@ -21,6 +22,17 @@ type Runtime interface {
 	InstanceLogs(id string, logs chan string) error
 	InstanceBackup(id string, manifest *types.InstanceBackupManifest, zw *zip.Writer) error
 	InstanceRestore(id string, manifest *types.InstanceBackupManifest, zr *zip.Reader) error
+	InstanceFileSystem(id string) (FileSystem, error)
 
 	Events(events chan types.Event, cancel chan bool) error
+}
+
+// TODO idk
+type FileSystem interface {
+	webdav.FileSystem
+}
+
+// TODO idk
+type File interface {
+	webdav.File
 }

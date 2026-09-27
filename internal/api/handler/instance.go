@@ -16,6 +16,7 @@ import (
 	"github.com/ayeama/panel/internal/types"
 	"github.com/ayeama/panel/pkg/api"
 	"github.com/gorilla/websocket"
+	"golang.org/x/net/webdav"
 )
 
 var upgrader = websocket.Upgrader{
@@ -45,6 +46,8 @@ func (h *InstanceHandler) RegisterHandlers(mux *http.ServeMux) {
 	mux.HandleFunc("GET /instances/{id}/backup", h.handleInstanceBackup)
 	mux.HandleFunc("POST /instances/{id}/restore", h.handleInstanceRestore)
 	mux.HandleFunc("GET /instances/{id}/logs", h.handleInstanceLogs)
+	mux.HandleFunc("/instances/{id}/files", h.handleInstanceFiles)
+	mux.HandleFunc("/instances/{id}/files/", h.handleInstanceFiles)
 }
 
 func (h *InstanceHandler) handleInstanceCreate(w http.ResponseWriter, r *http.Request) {
@@ -537,4 +540,33 @@ func (h *InstanceHandler) handleInstanceLogs(w http.ResponseWriter, r *http.Requ
 			}
 		}
 	}
+}
+
+func (h *InstanceHandler) handleInstanceFiles(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+
+	fs, err := h.runtime.InstanceFileSystem(id)
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+
+	prefix := path.Join("/instances", id, "files")
+
+	// NOTE we need to get the stripped path if any and add it back into the
+	//      request after cloning it to be safe
+	// TODO remove path.Join()?
+	req := r.Clone(r.Context())
+	if forwardedPrefix := req.Header.Get("X-Forwarded-Prefix"); forwardedPrefix != "" {
+		prefix = path.Join(forwardedPrefix, prefix)
+		req.URL.Path = path.Join(forwardedPrefix, req.URL.Path)
+	}
+
+	dav := webdav.Handler{
+		Prefix:     prefix,
+		FileSystem: fs,
+		LockSystem: webdav.NewMemLS(),
+	}
+
+	dav.ServeHTTP(w, req)
 }

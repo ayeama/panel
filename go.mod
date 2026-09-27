@@ -145,7 +145,7 @@ require (
 	go.podman.io/podman/v6 v6.1.2
 	go.podman.io/storage v1.64.1 // indirect
 	golang.org/x/crypto v0.56.0 // indirect
-	golang.org/x/net v0.57.0 // indirect
+	golang.org/x/net v0.57.0
 	golang.org/x/sys v0.47.0 // indirect
 	golang.org/x/term v0.45.0 // indirect
 	tags.cncf.io/container-device-interface v1.1.0 // indirect
