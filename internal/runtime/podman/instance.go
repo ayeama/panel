@@ -44,6 +44,7 @@ func (r *Runtime) InstanceCreate(options types.InstanceCreate) (types.Instance, 
 
 		volumeCreateOptions := entitiesTypes.VolumeCreateOptions{
 			Labels: volumeLabels,
+			// Options: map[string]string{"o": fmt.Sprintf("size=%fG", options.Resources.Disk)},
 		}
 
 		volume, err := volumes.Create(*r.ctx, volumeCreateOptions, &volumes.CreateOptions{})

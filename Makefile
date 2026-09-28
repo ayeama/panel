@@ -2,8 +2,8 @@
 
 install:
 	sudo dnf install -y podman
-	systemctl --user enable --now podman.socket
 	sudo loginctl enable-linger $$USER
+	systemctl --user enable --now podman.socket
 
 run:
 	go run cmd/panel/main.go
