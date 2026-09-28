@@ -365,17 +365,6 @@ func (h *InstanceHandler) handleInstanceBackup(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/zip")
-	w.Header().Set(
-		"Content-Disposition",
-		fmt.Sprintf(
-			"attachment; filename=\"panel-%s-%s-backup.zip\"",
-			instance.Name,
-			time.Now().Format("20060102150405"),
-		),
-	)
-	w.WriteHeader(http.StatusOK)
-
 	zw := zip.NewWriter(w)
 	defer zw.Close()
 
@@ -401,6 +390,17 @@ func (h *InstanceHandler) handleInstanceBackup(w http.ResponseWriter, r *http.Re
 		handleError(w, err)
 		return
 	}
+
+	w.Header().Set("Content-Type", "application/zip")
+	w.Header().Set(
+		"Content-Disposition",
+		fmt.Sprintf(
+			"attachment; filename=\"panel-%s-%s-backup.zip\"",
+			instance.Name,
+			time.Now().Format("20060102150405"),
+		),
+	)
+	w.WriteHeader(http.StatusOK)
 }
 
 func (h *InstanceHandler) handleInstanceRestore(w http.ResponseWriter, r *http.Request) {
@@ -556,6 +556,7 @@ func (h *InstanceHandler) handleInstanceFiles(w http.ResponseWriter, r *http.Req
 	// NOTE we need to get the stripped path if any and add it back into the
 	//      request after cloning it to be safe
 	// TODO remove path.Join()?
+	// TODO getting the prefix from proxy/user is risky
 	req := r.Clone(r.Context())
 	if forwardedPrefix := req.Header.Get("X-Forwarded-Prefix"); forwardedPrefix != "" {
 		prefix = path.Join(forwardedPrefix, prefix)

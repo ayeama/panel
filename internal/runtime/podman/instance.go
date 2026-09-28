@@ -143,13 +143,6 @@ func (r *Runtime) InstanceRead(id string) (types.Instance, error) {
 				memory = float64(containerDeep.HostConfig.Memory) / container_memory_gb
 			}
 
-			var webhooks []string
-			if container.Labels[instanceLabelWebhooks] != "" {
-				webhooks = strings.Split(container.Labels[instanceLabelWebhooks], ",")
-			} else {
-				webhooks = make([]string, 0)
-			}
-
 			// TODO has duplicate information
 			filteredLabels := make(map[string]string)
 			for k, v := range container.Labels {
@@ -169,7 +162,7 @@ func (r *Runtime) InstanceRead(id string) (types.Instance, error) {
 					Memory: memory,
 					Disk:   disk,
 				},
-				Webhooks: webhooks,
+				Webhooks: transformWebhooks(container.Labels[instanceLabelWebhooks]),
 				Labels:   filteredLabels,
 			}
 			return instance, nil
@@ -214,9 +207,6 @@ func (r *Runtime) InstanceReadMany() ([]types.Instance, error) {
 			memory = float64(containerDeep.HostConfig.Memory) / container_memory_gb
 		}
 
-		// TODO handle empty webhook string ""?
-		webhooks := strings.Split(container.Labels[instanceLabelWebhooks], ",")
-
 		// TODO has duplicate information
 		filteredLabels := make(map[string]string)
 		for k, v := range container.Labels {
@@ -236,7 +226,7 @@ func (r *Runtime) InstanceReadMany() ([]types.Instance, error) {
 				Memory: memory,
 				Disk:   disk,
 			},
-			Webhooks: webhooks,
+			Webhooks: transformWebhooks(container.Labels[instanceLabelWebhooks]),
 			Labels:   filteredLabels,
 		})
 	}

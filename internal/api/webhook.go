@@ -39,7 +39,8 @@ func webhook(runtime runtime.Runtime) {
 
 				instance, err := runtime.InstanceRead(id)
 				if err != nil {
-					log.Fatal(err)
+					log.Println("WARNING:", err)
+					continue
 				}
 
 				webhookData, err := json.Marshal(api.WebhookEventDataInstanceCreated{
@@ -116,7 +117,8 @@ func webhook(runtime runtime.Runtime) {
 					Name: name,
 				})
 				if err != nil {
-					log.Fatal(err)
+					log.Println("WARNING:", err)
+					continue
 				}
 
 				webhookRequest := api.WebhookEvent{
@@ -127,7 +129,8 @@ func webhook(runtime runtime.Runtime) {
 
 				body, err := json.Marshal(webhookRequest)
 				if err != nil {
-					log.Fatal(err)
+					log.Println("WARNING:", err)
+					continue
 				}
 
 				webhooks := eventData.Webhooks

@@ -158,6 +158,10 @@ func (h *WebhookHandler) handleWebhook(w http.ResponseWriter, r *http.Request) {
 			_, err = (*h.cf.client).DNS.Records.Delete(ctx, record.ID, dns.RecordDeleteParams{
 				ZoneID: cloudflare.F(h.cf.zoneID),
 			})
+			if err != nil {
+				log.Println("WARNING failed to delete DNS record")
+				continue
+			}
 			log.Println("deleted", record.Type, record.Name)
 		}
 	default:

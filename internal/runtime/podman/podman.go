@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"strconv"
+	"strings"
 
 	"go.podman.io/podman/v6/pkg/bindings"
 	"go.podman.io/podman/v6/pkg/bindings/containers"
@@ -122,4 +123,17 @@ func transformPorts(ports []netTypes.PortMapping) map[string]string {
 	}
 
 	return transPorts
+}
+
+func transformWebhooks(webhooks string) []string {
+	splitWebhooks := make([]string, 0)
+
+	for _, wh := range strings.Split(webhooks, ",") {
+		if wh == "" {
+			continue
+		}
+		splitWebhooks = append(splitWebhooks, wh)
+	}
+
+	return splitWebhooks
 }

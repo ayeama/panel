@@ -2,7 +2,6 @@ package podman
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/ayeama/panel/internal/runtime"
 	"github.com/ayeama/panel/internal/types"
@@ -29,19 +28,12 @@ func (r *Runtime) Events(events chan types.Event, cancel chan bool) error {
 					},
 				}
 			case mobyEvents.ActionRemove:
-				var webhooks []string
-				if podmanEvent.Actor.Attributes[instanceLabelWebhooks] != "" {
-					webhooks = strings.Split(podmanEvent.Actor.Attributes[instanceLabelWebhooks], ",")
-				} else {
-					webhooks = make([]string, 0)
-				}
-
 				events <- types.Event{
 					Type: types.EventTypeInstanceDeleted,
 					Data: types.EventInstanceDeleted{
 						ID:       podmanEvent.Actor.Attributes[instanceLabelID],
 						Name:     podmanEvent.Actor.Attributes["name"],
-						Webhooks: webhooks,
+						Webhooks: transformWebhooks(podmanEvent.Actor.Attributes[instanceLabelWebhooks]),
 					},
 				}
 			}

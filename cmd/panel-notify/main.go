@@ -104,12 +104,12 @@ func main() {
 	}
 
 	topic := os.Getenv("PANEL_NOTIFY_NTFY_TOPIC")
-	if host == "" {
+	if topic == "" {
 		log.Fatal(errors.New("missing 'PANEL_NOTIFY_NTFY_TOPIC' environment variable"))
 	}
 
 	token := os.Getenv("PANEL_NOTIFY_NTFY_TOKEN")
-	if host == "" {
+	if token == "" {
 		log.Fatal(errors.New("missing 'PANEL_NOTIFY_NTFY_TOKEN' environment variable"))
 	}
 
