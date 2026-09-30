@@ -46,7 +46,7 @@ build:
 deploy:
 	podman pod create \
 		--name panel \
-		-p 8080:8080 \
+		-p 127.0.0.1:8080:8080 \
 		--userns keep-id
 
 	podman run \
@@ -105,9 +105,10 @@ servers:
 		-t panel/factorio:2.0.77 \
 		servers/factorio-2.0.77
 
+	BUILDAH_FORMAT=docker \
 	podman build \
-		-t panel/minecraft-pumpkin:latest \
-		servers/minecraft-pumpkin-latest
+		-t panel/minecraft-pumpkin:0.2.0 \
+		servers/minecraft-pumpkin-0.2.0
 
 	podman build \
 		-t panel/minecraft:1.2.5 \
