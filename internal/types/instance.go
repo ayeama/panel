@@ -1,5 +1,7 @@
 package types
 
+import "time"
+
 type Instance struct {
 	ID        string
 	Name      string
@@ -9,6 +11,8 @@ type Instance struct {
 	Resources InstanceResources
 	Webhooks  []string
 	Labels    map[string]string
+	Created   time.Time
+	Started   time.Time
 }
 
 type InstanceCreate struct {

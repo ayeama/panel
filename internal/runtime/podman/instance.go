@@ -164,6 +164,8 @@ func (r *Runtime) InstanceRead(id string) (types.Instance, error) {
 				},
 				Webhooks: transformWebhooks(container.Labels[instanceLabelWebhooks]),
 				Labels:   filteredLabels,
+				Created:  containerDeep.Created,
+				Started:  containerDeep.State.StartedAt,
 			}
 			return instance, nil
 		}
@@ -228,6 +230,8 @@ func (r *Runtime) InstanceReadMany() ([]types.Instance, error) {
 			},
 			Webhooks: transformWebhooks(container.Labels[instanceLabelWebhooks]),
 			Labels:   filteredLabels,
+			Created:  containerDeep.Created,
+			Started:  containerDeep.State.StartedAt,
 		})
 	}
 

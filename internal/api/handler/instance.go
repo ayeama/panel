@@ -86,6 +86,9 @@ func (h *InstanceHandler) handleInstanceCreate(w http.ResponseWriter, r *http.Re
 			Disk:   instance.Resources.Disk,
 		},
 		Webhooks: instance.Webhooks,
+		// TODO labels?
+		Created: instance.Created,
+		Started: instance.Started,
 	}
 
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
@@ -117,6 +120,9 @@ func (h *InstanceHandler) handleInstanceReadMany(w http.ResponseWriter, r *http.
 				Disk:   instance.Resources.Disk,
 			},
 			Webhooks: instance.Webhooks,
+			// TODO labels?
+			Created: instance.Created,
+			Started: instance.Started,
 		}
 	}
 
@@ -149,6 +155,9 @@ func (h *InstanceHandler) handleInstanceRead(w http.ResponseWriter, r *http.Requ
 			Disk:   instance.Resources.Disk,
 		},
 		Webhooks: instance.Webhooks,
+		// TODO labels?
+		Created: instance.Created,
+		Started: instance.Started,
 	}
 
 	if err := json.NewEncoder(w).Encode(resp); err != nil {

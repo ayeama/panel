@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/ayeama/panel/pkg/api"
 )
@@ -17,8 +18,9 @@ type Instance struct {
 	Status    string
 	Ports     map[string]string
 	Resources InstanceResources
-
-	Webhooks []string
+	Webhooks  []string
+	Started   time.Time
+	Updated   time.Time
 }
 
 type InstanceCreate struct {

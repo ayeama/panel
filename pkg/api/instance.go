@@ -1,5 +1,7 @@
 package api
 
+import "time"
+
 type Instance struct {
 	ID        string            `json:"id"`
 	Name      string            `json:"name"`
@@ -9,6 +11,8 @@ type Instance struct {
 	Resources InstanceResources `json:"resources"`
 	Webhooks  []string          `json:"webhooks"`
 	Labels    map[string]string `json:"labels"`
+	Created   time.Time         `json:"created"`
+	Started   time.Time         `json:"started"`
 }
 
 type InstanceResources struct {
