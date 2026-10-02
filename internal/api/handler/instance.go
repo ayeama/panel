@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -468,7 +469,7 @@ func (h *InstanceHandler) handleInstanceRestore(w http.ResponseWriter, r *http.R
 		}
 	}
 	if manifestFile == nil {
-		handleError(w, err)
+		handleError(w, errors.New("missing manifest file"))
 		return
 	}
 	defer manifestFile.Close()
@@ -481,7 +482,7 @@ func (h *InstanceHandler) handleInstanceRestore(w http.ResponseWriter, r *http.R
 	}
 
 	if manifest.ID != instance.ID {
-		handleError(w, err)
+		handleError(w, errors.New("manifest and instance IDs don't match"))
 		return
 	}
 
