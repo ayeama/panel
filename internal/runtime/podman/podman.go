@@ -3,12 +3,16 @@ package podman
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 
+	"github.com/ayeama/panel/internal/runtime"
+	"go.podman.io/podman/v6/libpod/define"
 	"go.podman.io/podman/v6/pkg/bindings"
 	"go.podman.io/podman/v6/pkg/bindings/containers"
 	"go.podman.io/podman/v6/pkg/bindings/images"
+	"go.podman.io/podman/v6/pkg/bindings/system"
 	"go.podman.io/podman/v6/pkg/bindings/volumes"
 
 	netTypes "go.podman.io/common/libnetwork/types"
@@ -32,7 +36,8 @@ const (
 )
 
 type Runtime struct {
-	ctx *context.Context
+	ctx  *context.Context
+	info *define.Info
 }
 
 type Config struct {
@@ -41,11 +46,17 @@ type Config struct {
 
 // TODO: pass in context?
 func New(config *Config) (*Runtime, error) {
-	c, err := bindings.NewConnection(context.Background(), config.URI)
+	ctx, err := bindings.NewConnection(context.Background(), config.URI)
 	if err != nil {
 		return nil, err
 	}
-	return &Runtime{&c}, nil
+
+	info, err := system.Info(ctx, nil)
+	if err != nil {
+		return nil, &runtime.Error{Op: "read", Resource: "runtime", ID: "podman", Err: fmt.Errorf("%w: %w", runtime.ErrInternal, err)}
+	}
+
+	return &Runtime{&ctx, info}, nil
 }
 
 func (r *Runtime) imageID(id string) (string, error) {

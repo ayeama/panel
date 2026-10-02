@@ -16,7 +16,6 @@ import (
 	"github.com/opencontainers/runtime-spec/specs-go"
 	"go.podman.io/podman/v6/pkg/bindings/containers"
 	"go.podman.io/podman/v6/pkg/bindings/images"
-	"go.podman.io/podman/v6/pkg/bindings/system"
 	"go.podman.io/podman/v6/pkg/bindings/volumes"
 	entitiesTypes "go.podman.io/podman/v6/pkg/domain/entities/types"
 	"go.podman.io/podman/v6/pkg/specgen"
@@ -454,12 +453,6 @@ func (r *Runtime) InstanceFileSystem(id string) (runtime.FileSystem, error) {
 		return nil, &runtime.Error{Op: "filesystem", Resource: "instance", ID: id, Err: fmt.Errorf("%w: %w", runtime.ErrInternal, err)}
 	}
 
-	// TODO get info once at startup?
-	info, err := system.Info(*r.ctx, nil)
-	if err != nil {
-		return nil, &runtime.Error{Op: "filesystem", Resource: "instance", ID: id, Err: fmt.Errorf("%w: %w", runtime.ErrInternal, err)}
-	}
-
 	for _, mount := range containerDeep.Mounts {
 		volume, err := volumes.Inspect(*r.ctx, mount.Name, nil)
 		if err != nil {
@@ -470,7 +463,7 @@ func (r *Runtime) InstanceFileSystem(id string) (runtime.FileSystem, error) {
 			continue
 		}
 
-		dir := path.Join(info.Store.VolumePath, volume.Name, "_data")
+		dir := path.Join(r.info.Store.VolumePath, volume.Name, "_data")
 		if volumePath := os.Getenv("PANEL_VOLUME_PATH"); volumePath != "" {
 			dir = path.Join(volumePath, volume.Name, "_data")
 		}
