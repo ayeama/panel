@@ -19,21 +19,6 @@ const id = route.params.id
 const { instance, instanceRead, instanceDelete, instanceStart, instanceStop, instanceRestore } =
   useInstance()
 
-const instanceRefreshTimeoutSeconds = 10
-let instanceRefreshTimeout
-
-async function instanceRefresh() {
-  try {
-    await instanceRead(id)
-  } catch (error) {
-    if (error.message === API_ERROR_NOT_FOUND) {
-      router.push('/')
-    }
-  }
-
-  instanceRefreshTimeout = setTimeout(instanceRefresh, instanceRefreshTimeoutSeconds * 1000)
-}
-
 const restoreFileInput = ref(null)
 
 const instanceFiles = ref(`${API_DAV}/instances/${id}/files`)
@@ -43,11 +28,7 @@ const instanceFilesCopy = async () => {
 }
 
 onMounted(async () => {
-  await instanceRefresh(id)
-})
-
-onUnmounted(async () => {
-  clearTimeout(instanceRefreshTimeout)
+  await instanceRead(id)
 })
 
 async function instanceDeleteRedirect(id) {

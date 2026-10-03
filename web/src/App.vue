@@ -28,7 +28,11 @@ const themeIcon = computed(() => {
         <RouterLink class="navbar-brand" to="/">Panel</RouterLink>
 
         <div class="dropdown">
-          <button class="btn dropdown-toggle d-flex align-items-center" type="button" data-bs-toggle="dropdown">
+          <button
+            class="btn dropdown-toggle d-flex align-items-center"
+            type="button"
+            data-bs-toggle="dropdown"
+          >
             <component :is="themeIcon" />
           </button>
           <ul class="dropdown-menu dropdown-menu-end">

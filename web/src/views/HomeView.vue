@@ -7,20 +7,8 @@ import InstanceTable from '@/components/InstanceTable.vue'
 
 const { instances, instanceReadMany } = useInstance()
 
-const instancesRefreshTimeoutSeconds = 10
-let instancesRefreshTimeout
-
-async function instancesRefresh() {
-  instanceReadMany()
-  instancesRefreshTimeout = setTimeout(instancesRefresh, instancesRefreshTimeoutSeconds * 1000)
-}
-
 onMounted(async () => {
-  await instancesRefresh()
-})
-
-onUnmounted(async () => {
-  clearTimeout(instancesRefreshTimeout)
+  await instanceReadMany()
 })
 </script>
 
