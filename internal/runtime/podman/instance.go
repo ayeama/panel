@@ -405,7 +405,6 @@ func (r *Runtime) InstanceRestore(id string, manifest *types.InstanceBackupManif
 
 		for _, filePath := range zr.File {
 			if path.Base(filePath.Name) == manifestMount.ID {
-				fmt.Println("found a match:", volumeName, filePath.Name, manifestMount.ID)
 				f, err := zr.Open(filePath.Name)
 				if err != nil {
 					return &runtime.Error{Op: "restore", Resource: "instance", ID: id, Err: fmt.Errorf("%w: %w", runtime.ErrInternal, err)}
@@ -418,7 +417,6 @@ func (r *Runtime) InstanceRestore(id string, manifest *types.InstanceBackupManif
 				}
 				break
 			}
-			fmt.Println("did not find a match:", volumeName, filePath.Name, manifestMount.ID)
 		}
 
 	}
