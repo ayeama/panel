@@ -1,3 +1,8 @@
-# Panel
+# panel
 
-An ayeama game panel.
+## Getting Started
+
+```
+sudo dnf install -y git make
+make install
+```
