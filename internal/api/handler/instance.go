@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"log"
 	"net/http"
 	"os"
 	"path"
@@ -375,8 +376,17 @@ func (h *InstanceHandler) handleInstanceBackup(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	zw := zip.NewWriter(w)
-	defer zw.Close()
+	now := time.Now().Format("20060102150405")
+
+	tmp, err := os.CreateTemp("", fmt.Sprintf("panel-%s-%s-backup-*.zip", instance.Name, now))
+	if err != nil {
+		handleError(w, err)
+		return
+	}
+	defer os.Remove(tmp.Name())
+	defer tmp.Close()
+
+	zw := zip.NewWriter(tmp)
 
 	manifest := types.InstanceBackupManifest{
 		Instance: instance,
@@ -384,12 +394,14 @@ func (h *InstanceHandler) handleInstanceBackup(w http.ResponseWriter, r *http.Re
 	}
 
 	if err = h.runtime.InstanceBackup(instance.ID, &manifest, zw); err != nil {
+		zw.Close()
 		handleError(w, err)
 		return
 	}
 
 	f, err := zw.Create("manifest.json")
 	if err != nil {
+		zw.Close()
 		handleError(w, err)
 		return
 	}
@@ -397,6 +409,17 @@ func (h *InstanceHandler) handleInstanceBackup(w http.ResponseWriter, r *http.Re
 	encoder := json.NewEncoder(f)
 	encoder.SetIndent("", "    ")
 	if err = encoder.Encode(manifest); err != nil {
+		zw.Close()
+		handleError(w, err)
+		return
+	}
+
+	if err = zw.Close(); err != nil {
+		handleError(w, err)
+		return
+	}
+
+	if _, err = tmp.Seek(0, io.SeekStart); err != nil {
 		handleError(w, err)
 		return
 	}
@@ -407,10 +430,15 @@ func (h *InstanceHandler) handleInstanceBackup(w http.ResponseWriter, r *http.Re
 		fmt.Sprintf(
 			"attachment; filename=\"panel-%s-%s-backup.zip\"",
 			instance.Name,
-			time.Now().Format("20060102150405"),
+			now,
 		),
 	)
-	w.WriteHeader(http.StatusOK)
+
+	if _, err = io.Copy(w, tmp); err != nil {
+		// TODO error handling
+		log.Panicf("WARNING")
+		return
+	}
 }
 
 func (h *InstanceHandler) handleInstanceRestore(w http.ResponseWriter, r *http.Request) {
